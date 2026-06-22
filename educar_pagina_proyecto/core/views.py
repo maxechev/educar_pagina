@@ -2331,6 +2331,18 @@ def aprobar_pago(request, id_pago):
 
     return redirect('dashboard-administrativo')
 
+def rechazar_pago(request, id_pago):
+
+    pago = PagoPendiente.objects.get(
+        id_pago=id_pago
+    )
+
+    pago.delete()
+
+    return redirect(
+        'dashboard-administrativo'
+    )
+
 @never_cache
 def enviar_documentacion(request):
 

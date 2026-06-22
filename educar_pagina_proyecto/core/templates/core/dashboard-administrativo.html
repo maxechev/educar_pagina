@@ -315,15 +315,33 @@
                       </td>
 
                       <td>
+
                           {% if pago.estado == 'Pendiente' %}
+
                           <form method="POST"
-                                action="{% url 'aprobar-pago' pago.id_pago %}">
+                                action="{% url 'aprobar-pago' pago.id_pago %}"
+                                style="display:inline;">
                               {% csrf_token %}
-                              <button type="submit" class="btn-form">
+
+                              <button type="submit"
+                                      class="btn-aprobar">
                                   Aprobar
                               </button>
                           </form>
+
+                          <form method="POST"
+                                action="{% url 'rechazar-pago' pago.id_pago %}"
+                                style="display:inline;">
+                              {% csrf_token %}
+
+                              <button type="submit"
+                                      class="btn-rechazar">
+                                  Rechazar
+                              </button>
+                          </form>
+
                           {% endif %}
+
                       </td>
                   </tr>
 

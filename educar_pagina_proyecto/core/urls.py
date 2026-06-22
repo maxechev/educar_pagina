@@ -42,6 +42,7 @@ urlpatterns = [
     path('aprobar-documentacion/<int:id_documentacion>/',views.aprobar_documentacion,name='aprobar_documentacion'),
     path('rechazar-documentacion/<int:id_documentacion>/',views.rechazar_documentacion,name='rechazar_documentacion'),
     path('crear-usuario/',views.crear_usuario,name='crear-usuario'),
+    path('rechazar-pago/<int:id_pago>/',views.rechazar_pago,name='rechazar-pago'),
     # Comunicaciones - noticias y comunicados
     path('contacto/opinion/', views.guardar_opinion, name='guardar-opinion'),
     path('crear-comunicado/',views.crear_comunicado,name='crear-comunicado'),
