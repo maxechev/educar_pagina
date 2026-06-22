@@ -337,10 +337,12 @@ def noticias(request):
 
 @never_cache
 def dashboard_alumno(request):
-    persona = obtener_persona(request)
-
+    persona, dashboard_url = obtener_datos_sesion(request)
     if not persona:
         return redirect('login')
+    if dashboard_url != 'dashboard-alumno':
+        return redirect(dashboard_url)
+        
     alumno = Alumno.objects.filter(
         id_persona=persona
     ).select_related(
@@ -782,17 +784,14 @@ def dashboard_alumno(request):
 
 @never_cache
 def dashboard_docente(request):
-    from django.db.models import Avg
-
-    persona = obtener_persona(request)
-
+    persona, dashboard_url = obtener_datos_sesion(request)
     if not persona:
         return redirect('login')
-
+    if dashboard_url != 'dashboard-docente':
+        return redirect(dashboard_url)
+    from django.db.models import Avg
+    
     docente = Docente.objects.filter(id_persona=persona).first()
-
-    if not docente:
-        return redirect('login')
 
     materias = Materia.objects.filter(
         docentedictamateria__id_docente=docente
@@ -941,10 +940,13 @@ def horario_docente(request):
 
 @never_cache
 def dashboard_directivo(request):
-    persona = obtener_persona(request)
 
+    persona, dashboard_url = obtener_datos_sesion(request)
     if not persona:
         return redirect('login')
+
+    if dashboard_url != 'dashboard-directivo':
+        return redirect(dashboard_url)
 
     cantidad_alumnos = Alumno.objects.count()
     cantidad_docentes = Docente.objects.count()
@@ -1243,10 +1245,11 @@ def enviar_consulta(request):
 
 @never_cache
 def dashboard_administrativo(request):
-    persona = obtener_persona(request)
-
+    persona, dashboard_url = obtener_datos_sesion(request)
     if not persona:
         return redirect('login')
+    if dashboard_url != 'dashboard-administrativo':
+        return redirect(dashboard_url)
 
     administrativo = PersonalAdministrativo.objects.filter(
         id_persona=persona
@@ -1577,11 +1580,11 @@ def crear_usuario(request):
 
 @never_cache
 def dashboard_padres(request):
-
-    persona = obtener_persona(request)
-
+    persona, dashboard_url = obtener_datos_sesion(request)
     if not persona:
         return redirect('login')
+    if dashboard_url != 'dashboard-padres':
+        return redirect(dashboard_url)
 
     tutor = Tutor.objects.filter(
         id_persona=persona
@@ -1765,15 +1768,15 @@ def dashboard_padres(request):
 
 @never_cache
 def dashboard_preceptor(request):
-
-    persona = obtener_persona(request)
+    persona, dashboard_url = obtener_datos_sesion(request)
+    if not persona:
+        return redirect('login')
+    if dashboard_url != 'dashboard-preceptor':
+        return redirect(dashboard_url)
 
     curso_id = request.POST.get('curso_id') or request.GET.get('curso_id')
     
     notificaciones = []
-
-    if not persona:
-        return redirect('login')
 
     preceptor = Preceptor.objects.filter(
         id_persona=persona
