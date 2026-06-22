@@ -325,12 +325,14 @@
             {% endif %}
 
             {% if messages %}
-            {% for message in messages %}
-                <div class="{% if message.tags == 'success' %}mensaje-exito{% else %}mensaje-error{% endif %}">
-                    {{ message }}
-                </div>
-            {% endfor %}
-        {% endif %}
+                {% for message in messages %}
+                    {% if 'pagos' in message.tags %}
+                        <div class="{% if 'success' in message.tags %}mensaje-exito{% else %}mensaje-error{% endif %}">
+                            {{ message }}
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
 
             <form method="POST" action="{% url 'registrar_pago' %}">
               {% csrf_token %}
@@ -441,9 +443,11 @@
 
                   {% if messages %}
                       {% for message in messages %}
-                          <div class="{% if message.tags == 'success' %}mensaje-exito{% else %}mensaje-error{% endif %}">
-                              {{ message }}
-                          </div>
+                          {% if 'documentacion' in message.tags %}
+                              <div class="{% if 'success' in message.tags %}mensaje-exito{% else %}mensaje-error{% endif %}">
+                                  {{ message }}
+                              </div>
+                          {% endif %}
                       {% endfor %}
                   {% endif %}
 

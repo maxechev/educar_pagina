@@ -2242,7 +2242,8 @@ def registrar_pago(request):
 
                 messages.error(
                     request,
-                    'Ya existe una solicitud pendiente para ese mes.'
+                    'Ya existe una solicitud pendiente para ese mes.',
+                    extra_tags="pagos"
                 )
 
                 request.session["panel_activo"] = "pagos"
@@ -2256,7 +2257,8 @@ def registrar_pago(request):
 
                 messages.error(
                     request,
-                    f'La cuota de {request.POST.get("mes")} ya fue abonada.'
+                    f'La cuota de {request.POST.get("mes")} ya fue abonada.',
+                    extra_tags="pagos"
                 )
 
                 request.session["panel_activo"] = "pagos"
@@ -2273,28 +2275,32 @@ def registrar_pago(request):
 
             messages.success(
                 request,
-                'El comprobante de pago fue enviado correctamente y será revisado por administración.'
+                'El comprobante de pago fue enviado correctamente y será revisado por administración.',
+                extra_tags="pagos"
             )
 
         except Alumno.DoesNotExist:
 
             messages.error(
                 request,
-                'Debe seleccionar un alumno válido.'
+                'Debe seleccionar un alumno válido.',
+                extra_tags="pagos"
             )
 
         except Arancel.DoesNotExist:
 
             messages.error(
                 request,
-                'No existe un arancel configurado para este nivel.'
+                'No existe un arancel configurado para este nivel.',
+                extra_tags="pagos"
             )
 
         except Exception as e:
 
             messages.error(
                 request,
-                f'Ocurrió un error al registrar el pago: {e}'
+                f'Ocurrió un error al registrar el pago: {e}',
+                extra_tags="pagos"
             )
 
         request.session["panel_activo"] = "pagos"
@@ -2342,7 +2348,8 @@ def enviar_documentacion(request):
 
             messages.error(
                 request,
-                'Este alumno ya tiene documentación cargada.'
+                'Este alumno ya tiene documentación cargada.',
+                extra_tags="documentacion"
             )
 
             request.session["panel_activo"] = "documentacion"
@@ -2454,14 +2461,16 @@ def enviar_documentacion(request):
 
         messages.success(
             request,
-            'La documentación fue enviada correctamente.'
+            'La documentación fue enviada correctamente.',
+            extra_tags="documentacion"
         )
 
     except Exception as e:
 
         messages.error(
             request,
-            f'Error al enviar la documentación: {e}'
+            f'Error al enviar la documentación: {e}',
+            extra_tags="documentacion"
         )
 
     request.session["panel_activo"] = "documentacion"
