@@ -26,7 +26,9 @@ SECRET_KEY = 'django-insecure-l^n1bt2ey@d=d^1#alypeaeo6%%d1n)z(zkum)eii*2#-41)m&
 DEBUG = True
 
 ALLOWED_HOSTS = [
-    "educar-production.up.railway.app",
+    "educarparatransformar.pythonanywhere.com",
+    "localhost",
+    "127.0.0.1",
 ]
 
 # Application definition
