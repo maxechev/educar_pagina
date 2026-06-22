@@ -1,0 +1,251 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contacto</title>
+  <link rel="stylesheet" href="{% static 'core/css/styles.css' %}">
+</head>
+
+<body>
+
+  <div class="page">
+    {% include 'core/plantillas/cabecera.html' %}
+
+    <main>
+
+      <section class="hero">
+        <h1>Contacto</h1>
+
+        <p>
+          Estamos disponibles para responder consultas, brindar información
+          y acompañar a las familias durante todo el proceso educativo.
+        </p>
+      </section>
+
+            {% if messages %}
+          {% for message in messages %}
+              <div class="mensaje {{ message.tags }}">
+                  {{ message }}
+              </div>
+          {% endfor %}
+      {% endif %}
+
+      <section class="cards">
+
+        <div class="card">
+          <div class="card-content">
+
+            <div class="card-title">
+              <div class="icon icon-blue">📍</div>
+              <span>Ubicación</span>
+            </div>
+
+            <p>
+              Ruta Nacional 11, afueras de Resistencia, Chaco.
+              Campus educativo con instalaciones deportivas y académicas.
+            </p>
+
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-content">
+
+            <div class="card-title">
+              <div class="icon icon-green">📞</div>
+              <span>Contacto directo</span>
+            </div>
+
+            <p>
+              Teléfono: (362) 4000000<br>
+              WhatsApp: +54 9 362 4000000<br>
+              Email: educarparatransformarcolegio@gmail.com
+            </p>
+
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-content">
+
+            <div class="card-title">
+              <div class="icon icon-pink">🌐</div>
+              <span>Redes sociales</span>
+            </div>
+
+            <p>
+              Seguinos en Instagram y Facebook como <b>@educarparatransformar</b> para conocer noticias,
+              actividades y novedades institucionales.
+            </p>
+
+          </div>
+        </div>
+
+      </section>
+
+      <section class="form-section">
+
+        <form
+        class="form-card"
+        action="{% url 'enviar-consulta' %}"
+        method="POST">
+
+        {% csrf_token %}
+
+          <input type="hidden" name="origen" value="contacto">
+
+          <h2>Enviar consulta</h2>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="nombre">Nombre completo</label>
+
+              <input
+                  type="text"
+                  id="nombre"
+                  name="nombre"
+                  required
+                  pattern="[A-Za-zÁÉÍÓÚáéíóúÑñ ]{2,50}">
+            </div>
+
+            <div class="form-group">
+                <label for="email">Correo electrónico</label>
+
+                <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    required>
+            </div>
+
+          </div>
+
+          <div class="form-group full">
+
+            <label for="mensaje">Mensaje</label>
+
+            <textarea
+              id="mensaje"
+              name="mensaje"
+              rows="6"
+              placeholder="Escriba su consulta aquí..."
+              required></textarea>
+
+          </div>
+
+          <button type="submit" class="btn-form">
+            Enviar consulta
+          </button>
+
+        </form>
+
+      </section>
+
+      <section class="cards">
+
+        <div class="card">
+
+          <div class="card-content">
+
+            <div class="card-title">
+              <div class="icon icon-green">💬</div>
+              <span>Opiniones de familias</span>
+            </div>
+
+            <p>
+              “Nos encantó la propuesta educativa y el acompañamiento brindado.”
+              — Familia Gómez
+            </p>
+
+            <p>
+              “Las instalaciones y actividades deportivas son increíbles.”
+              — Familia Martínez
+            </p>
+
+          </div>
+
+        </div>
+
+      </section>
+
+      <section class="form-section">
+        <div class="form-card">
+          <h2>Dejar una opinión</h2>
+          {% if error_opinion %}
+          <div style="background:#fee2e2; color:#991b1b; border-radius:8px; padding:12px; margin-bottom:16px;">
+            {{ error_opinion }}
+          </div>
+          {% endif %}
+          <form method="POST" action="{% url 'guardar-opinion' %}">
+            {% csrf_token %}
+            <div class="form-group full">
+              <label for="nombre">Tu nombre</label>
+              <input type="text" id="nombre" name="nombre" placeholder="Ingresá tu nombre (Opcional)" maxlength="100">
+            </div>
+            <div class="form-group full">
+              <label for="opinion">Tu opinión</label>
+              <textarea id="opinion" name="opinion" rows="5"
+                placeholder="Escribí tu opinión sobre la institución..." required maxlength="500"></textarea>
+            </div>
+            <button type="submit" class="btn-form">Publicar opinión</button>
+          </form>
+        </div>
+      </section>
+
+      <section class="cards" id="opiniones">
+
+        <div class="card">
+
+          <div class="card-content">
+
+            <div class="card-title">
+              <div class="icon icon-green">💬</div>
+              <span>Opiniones de visitantes</span>
+            </div>
+
+          {% if opiniones %}
+            {% for op in opiniones %}
+              <p>
+                <em>"{{ op.texto }}"</em><br>
+                <strong>— {{ op.nombre }}</strong>
+                <small style="color:#999;"> · {{ op.fecha }}</small>
+              </p>
+              {% endfor %}
+            {% else %}
+            <p>Todavía no hay opiniones. ¡Sé el primero en dejar la tuya!</p>
+          {% endif %}
+
+
+          </div>
+
+        </div>
+
+      </section>
+
+    </main>
+
+  </div>
+
+  <script>
+  function validarOpinion(event) {
+    const opinion = document.getElementById('opinion').value.trim();
+
+    if (!opinion) {
+      alert("Por favor, escribí tu opinión antes de publicar.");
+      event.preventDefault();
+      return false;
+    }
+
+    if (opinion.length > 500) {
+      alert("La opinión no puede superar los 500 caracteres.");
+      event.preventDefault();
+      return false;
+    }
+
+    return true;
+  }
+  </script>
+</body>
+</html>

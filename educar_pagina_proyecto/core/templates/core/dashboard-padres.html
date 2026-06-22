@@ -1,0 +1,750 @@
+{% load static %}
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Portal del Tutor</title>
+    <link rel="stylesheet" href="{% static 'core/css/styles.css' %}" />
+  </head>
+
+  <div class="modal-overlay" id="modalCerrarSesion">
+    <div class="modal-box">
+      <h2>¿Cerrar sesión?</h2>
+
+      <p>Vas a salir del portal de tutor.</p>
+
+      <div class="modal-buttons">
+        <button class="btn-cancelar" onclick="cerrarModal()">Cancelar</button>
+
+        <button class="btn-cerrar" onclick="confirmarCerrarSesion()">
+          Cerrar sesión
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function abrirModalCerrarSesion() {
+      document.getElementById("modalCerrarSesion").classList.add("active");
+    }
+
+    function cerrarModal() {
+      document.getElementById("modalCerrarSesion").classList.remove("active");
+    }
+
+    function confirmarCerrarSesion() {
+      window.location.href = "{% url 'logout' %}";
+    }
+  </script>
+
+  <body>
+    <div class="page">
+      <header>
+        <a href="{% url 'index' %}" class="brand">
+          <img src="{% static 'core/IMG/logo.png' %}" alt="Logo" />
+
+          <div>
+            <div class="brand-title">Educar para Transformar</div>
+            <div class="brand-subtitle">Portal del Tutor</div>
+          </div>
+        </a>
+
+        <nav></nav>
+
+        <div class="login">
+          <a href="#" onclick="abrirModalCerrarSesion()" class="btn-logout"
+            >Cerrar sesión</a
+          >
+        </div>
+      </header>
+
+      <div class="dashboard-layout">
+        <aside class="sidebar">
+          <div class="sidebar-user">
+            <div class="avatar">
+              {{ persona.nombre|slice:":1"|upper }}{{persona.apellido|slice:":1"|upper }}
+            </div>
+
+            <strong>{{ persona.nombre }} {{ persona.apellido }}</strong>
+
+            <span>
+              Tutor de {% for hijo in hijos %} {{ hijo.persona.nombre }} 
+              {{hijo.persona.apellido }}{% if not forloop.last %}, {% endif %} {%endfor %}
+            </span>
+          </div>
+
+          <nav class="sidebar-nav">
+            <a
+              href="#"
+              class="active"
+              onclick="
+                showPanel('inicio', this);
+                return false;
+              "
+            >
+              <span class="nav-icon">🏠</span> Inicio
+            </a>
+
+            <a
+              href="#"
+              onclick="
+                showPanel('hijos', this);
+                return false;
+              "
+            >
+              <span class="nav-icon">👨‍👩‍👧</span> Mi/s hijo/s
+            </a>
+
+            <a
+              href="#"
+              onclick="
+                showPanel('calificaciones', this);
+                return false;
+              "
+            >
+              <span class="nav-icon">📊</span> Calificaciones
+            </a>
+
+            <a
+              href="#"
+              onclick="
+                showPanel('asistencias', this);
+                return false;
+              "
+            >
+              <span class="nav-icon">✅</span> Asistencias
+            </a>
+
+            <a
+              href="#"
+              onclick="
+                showPanel('pagos', this);
+                return false;
+              "
+            >
+              <span class="nav-icon">💳</span> Pagos
+            </a>
+
+            <a
+              href="#"
+              onclick="
+                showPanel('cuotas', this);
+                return false;
+              "
+            >
+              <span class="nav-icon">💰</span> Historial de pagos
+            </a>
+            <a
+              href="#"
+              onclick="
+                showPanel('documentacion', this);
+                return false;
+              "
+            >
+              <span class="nav-icon">📄</span>
+              Documentación
+            </a>
+
+            <a
+              href="#"
+              onclick="
+                showPanel('mensajes', this);
+                return false;
+              "
+            >
+              <span class="nav-icon">💬</span> Mensajes
+            </a>
+            <a
+              href="#"
+              onclick="
+                showPanel('contacto', this);
+                return false;
+              "
+            >
+              <span class="nav-icon">📞</span> Contacto
+            </a>
+            <a
+              href="#"
+              onclick="
+                showPanel('perfil', this);
+                return false;
+              "
+            >
+              <span class="nav-icon">👤</span> Mi perfil
+            </a>
+          </nav>
+        </aside>
+
+        <main class="dashboard-main">
+          <!-- INICIO -->
+          <div id="panel-inicio" class="panel active">
+            <p class="section-title">Hola de nuevo, {{ persona.nombre }}</p>
+
+            <div class="stat-grid">
+              <div class="stat-card">
+                <div class="stat-label">Promedio general</div>
+                <div class="stat-value" style="color: #16a34a">
+                  {{ promedio_general }}
+                </div>
+                <div class="stat-sub">
+                  Promedio de {{ hijos|length }} alumno{{hijos|length|pluralize:"s" }}
+                </div>
+              </div>
+
+              <div class="stat-card">
+                <div class="stat-label">Asistencia</div>
+                <div class="stat-value" style="color: #1d66c2">
+                  {{ porcentaje_asistencia }}%
+                </div>
+                <div class="stat-sub">Ciclo lectivo actual</div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- hijos -->
+          <div id="panel-hijos" class="panel">
+            <p class="section-title">Mi/s hijo/s</p>
+
+            <table class="tabla">
+              <thead>
+                <tr>
+                  <th>Alumno</th>
+                  <th>Curso</th>
+                  <th>Turno</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {% for hijo in hijos %}
+
+                <tr>
+                  <td>{{ hijo.persona.nombre }} {{ hijo.persona.apellido }}</td>
+
+                  <td>{{ hijo.curso.nivel }} {{ hijo.curso.comision }}</td>
+
+                  <td>{{ hijo.curso.turno }}</td>
+
+                  <td>
+                    {% if hijo.promedio >= 6 %}
+                    <span class="badge badge-green"> Regular </span>
+                    {% else %}
+                    <span class="badge badge-red"> En riesgo </span>
+                    {% endif %}
+                  </td>
+                </tr>
+
+                {% empty %}
+
+                <tr>
+                  <td colspan="4">No hay hijos asociados.</td>
+                </tr>
+
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+          <!-- CALIFICACIONES -->
+          <div id="panel-calificaciones" class="panel">
+            <p class="section-title">Calificaciones</p>
+
+            <table class="tabla">
+              <thead>
+                <tr>
+                  <th>Materia</th>
+                  <th>Promedio</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {% for hijo in hijos %}
+
+                <tr>
+                  <td>{{ hijo.persona.nombre }} {{ hijo.persona.apellido }}</td>
+
+                  <td>{{ hijo.promedio }}</td>
+
+                  <td>
+                    {% if hijo.promedio >= 6 %}
+                    <span class="badge badge-green"> Regular </span>
+                    {% else %}
+                    <span class="badge badge-red"> En riesgo </span>
+                    {% endif %}
+                  </td>
+                </tr>
+
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+          <!-- ASISTENCIAS -->
+          <div id="panel-asistencias" class="panel">
+            <p class="section-title">
+              Asistencias de
+              {% for hijo in hijos|slice:":3" %}
+                {{ hijo.persona.nombre }} {{ hijo.persona.apellido }}
+                {% if not forloop.last %}, {% endif %}
+              {% endfor %}
+            </p>
+
+            <div class="stat-grid">
+              <div class="stat-card">
+                <div class="stat-label">Presentes</div>
+                <div class="stat-value" style="color: #16a34a">
+                  {{ presentes }}
+                </div>
+              </div>
+
+              <div class="stat-card">
+                <div class="stat-label">Ausencias</div>
+                <div class="stat-value" style="color: #dc2626">
+                  {{ ausencias }}
+                </div>
+              </div>
+
+              <div class="stat-card">
+                <div class="stat-label">Tardanzas</div>
+                <div class="stat-value" style="color: #d97706">
+                  {{ tardanzas }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- PAGOS -->
+          <div id="panel-pagos" class="panel">
+            <h2>Registrar pago</h2>
+
+            {% if exito %}
+            <div class="success-message">Pago enviado correctamente.</div>
+            {% endif %}
+
+            {% if messages %}
+            {% for message in messages %}
+                <div class="{% if message.tags == 'success' %}mensaje-exito{% else %}mensaje-error{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+            <form method="POST" action="{% url 'registrar_pago' %}">
+              {% csrf_token %}
+
+              <div class="form-group">
+                <label>Alumno</label>
+
+                <select name="alumno" required>
+                  <option value="">Seleccione un hijo</option>
+
+                  {% for hijo in hijos %}
+                  <option value="{{ hijo.alumno.legajo }}">
+                      {{ hijo.persona.nombre }} {{ hijo.persona.apellido }}
+                  </option>
+                  {% endfor %}
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>Mes</label>
+
+                <select name="mes" required>
+                  <option value="Marzo">Marzo</option>
+                  <option value="Abril">Abril</option>
+                  <option value="Mayo">Mayo</option>
+                  <option value="Junio">Junio</option>
+                  <option value="Julio">Julio</option>
+                  <option value="Agosto">Agosto</option>
+                  <option value="Septiembre">Septiembre</option>
+                  <option value="Octubre">Octubre</option>
+                  <option value="Noviembre">Noviembre</option>
+                  <option value="Diciembre">Diciembre</option>
+                </select>
+              </div>
+
+              <p>El importe será calculado automáticamente según el nivel del alumno.</p>
+
+              <button type="submit" class="btn-form">Enviar pago</button>
+            </form>
+          </div>
+          
+          <!-- HISTORIAL -->
+          <div id="panel-cuotas" class="panel">
+
+              <h2>Historial de cuotas</h2>
+
+              <table class="tabla">
+                  <thead>
+                      <tr>
+                          <th>Alumno</th>
+                          <th>Periodo</th>
+                          <th>Monto</th>
+                          <th>Estado</th>
+                      </tr>
+                  </thead>
+
+                  <tbody>
+
+                      {% for cuota in cuotas %}
+                      <tr>
+
+                          <td>
+                              {{ cuota.id_legajo_alumno.id_persona.nombre }}
+                              {{ cuota.id_legajo_alumno.id_persona.apellido }}
+                          </td>
+
+                          <td>{{ cuota.periodo }}</td>
+
+                          <td>${{ cuota.monto }}</td>
+
+                          <td>
+
+                              {% if cuota.estado == 'Pagada' %}
+                              <span class="badge badge-green">
+                                  Pagada
+                              </span>
+
+                              {% elif cuota.estado == 'Pendiente' %}
+                              <span class="badge badge-yellow">
+                                  Pendiente
+                              </span>
+
+                              {% else %}
+                              <span class="badge">
+                                  {{ cuota.estado }}
+                              </span>
+                              {% endif %}
+
+                          </td>
+
+                      </tr>
+                      {% empty %}
+                      <tr>
+                          <td colspan="4">
+                              No hay cuotas registradas.
+                          </td>
+                      </tr>
+                      {% endfor %}
+
+                  </tbody>
+              </table>
+          </div>
+
+          <!-- DOCUMENTACION -->
+          <div id="panel-documentacion" class="panel">
+
+                  <h2>Documentación del alumno</h2>
+
+                  {% if messages %}
+                      {% for message in messages %}
+                          <div class="{% if message.tags == 'success' %}mensaje-exito{% else %}mensaje-error{% endif %}">
+                              {{ message }}
+                          </div>
+                      {% endfor %}
+                  {% endif %}
+
+                  <!-- ESTADO DE LA DOCUMENTACION -->
+                  {% for hijo in hijos %}
+
+                      {% if hijo.documentacion %}
+
+                          <div class="tarea-card" style="margin-bottom:15px;">
+
+                              <strong>
+                                  {{ hijo.persona.nombre }}
+                                  {{ hijo.persona.apellido }}
+                              </strong>
+
+                              <br>
+
+                              Estado:
+                              {{ hijo.documentacion.estado }}
+
+                              {% if hijo.documentacion.estado == 'Rechazada' %}
+                                  <br>
+                                  Motivo:
+                                  {{ hijo.documentacion.observaciones }}
+                              {% endif %}
+
+                          </div>
+
+                      {% endif %}
+
+                  {% endfor %}
+
+                  <p class="section-title">
+                      Adjunte la documentación obligatoria para completar el legajo.
+                  </p>
+
+                  <form method="POST"
+                      action="{% url 'enviar_documentacion' %}"
+                      enctype="multipart/form-data">
+
+                  {% csrf_token %}
+
+                  <div class="form-group">
+                      <label>Alumno</label>
+
+                      <select name="alumno" required>
+                          <option value="">
+                              Seleccione un alumno
+                          </option>
+
+                          {% for hijo in hijos %}
+                          <option value="{{ hijo.alumno.legajo }}">
+                              {{ hijo.persona.nombre }}
+                              {{ hijo.persona.apellido }}
+                          </option>
+                          {% endfor %}
+                      </select>
+                  </div>
+
+                  <div class="form-group">
+                      <label>DNI (frente)</label>
+                      <input type="file"
+                            name="dni_frente"
+                            accept=".jpg,.jpeg,.png"
+                            required>
+                  </div>
+
+                  <div class="form-group">
+                      <label>DNI (dorso)</label>
+                      <input type="file"
+                            name="dni_dorso"
+                            accept=".jpg,.jpeg,.png"
+                            required>
+                  </div>
+
+                  <div class="form-group">
+                      <label>Partida de nacimiento</label>
+                      <input type="file"
+                            name="partida"
+                            accept=".jpg,.jpeg,.png"
+                            required>
+                  </div>
+
+                  <div class="form-group">
+                      <label>Certificado de salud</label>
+                      <input type="file"
+                            name="salud"
+                            accept=".jpg,.jpeg,.png"
+                            required>
+                  </div>
+
+                  <button type="submit" class="btn-form">
+                      Enviar documentación
+                  </button>
+
+              </form>
+
+          </div>
+
+          <!-- MENSAJES -->
+          <div id="panel-mensajes" class="panel">
+            <p class="section-title">Comunicados institucionales</p>
+
+            {% for noticia in noticias %}
+            <div class="notif-item">
+              <div class="notif-icon" style="background: #dbeafe">📢</div>
+
+              <div class="notif-text">
+                <strong>{{ noticia.titulo }}</strong>
+
+                {% if noticia.curso %}
+                <small style="display: block; font-weight: 600; color: #64748b">
+                  Curso: {{ noticia.curso }}
+                </small>
+                {% endif %}
+
+                <span>{{ noticia.contenido }}</span>
+
+                <small>{{ noticia.fecha }}</small>
+              </div>
+            </div>
+
+            {% empty %}
+            <p>No hay comunicados disponibles.</p>
+            {% endfor %}
+          </div>
+          <!-- CONTACTO -->
+          <div id="panel-contacto" class="panel">
+            <input type="hidden" name="origen" value="dashboard">
+            <p class="section-title">Contacto con Administración</p>
+
+            <div class="stat-grid">
+              <div class="stat-card">
+                <div class="stat-label">WhatsApp</div>
+
+                <div class="stat-sub">+54 9 362 4000000</div>
+
+                <a
+                  href="https://wa.me/5493624000000"
+                  target="_blank"
+                  class="btn-form"
+                  style="
+                    margin-left: 0;
+                    margin-top: 10px;
+                    text-decoration: none;
+                    display: inline-block;
+                  "
+                >
+                  Enviar mensaje
+                </a>
+              </div>
+
+              <div class="stat-card">
+                <div class="stat-label">Correo electrónico</div>
+
+                <div class="stat-sub">
+                  educarparatransformarcolegio@gmail.com
+                </div>
+              </div>
+
+              <div class="stat-card">
+                <div class="stat-label">Redes Sociales</div>
+
+                <div class="stat-sub">
+                  Instagram y Facebook: @educarparatransformar
+                </div>
+              </div>
+            </div>
+
+            <br />
+
+            <div class="stat-card">
+              <h3 style="margin-bottom: 20px">Formulario de consulta</h3>
+              {% if messages %} {% for message in messages %}
+              <div
+                style="
+                  background: #dcfce7;
+                  color: #166534;
+                  padding: 12px;
+                  border-radius: 8px;
+                  margin-bottom: 15px;
+                  font-weight: 600;
+                "
+              >
+                ✅ {{ message }}
+              </div>
+              {% endfor %} {% endif %}
+              <form action="{% url 'enviar-consulta' %}" method="POST">
+                {% csrf_token %}
+                <input type="hidden" name="origen" value="dashboard">
+                <input
+                  type="hidden"
+                  name="nombre"
+                  value="{{ persona.nombre }} {{ persona.apellido }}"
+                />
+
+                <input type="hidden" name="email" value="{{ persona.email }}" />
+                <div class="form-group">
+                  <label>Mensaje</label>
+
+                  <textarea
+                    name="mensaje"
+                    rows="5"
+                    required
+                    placeholder="Escriba aquí su consulta..."
+                  ></textarea>
+                </div>
+
+                <br />
+
+                <button type="submit" class="btn-form">Enviar consulta</button>
+              </form>
+            </div>
+          </div>
+          <!-- PERFIL -->
+          <div id="panel-perfil" class="panel">
+            <p class="section-title">Mi perfil</p>
+
+            <table class="tabla">
+              <tbody>
+                <tr>
+                  <td style="font-weight: 600; color: #64748b">
+                    Nombre completo
+                  </td>
+                  <td>{{ persona.nombre }} {{ persona.apellido }}</td>
+                </tr>
+
+                <tr>
+                  <td style="font-weight: 600; color: #64748b">DNI</td>
+                  <td>{{ persona.dni }}</td>
+                </tr>
+
+                <tr>
+                  <td style="font-weight: 600; color: #64748b">
+                    Alumno asociado
+                  </td>
+                  <td>
+                    {% for hijo in hijos %} {{ hijo.persona.nombre }} {{hijo.persona.apellido }} {% if not forloop.last %} , 
+                    {%endif %} {% endfor %}
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="font-weight: 600; color: #64748b">Teléfono</td>
+                  <td>{{ persona.telefono }}</td>
+                </tr>
+
+                <tr>
+                  <td style="font-weight: 600; color: #64748b">
+                    Correo electrónico
+                  </td>
+                  <td>{{ persona.email }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <script>
+      function showPanel(id, el) {
+        document
+          .querySelectorAll(".panel")
+          .forEach((p) => p.classList.remove("active"));
+
+        document
+          .querySelectorAll(".sidebar-nav a")
+          .forEach((a) => a.classList.remove("active"));
+
+        document.getElementById("panel-" + id).classList.add("active");
+
+        if (el) {
+          el.classList.add("active");
+        }
+      }
+
+      document.addEventListener("DOMContentLoaded", function () {
+        const panelActivo = "{{ panel_activo|default:'inicio' }}";
+
+        document
+          .querySelectorAll(".panel")
+          .forEach((p) => p.classList.remove("active"));
+
+        document
+          .querySelectorAll(".sidebar-nav a")
+          .forEach((a) => a.classList.remove("active"));
+
+        document
+          .getElementById("panel-" + panelActivo)
+          ?.classList.add("active");
+
+        document.querySelectorAll(".sidebar-nav a").forEach((link) => {
+          if (
+            link.getAttribute("onclick") &&
+            link.getAttribute("onclick").includes("'" + panelActivo + "'")
+          ) {
+            link.classList.add("active");
+          }
+        });
+      });
+    </script>
+  </body>
+</html>

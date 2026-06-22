@@ -1,0 +1,27 @@
+[
+  {
+    "nombre": "María González",
+    "texto": "La plataforma es muy fácil de usar y me permite seguir el progreso académico de mi hijo de manera rápida.",
+    "fecha": "12/06/2026 09:15"
+  },
+  {
+    "nombre": "Carlos Fernández",
+    "texto": "Me gustó la organización de la información y la posibilidad de comunicarme con la institución desde un solo lugar.",
+    "fecha": "14/06/2026 16:42"
+  },
+  {
+    "nombre": "Lucía Martínez",
+    "texto": "Las notificaciones y avisos funcionan muy bien. Ahora estoy al tanto de todas las novedades importantes.",
+    "fecha": "16/06/2026 11:28"
+  },
+  {
+    "nombre": "Javier Romero",
+    "texto": "El sistema es intuitivo y facilita mucho la gestión de consultas y trámites administrativos.",
+    "fecha": "17/06/2026 18:56"
+  },
+  {
+    "nombre": "Lucas",
+    "texto": "Muy bueno",
+    "fecha": "19/06/2026 10:21"
+  }
+]

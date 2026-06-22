@@ -1,0 +1,43 @@
+[
+  {
+    "titulo": "Reunión de padres 1A Secundario",
+    "contenido": "Se informa a las familias que el próximo jueves se realizará una reunión de padres para tratar temas académicos y de convivencia. La asistencia es importante.",
+    "autor": "Andrea Sánchez",
+    "rol": "Preceptor",
+    "fecha": "13/06/2026 08:15",
+    "curso_id": 1,
+    "curso": "Secundario 1° A"
+  },
+  {
+    "titulo": "Entrega de boletines",
+    "contenido": "Se comunica a toda la comunidad educativa que los boletines estarán disponibles a partir del lunes en la secretaría de la institución.",
+    "autor": "Elena Morales",
+    "rol": "Directivo",
+    "fecha": "13/06/2026 09:40"
+  },
+  {
+    "titulo": "Recordatorio uniforme escolar 2B",
+    "contenido": "Se recuerda a los estudiantes la importancia de asistir con el uniforme completo durante toda la semana.",
+    "autor": "Andrea Sánchez",
+    "rol": "Preceptor",
+    "fecha": "13/06/2026 11:20",
+    "curso_id": 2,
+    "curso": "Secundario 2° B"
+  },
+  {
+    "titulo": "Suspensión de actividades deportivas",
+    "contenido": "Debido a las condiciones climáticas previstas para mañana, las actividades deportivas extracurriculares quedan suspendidas hasta nuevo aviso.",
+    "autor": "Elena Morales",
+    "rol": "Directivo",
+    "fecha": "14/06/2026 17:05"
+  },
+  {
+    "titulo": "Evaluación de Matemática 1A",
+    "contenido": "Se informa que la evaluación de Matemática se realizará el próximo martes. Se recomienda repasar los contenidos vistos durante las últimas semanas.",
+    "autor": "Andrea Sánchez",
+    "rol": "Preceptor",
+    "fecha": "15/06/2026 07:50",
+    "curso_id": 1,
+    "curso": "Secundario 1° A"
+  }
+]

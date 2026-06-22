@@ -1,0 +1,116 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bienestar Estudiantil</title>
+  <link rel="stylesheet" href="{% static 'core/css/styles.css' %}">
+</head>
+
+<body>
+
+  <div class="page">
+    {% include 'core/plantillas/cabecera.html' %}
+
+    <main>
+      <section class="cards">
+        <div class="card">
+            <img src="{% static 'core/IMG/apoyo.jpg' %}" alt="Apoyo estudiantil" class="card-image">
+            <div class="card-content">
+            <div class="card-title">
+                <div class="icon icon-green">♡</div>
+                <span>Apoyo estudiantil</span>
+            </div>
+
+            <p>
+                Espacios de orientación y acompañamiento para fortalecer la trayectoria escolar,
+                la convivencia y el desarrollo personal de cada alumno.
+            </p>
+            </div>
+        </div>
+
+        <div class="card">
+            <img src="{% static 'core/IMG/idiomas.jpg' %}" alt="Idiomas" class="card-image">
+
+            <div class="card-content">
+            <div class="card-title">
+                <div class="icon icon-blue">🌐</div>
+                <span>Idiomas</span>
+            </div>
+
+            <p>
+                Enseñanza de inglés, portugués y francés para ampliar las oportunidades comunicativas,
+                culturales y académicas de los estudiantes.
+            </p>
+            </div>
+        </div>
+
+        <div class="card">
+            <img src="{% static 'core/IMG/enfermeria.jpg' %}" alt="Enfermería" class="card-image">
+
+            <div class="card-content">
+            <div class="card-title">
+                <div class="icon icon-pink">⚕</div>
+                <span>Enfermería</span>
+            </div>
+
+            <p>
+                Atención básica y acompañamiento preventivo para cuidar la salud de los estudiantes
+                durante la jornada escolar.
+            </p>
+            </div>
+        </div>
+
+        </section>
+
+      <section class="cards">
+        <div class="card">
+            <img src="{% static 'core/IMG/deportes.jpg' %}" alt="Deportes" class="card-image">
+          <div class="card-content">
+            <div class="card-title">
+              <div class="icon icon-blue">⚽</div>
+              <span>Deportes</span>
+            </div>
+            <p>
+              Actividades como fútbol, natación, atletismo, vóleibol, básquet, artes marciales,
+              danza y ajedrez para fomentar disciplina, trabajo en equipo y hábitos saludables.
+            </p>
+          </div>
+        </div>
+
+        <div class="card">
+            <img src="{% static 'core/IMG/comedor.jpg' %}" alt="Comedor" class="card-image">
+          <div class="card-content">
+            <div class="card-title">
+              <div class="icon icon-green">🍽</div>
+              <span>Comedor</span>
+            </div>
+            <p>
+              Servicio de comedor destinado a acompañar la jornada extendida, favoreciendo
+              una alimentación organizada y adecuada durante el día escolar.
+            </p>
+          </div>
+        </div>
+
+        <div class="card">
+            <img src="{% static 'core/IMG/traslado.jpg' %}" alt="Micros de traslado" class="card-image">
+          <div class="card-content">
+            <div class="card-title">
+              <div class="icon icon-pink">🚌</div>
+              <span>Micros de traslado</span>
+            </div>
+            <p>
+              Servicio de transporte escolar para facilitar el acceso de los estudiantes
+              al centro educativo de manera segura y organizada.
+            </p>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+  </div>
+
+</body>
+</html>

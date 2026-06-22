@@ -1,0 +1,656 @@
+{% load static %}
+{% load filters %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portal del Docente</title>
+  <link rel="stylesheet" href="{% static 'core/css/styles.css' %}">
+</head>
+<body>
+  <div class="page">
+    <header>
+      <a href="{% url 'index' %}" class="brand">
+        <img src="{% static 'core/IMG/logo.png' %}" alt="Logo">
+        <div>
+          <div class="brand-title">Educar para Transformar</div>
+          <div class="brand-subtitle">Portal del Docente</div>
+        </div>
+      </a>
+      <nav></nav>
+      <div class="login">
+        <a href="#" onclick="abrirModalCerrarSesion()" class="btn-logout">Cerrar sesión</a>
+      </div>
+    </header>
+
+    <div class="dashboard-layout">
+      <aside class="sidebar">
+        <div class="sidebar-user">
+          <div class="avatar">
+            {{ persona.nombre|slice:":1"|upper }}{{ persona.apellido|slice:":1"|upper }}
+          </div>
+          <strong>Prof. {{ persona.nombre }} {{ persona.apellido }}</strong>
+          <span>
+            {{ docente.especialidad }} · Docente
+          </span>
+        </div>
+        <nav class="sidebar-nav">
+          <a href="#" class="active" onclick="showPanel('inicio', this); return false;">
+            <span class="nav-icon">🏠</span> Inicio
+          </a>
+          <a href="#" onclick="showPanel('cursos', this); return false;">
+            <span class="nav-icon">📚</span> Mis cursos
+          </a>
+          <a href="#" onclick="showPanel('notas', this); return false;">
+            <span class="nav-icon">📝</span> Cargar notas
+          </a>
+          <a href="#" onclick="showPanel('tareas', this); return false;">
+            <span class="nav-icon">📋</span> Tareas y evaluaciones
+          </a>
+          <a href="#" onclick="showPanel('horario', this); return false;">
+            <span class="nav-icon">📅</span> Mi horario
+          </a>
+          <a href="#" onclick="showPanel('perfil', this); return false;">
+            <span class="nav-icon">👤</span> Mi perfil
+          </a>
+        </nav>
+      </aside>
+
+      <main class="dashboard-main">
+
+        <!-- INICIO -->
+        <div id="panel-inicio" class="panel active">
+          <p class="section-title">Hola de nuevo, {{ persona.nombre }} {{ persona.apellido }}</p>
+          <div class="stat-grid">
+            <div class="stat-card">
+              <div class="stat-label">Cursos a cargo</div>
+              <div class="stat-value" style="color:#e61c92">
+                {{ cursos|length }}
+              </div>
+              <div class="stat-sub">Este ciclo lectivo</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Total de alumnos</div>
+              <div class="stat-value" style="color:#1d66c2">
+                {{ alumnos|length }}
+              </div>
+              <div class="stat-sub">En todos los cursos</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Evaluaciones pendientes</div>
+              <div class="stat-value" style="color:#d97706">3</div>
+              <div class="stat-sub">Por corregir</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CURSOS -->
+        <div id="panel-cursos" class="panel">
+          <p class="section-title">Mis cursos</p>
+          <table class="tabla">
+            <thead>
+              <tr><th>Curso</th><th>Nivel</th><th>Turno</th><th>Alumnos</th><th>Promedio</th></tr>
+            </thead>
+            <tbody>
+              {% for c in cursos %}
+              <tr>
+                <td>{{ c.curso }}</td>
+                <td>{{ c.nivel }}</td>
+                <td>{{ c.turno }}</td>
+                <td>{{ c.alumnos }}</td>
+                <td>{{ c.promedio }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <!-- NOTAS -->
+        <div id="panel-notas" class="panel">
+          <p class="section-title">Cargar notas</p>
+
+            <div id="mensaje-nota" style="display:none; padding:12px; margin-bottom:15px; border-radius:6px; font-weight:bold; transition: all 0.3s ease;">
+            </div>
+
+          <table class="tabla">
+            <thead>
+              <tr>
+                <th>Alumno</th>
+                <th>DNI</th>
+                <th>1° Bimestre</th>
+                <th>2° Bimestre</th>
+                <th>3° Bimestre</th>
+                <th>Guardar</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for alumno in alumnos %}
+              <tr>
+                <td style="padding:18px;">
+                  {{ alumno.id_persona.apellido }}, {{ alumno.id_persona.nombre }}
+                </td>
+                <td style="padding:18px; font-size:0.9em; color:#64748b;">
+                  {{ alumno.id_persona.dni }}
+                </td>
+                {% with notas=notas_por_alumno|get_item:alumno.legajo %}
+                <td style="padding:8px;">
+                  <input type="number" step="0.1" min="0" max="10" name="nota1"
+                        value="{{ notas.trim1|default:'' }}"
+                        class="nota-1"
+                        style="width:85px; padding:6px 8px; text-align:center; border:1px solid #cbd5e1; border-radius:4px;">
+                </td>
+                <td style="padding:8px;">
+                  <input type="number" step="0.1" min="0" max="10" name="nota2"
+                        value="{{ notas.trim2|default:'' }}"
+                        class="nota-2"
+                        style="width:85px; padding:6px 8px; text-align:center; border:1px solid #cbd5e1; border-radius:4px;">
+                </td>
+                <td style="padding:8px;">
+                  <input type="number" step="0.1" min="0" max="10" name="nota3"
+                        value="{{ notas.trim3|default:'' }}"
+                        class="nota-3"
+                        style="width:85px; padding:6px 8px; text-align:center; border:1px solid #cbd5e1; border-radius:4px;">
+                </td>
+                {% endwith %}
+                <td style="padding:8px; padding-bottom: 21px; ">
+                  <button type="button" class="btn-small"
+                          onclick="guardarNotaDB({{ alumno.legajo }}, this)"
+                          style="background:#2563eb; color:white; border:none; padding:6px 14px; border-radius:4px; cursor:pointer;">
+                    Guardar
+                  </button>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <!-- TAREAS Y EVALUACIONES -->
+        <div id="panel-tareas" class="panel">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <p class="section-title" style="margin:0;">Tareas y evaluaciones</p>
+            <button class="btn-small" style="background:#2563eb; color:white; padding:8px 16px; border:none; border-radius:6px; cursor:pointer;" onclick="abrirModalNuevaTarea()">
+              + Nueva Publicación
+            </button>
+          </div>
+
+          <!-- Mensajes de Alerta -->
+          {% if messages %}
+            {% for message in messages %}
+              <div style="padding: 10px; margin-bottom: 15px; border-radius: 6px; background-color: {% if message.tags == 'success' %}#dcfce7; color: #166534; border: 1px solid #bbf7d0;{% else %}#fee2e2; color: #991b1b; border: 1px solid #fecaca;{% endif %}">
+                {{ message }}
+              </div>
+            {% endfor %}
+          {% endif %}
+
+          <div class="tareas-lista">
+            {% for t in tareas %}
+              <div class="tarea-card" style="display:flex; justify-content:space-between; align-items:center; padding:15px; border:1px solid #cbd5e1; border-radius:10px; margin-bottom:12px; background:white;">
+                <div class="tarea-info" style="text-align:left;">
+                  <div style="display:flex; align-items:center; gap: 8px; margin-bottom: 4px;">
+                    <span style="font-size:0.85em; font-weight:bold; padding:2px 8px; border-radius:12px; background:{% if t.tipo == 'Tarea' %}#dbeafe; color:#1e40af;{% else %}#fce7f3; color:#9d174d;{% endif %}">
+                      {{ t.tipo }}
+                    </span>
+                    <strong>{{ t.titulo }}</strong>
+                  </div>
+                  <span style="font-size:0.9em; color:#475569;">
+                    Curso: {{ t.curso_destinado.anio }}° {{ t.curso_destinado.nivel }} ({{ t.curso_destinado.comision }}) · 
+                    Fecha: {{ t.fecha|date:"d/m/Y" }}
+                  </span>
+                  <p style="margin: 8px 0 0 0; font-size:0.92em; color:#1e293b;">{{ t.descripcion }}</p>
+                </div>
+                
+                <div style="display:flex; align-items:center; gap:12px;">
+                  <span class="badge {% if t.estado == 'Publicado' %}badge-green{% elif t.estado == 'Programado' %}badge-yellow{% else %}badge-blue{% endif %}">
+                    {% if t.estado == 'Borrador' %}Pendiente{% else %}{{ t.estado }}{% endif %}
+                  </span>
+                
+                    <a href="{% url 'editar-tarea' t.id %}" class="btn-small"
+                      style="background:#dbeafe; color:#1e40af; border:1px solid #bfdbfe;  cursor:pointer; text-decoration:none; padding:6px 14px; border-radius:24px;">
+                      Editar
+                    </a>
+                  
+                  <button class="btn-small" style="background:#fee2e2; color:#991b1b; border: 1px solid #fecaca; border-radius:24px; cursor:pointer;" 
+                          onclick="abrirModalEliminar('{{ t.id }}', '{{ t.titulo|escapejs }}')">
+                    Borrar
+                  </button>
+                  
+                </div>
+              </div>
+            {% empty %}
+              <p style="text-align:center; color:#64748b; padding:20px;">No has subido ninguna tarea o evaluación aún.</p>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- HORARIO SEMANAL -->
+        <div id="panel-horario" class="panel">
+          <p class="section-title">Mi horario semanal</p>
+          <table class="tabla">
+            <thead>
+              <tr>
+                <th>Hora</th>
+                <th>Lunes</th>
+                <th>Martes</th>
+                <th>Miércoles</th>
+                <th>Jueves</th>
+                <th>Viernes</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for hora, dias in horario.items %}
+              <tr>
+                <td><strong>{{ hora }}</strong></td>
+                <td>{{ dias.Lunes }}</td>
+                <td>{{ dias.Martes }}</td>
+                <td>{{ dias.Miércoles }}</td>
+                <td>{{ dias.Jueves }}</td>
+                <td>{{ dias.Viernes }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <!-- PERFIL -->
+        <div id="panel-perfil" class="panel">
+          <p class="section-title">Mi perfil docente</p>
+          <table class="tabla">
+            <tbody>
+              <tr><td style="font-weight:600;color:#64748b">Nombre completo</td><td>{{ persona.nombre }} {{ persona.apellido }}</td></tr>
+              <tr><td style="font-weight:600;color:#64748b">DNI</td><td>{{ persona.dni }}</td></tr>
+              <tr><td style="font-weight:600;color:#64748b">Título</td><td>{{ docente.titulo }}</td></tr>
+              <tr><td style="font-weight:600;color:#64748b">Especialidad</td><td>{{ docente.especialidad }}</td></tr>
+              <tr><td style="font-weight:600;color:#64748b">Fecha de ingreso</td><td>{{ docente.fecha_ingreso }}</td></tr>
+              <tr><td style="font-weight:600;color:#64748b">Correo institucional</td><td>{{ persona.email }}</td></tr>
+              <tr><td style="font-weight:600;color:#64748b">Teléfono</td><td>{{ persona.telefono }}</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- MODAL CERRAR SESIÓN -->
+  <div class="modal-overlay" id="modalCerrarSesion">
+    <div class="modal-box">
+      <h2>¿Cerrar sesión?</h2>
+      <p>Vas a salir del portal de docente.</p>
+      <div class="modal-buttons">
+        <button class="btn-cancelar" onclick="cerrarModal()">Cancelar</button>
+        <button class="btn-cerrar" onclick="confirmarCerrarSesion()">Cerrar sesión</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL NUEVA TAREA / EVALUACIÓN -->
+  <div class="modal-overlay" id="modalNuevaTarea">
+    <div class="modal-box" style="max-width: 500px; padding: 25px;">
+      <h2 style="margin-bottom:15px; text-align:left;">Nueva Tarea o Evaluación</h2>
+      <form action="{% url 'crear-tarea' %}" method="POST">
+        {% csrf_token %}
+        <div style="margin-bottom: 12px; text-align: left;">
+          <label style="display:block; font-weight:bold; margin-bottom:4px; font-size:0.9em;">Título *</label>
+          <input type="text" name="titulo" required style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px; font-size: 0.95em;">
+        </div>
+        <div style="margin-bottom: 12px; text-align: left; display: flex; gap: 10px;">
+          <div style="flex: 1;">
+            <label style="display:block; font-weight:bold; margin-bottom:4px; font-size:0.9em;">Tipo *</label>
+            <select name="tipo" required style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px; font-size: 0.95em;">
+              <option value="Tarea">Tarea</option>
+              <option value="Evaluación">Evaluación</option>
+            </select>
+          </div>
+          <div style="flex: 1;">
+            <label style="display:block; font-weight:bold; margin-bottom:4px; font-size:0.9em;">Curso Destinado *</label>
+            <select name="curso" required style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px; font-size: 0.95em;">
+              {% for c in cursos_lista %}
+                <option value="{{ c.id_curso }}">{{ c.anio }}° {{ c.nivel }} ({{ c.comision }})</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <div style="margin-bottom: 12px; text-align: left;">
+          <label style="display:block; font-weight:bold; margin-bottom:4px; font-size:0.9em;">Fecha de Entrega/Evaluación *</label>
+          <input type="date" name="fecha" required style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px; font-size: 0.95em;">
+        </div>
+        <div style="margin-bottom: 12px; text-align: left;">
+          <label style="display:block; font-weight:bold; margin-bottom:4px; font-size:0.9em;">Descripción *</label>
+          <textarea name="descripcion" required rows="3" style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px; font-family:inherit; font-size: 0.95em;"></textarea>
+        </div>
+        <div style="margin-bottom: 12px; text-align: left;">
+          <label style="display:block; font-weight:bold; margin-bottom:4px; font-size:0.9em;">Estado Inicial *</label>
+          <select name="estado" required style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px; font-size: 0.95em;">
+            <option value="Borrador">Pendiente (Borrador)</option>
+            <option value="Publicado">Publicado de inmediato</option>
+          </select>
+        </div>
+        
+        <div style="margin-bottom: 12px; text-align: left; background: #f8fafc; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0;">
+          <label style="display:flex; align-items:center; gap: 8px; cursor: pointer; font-size:0.9em; font-weight:bold;">
+            <input type="checkbox" name="programar_publicacion" id="chkProgramar" onchange="toggleFechaPub(this, 'fechaPubContainer', 'txtFechaPub')">
+            <span>Programar publicación futura</span>
+          </label>
+          <div id="fechaPubContainer" style="display: none; margin-top: 8px;">
+            <label style="display:block; font-weight:bold; margin-bottom:4px; font-size: 0.85em; color:#475569;">Fecha y Hora de Publicación *</label>
+            <input type="datetime-local" name="fecha_publicacion" id="txtFechaPub" style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px;">
+          </div>
+        </div>
+        
+        <div class="modal-buttons" style="margin-top: 20px; display:flex; justify-content:flex-end; gap:10px;">
+          <button type="button" class="btn-cancelar" style="padding:8px 16px; cursor:pointer;" onclick="cerrarModalNuevaTarea()">Cancelar</button>
+          <button type="submit" class="btn-cerrar" style="background:#2563eb; color:white; padding:8px 16px; border:none; border-radius:6px; cursor:pointer;">Crear</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL EDITAR TAREA / EVALUACIÓN -->
+  <div class="modal-overlay" id="modalEditarTarea">
+    <div class="modal-box" style="max-width: 500px; padding: 25px;">
+      <h2 style="margin-bottom:15px; text-align:left;">Editar Tarea o Evaluación</h2>
+      <form id="formEditarTarea" method="POST">
+        {% csrf_token %}
+        <div style="margin-bottom: 12px; text-align: left;">
+          <label style="display:block; font-weight:bold; margin-bottom:4px; font-size:0.9em;">Título *</label>
+          <input type="text" name="titulo" id="editTitulo" required style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px; font-size: 0.95em;">
+        </div>
+        <div style="margin-bottom: 12px; text-align: left; display: flex; gap: 10px;">
+          <div style="flex: 1;">
+            <label style="display:block; font-weight:bold; margin-bottom:4px; font-size:0.9em;">Tipo *</label>
+            <select name="tipo" id="editTipo" required style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px; font-size: 0.95em;">
+              <option value="Tarea">Tarea</option>
+              <option value="Evaluación">Evaluación</option>
+            </select>
+          </div>
+          <div style="flex: 1;">
+            <label style="display:block; font-weight:bold; margin-bottom:4px; font-size:0.9em;">Curso Destinado *</label>
+            <select name="curso" id="editCurso" required style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px; font-size: 0.95em;">
+              {% for c in cursos_lista %}
+                <option value="{{ c.id_curso }}">{{ c.anio }}° {{ c.nivel }} ({{ c.comision }})</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <div style="margin-bottom: 12px; text-align: left;">
+          <label style="display:block; font-weight:bold; margin-bottom:4px; font-size:0.9em;">Fecha de Entrega/Evaluación *</label>
+          <input type="date" name="fecha" id="editFecha" required style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px; font-size: 0.95em;">
+        </div>
+        <div style="margin-bottom: 12px; text-align: left;">
+          <label style="display:block; font-weight:bold; margin-bottom:4px; font-size:0.9em;">Descripción *</label>
+          <textarea name="descripcion" id="editDescripcion" required rows="3" style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px; font-family:inherit; font-size: 0.95em;"></textarea>
+        </div>
+        <div style="margin-bottom: 12px; text-align: left;">
+          <label style="display:block; font-weight:bold; margin-bottom:4px; font-size:0.9em;">Estado *</label>
+          <select name="estado" id="editEstado" required style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px; font-size: 0.95em;">
+            <option value="Borrador">Pendiente (Borrador)</option>
+            <option value="Publicado">Publicado</option>
+          </select>
+        </div>
+        
+        <div style="margin-bottom: 12px; text-align: left; background: #f8fafc; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0;">
+          <label style="display:flex; align-items:center; gap: 8px; cursor: pointer; font-size:0.9em; font-weight:bold;">
+            <input type="checkbox" name="programar_publicacion" id="editChkProgramar" onchange="toggleFechaPub(this, 'editFechaPubContainer', 'editTxtFechaPub')">
+            <span>Programar publicación futura</span>
+          </label>
+          <div id="editFechaPubContainer" style="display: none; margin-top: 8px;">
+            <label style="display:block; font-weight:bold; margin-bottom:4px; font-size: 0.85em; color:#475569;">Fecha y Hora de Publicación *</label>
+            <input type="datetime-local" name="fecha_publicacion" id="editTxtFechaPub" style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px;">
+          </div>
+        </div>
+        
+        <div class="modal-buttons" style="margin-top: 20px; display:flex; justify-content:flex-end; gap:10px;">
+          <button type="button" class="btn-cancelar" style="padding:8px 16px; cursor:pointer;" onclick="cerrarModalEditarTarea()">Cancelar</button>
+          <button type="submit" class="btn-cerrar" style="background:#2563eb; color:white; padding:8px 16px; border:none; border-radius:6px; cursor:pointer;">Guardar Cambios</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Cierre de sesión modal
+    function abrirModalCerrarSesion() {
+      document.getElementById("modalCerrarSesion").classList.add("active");
+    }
+    function cerrarModal() {
+      document.getElementById("modalCerrarSesion").classList.remove("active");
+    }
+    function confirmarCerrarSesion() {
+      window.location.href = "{% url 'logout' %}";
+    }
+
+    // Modales de Tareas
+    function abrirModalNuevaTarea() {
+      document.getElementById("modalNuevaTarea").classList.add("active");
+    }
+    function cerrarModalNuevaTarea() {
+      document.getElementById("modalNuevaTarea").classList.remove("active");
+    }
+    function cerrarModalEditarTarea() {
+      document.getElementById("modalEditarTarea").classList.remove("active");
+    }
+
+    function toggleFechaPub(checkbox, containerId, inputId) {
+      const container = document.getElementById(containerId);
+      const input = document.getElementById(inputId);
+      if (checkbox.checked) {
+        container.style.display = 'block';
+        input.required = true;
+      } else {
+        container.style.display = 'none';
+        input.required = false;
+      }
+    }
+
+    function abrirModalEditar(id, titulo, tipo, cursoId, fecha, descripcion, estado, programado, fechaPub) {
+      const form = document.getElementById('formEditarTarea');
+      form.action = `/docente/tareas/${id}/editar/`;
+      
+      document.getElementById('editTitulo').value = titulo;
+      document.getElementById('editTipo').value = tipo;
+      document.getElementById('editCurso').value = cursoId;
+      document.getElementById('editFecha').value = fecha;
+      document.getElementById('editDescripcion').value = descripcion;
+      
+      // Si la tarea está programada, mostramos 'Borrador' en el select de estado visible
+      document.getElementById('editEstado').value = (estado === 'Programado') ? 'Borrador' : estado;
+      
+      const chkProgramar = document.getElementById('editChkProgramar');
+      chkProgramar.checked = (programado === 'true');
+      toggleFechaPub(chkProgramar, 'editFechaPubContainer', 'editTxtFechaPub');
+      
+      if (programado === 'true' && fechaPub) {
+        document.getElementById('editTxtFechaPub').value = fechaPub;
+      } else {
+        document.getElementById('editTxtFechaPub').value = '';
+      }
+      
+      document.getElementById('modalEditarTarea').classList.add('active');
+    }
+
+    // Navegación de paneles
+    function showPanel(panelName, element) {
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.remove('active'));
+      
+      document.getElementById('panel-' + panelName).classList.add('active');
+      element.classList.add('active');
+      
+      // Guarda el panel activo en la URL para no perderlo al hacer submit o refresh
+      const url = new URL(window.location);
+      url.searchParams.set('panel', panelName);
+      window.history.pushState({}, '', url);
+    }
+
+    // Persistir la pestaña activa al cargar/refrescar la página
+    document.addEventListener("DOMContentLoaded", function() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const panel = urlParams.get('panel') || 'inicio';
+      
+      const navLink = Array.from(document.querySelectorAll('.sidebar-nav a')).find(a => {
+        return a.getAttribute('onclick') && a.getAttribute('onclick').includes(`'${panel}'`);
+      });
+      
+      if (navLink) {
+        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.remove('active'));
+        
+        document.getElementById('panel-' + panel).classList.add('active');
+        navLink.classList.add('active');
+      }
+    });
+
+
+      function mostrarMensaje(texto, esExito) {
+        const mensajeDiv = document.getElementById('mensaje-nota');
+        if (mensajeDiv) {
+          mensajeDiv.style.display = 'block';
+          if (esExito) {
+            mensajeDiv.style.backgroundColor = '#dcfce7';
+            mensajeDiv.style.color = '#166534';
+            mensajeDiv.style.border = '1px solid #bbf7d0';
+          } else {
+            mensajeDiv.style.backgroundColor = '#fee2e2';
+            mensajeDiv.style.color = '#991b1b';
+            mensajeDiv.style.border = '1px solid #fecaca';
+          }
+          mensajeDiv.textContent = texto;
+          mensajeDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      }
+
+      function guardarNotaDB(legajo, boton) {
+        const fila = boton.closest('tr');
+        const nota1Input = fila.querySelector('.nota-1');
+        const nota2Input = fila.querySelector('.nota-2');
+        const nota3Input = fila.querySelector('.nota-3');
+
+        if (!nota1Input || !nota2Input || !nota3Input) {
+          mostrarMensaje('No se encontraron los campos de notas en esta fila.', false);
+          return;
+        }
+
+        const nota1Str = nota1Input.value.trim();
+        const nota2Str = nota2Input.value.trim();
+        const nota3Str = nota3Input.value.trim();
+
+        const nota1 = nota1Str === "" ? null : parseFloat(nota1Str);
+        const nota2 = nota2Str === "" ? null : parseFloat(nota2Str);
+        const nota3 = nota3Str === "" ? null : parseFloat(nota3Str);
+
+        const notas = [nota1, nota2, nota3];
+        for (let i = 0; i < notas.length; i++) {
+          if (notas[i] !== null && !isNaN(notas[i]) && (notas[i] < 0 || notas[i] > 10)) {
+            mostrarMensaje(`La nota ${i + 1} debe estar entre 0 y 10.`, false);
+            return;
+          }
+        }
+
+        boton.disabled = true;
+        boton.textContent = 'Guardando...';
+
+        fetch('/docente/guardar-nota/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+          },
+          body: JSON.stringify({
+            legajo_alumno: legajo,
+            nota1: nota1,
+            nota2: nota2,
+            nota3: nota3
+          })
+        })
+        .then(response => {
+          if (!response.ok) throw new Error('Error en el servidor');
+          return response.json();
+        })
+        .then(data => {
+          boton.disabled = false;
+          boton.textContent = 'Guardar';
+
+          if (data.success === true) {
+            mostrarMensaje('Notas guardadas correctamente para: ' + data.alumno, true);
+          } else {
+            mostrarMensaje('Error al guardar: ' + (data.error || 'Desconocido'), false);
+          }
+
+          setTimeout(() => {
+            const mensajeDiv = document.getElementById('mensaje-nota');
+            if (mensajeDiv) mensajeDiv.style.display = 'none';
+          }, 5000);
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          boton.disabled = false;
+          boton.textContent = 'Guardar';
+          mostrarMensaje('Error de conexión. Intente nuevamente.', false);
+        });
+      }
+  </script>
+
+  <div class="modal-overlay" id="modalEliminarTarea">
+    <div class="modal-box">
+      <button onclick="cerrarModalEliminar()" style="position:absolute; top:10px; right:12px; background:none; border:none; font-size:24px; cursor:pointer;">&times;</button>
+      
+      <h3 style="margin-top:0; color:#991b1b;">⚠️ Confirmar eliminación</h3>
+      
+      <p style="color:#64748b; margin-bottom:20px;">
+        ¿Estás seguro que deseas eliminar esta publicación? Esta acción no se puede deshacer.
+      </p>
+
+      <div class="modal-buttons">
+        <button onclick="cerrarModalEliminar()" 
+                style="background:#f1f5f9; color:#1e293b; border:1px solid #cbd5e1; padding:8px 16px; border-radius:4px; cursor:pointer;">
+          Cancelar
+        </button>
+
+        <form id="form-borrar-tarea" action="" method="POST" style="display:inline;">
+          {% csrf_token %}
+          <button type="submit" 
+                  style="background:#fee2e2; color:#991b1b; border:1px solid #fecaca; padding:8px 16px; border-radius:4px; cursor:pointer;"
+                  onclick="confirmarEliminar()">
+            Eliminar
+          </button>
+        </form>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+  // Variables globales para el modal de eliminación
+  let tareaIdParaEliminar = null;
+  let tituloTareaParaEliminar = '';
+
+  function abrirModalEliminar(id, titulo) {
+      tareaIdParaEliminar = id;
+      tituloTareaParaEliminar = titulo;
+      const form = document.getElementById('form-borrar-tarea');
+      if (form) {
+          form.action = '/docente/tareas/' + id + '/borrar/';
+      }
+      document.getElementById('modalEliminarTarea').classList.add('active');
+  }
+
+  function cerrarModalEliminar() {
+    document.getElementById('modalEliminarTarea').classList.remove('active');
+  }
+
+  function confirmarEliminar() {
+    // El form se enviará al hacer click en "Eliminar"
+  }
+
+  // Cerrar modal si se hace clic fuera del contenido
+  document.addEventListener('click', function(event) {
+    const modal = document.getElementById('modalEliminarTarea');
+    if (event.target === modal) {
+      cerrarModalEliminar();
+    }
+  });
+  </script>
+</body>
+</html>

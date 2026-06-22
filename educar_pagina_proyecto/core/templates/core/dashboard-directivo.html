@@ -1,0 +1,524 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portal Directivo</title>
+  <link rel="stylesheet" href="{% static 'core/css/styles.css' %}">
+</head>
+
+<div class="modal-overlay" id="modalCerrarSesion">
+
+  <div class="modal-box">
+
+    <h2>¿Cerrar sesión?</h2>
+
+    <p>
+      Vas a salir del portal directivo.
+    </p>
+
+    <div class="modal-buttons">
+
+      <button class="btn-cancelar" onclick="cerrarModal()">
+        Cancelar
+      </button>
+
+      <button class="btn-cerrar" onclick="confirmarCerrarSesion()">
+        Cerrar sesión
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+
+  function abrirModalCerrarSesion() {
+    document.getElementById("modalCerrarSesion").classList.add("active");
+  }
+
+  function cerrarModal() {
+    document.getElementById("modalCerrarSesion").classList.remove("active");
+  }
+
+  function confirmarCerrarSesion() {
+    window.location.href = "{% url 'logout' %}";
+  }
+
+</script>
+
+<body>
+  <div class="page">
+    <header>
+      <a href="{% url 'index' %}" class="brand">
+        <img src="{% static 'core/IMG/logo.png' %}" alt="Logo">
+        <div>
+          <div class="brand-title">Educar para Transformar</div>
+          <div class="brand-subtitle">Portal Directivo</div>
+        </div>
+      </a>
+      <nav></nav>
+      <div class="login">
+        <a href="#" onclick="abrirModalCerrarSesion()" class="btn-logout">Cerrar sesión</a>
+      </div>
+    </header>
+
+    <div class="dashboard-layout">
+      <aside class="sidebar">
+        <div class="sidebar-user">
+          <div class="avatar">
+            {{ persona.nombre|slice:":1"|upper }}{{ persona.apellido|slice:":1"|upper }}
+          </div>
+
+          <strong>{{ persona.nombre }} {{ persona.apellido }}</strong>
+
+          <span>Equipo Directivo</span>
+        </div>
+
+        <nav class="sidebar-nav">
+
+          <a href="#" class="active" onclick="showPanel('inicio', this); return false;">
+            <span class="nav-icon">🏠</span> Inicio
+          </a>
+
+          <a href="#" onclick="showPanel('institucion', this); return false;">
+            <span class="nav-icon">🏫</span> Institución
+          </a>
+
+          <a href="#" onclick="showPanel('docentes', this); return false;">
+            <span class="nav-icon">👩‍🏫</span> Docentes
+          </a>
+
+          <a href="#" onclick="showPanel('reportes', this); return false;">
+            <span class="nav-icon">📊</span> Reportes
+          </a>
+
+          <a href="#" onclick="showPanel('comunicados', this); return false;">
+            <span class="nav-icon">📢</span> Comunicados
+          </a>
+
+          <a href="#" onclick="showPanel('perfil', this); return false;">
+            <span class="nav-icon">👤</span> Mi perfil
+          </a>
+
+        </nav>
+
+      </aside>
+
+      <main class="dashboard-main">
+
+        <!-- INICIO -->
+        <div id="panel-inicio" class="panel active">
+
+          <p class="section-title">
+            Hola de nuevo, {{ persona.nombre }}
+          </p>
+
+          <div class="stat-grid">
+
+            <div class="stat-card">
+              <div class="stat-label">Estudiantes</div>
+              <div class="stat-value" style="color:#1d66c2">{{ cantidad_alumnos }}</div>
+              <div class="stat-sub">Todos los niveles</div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-label">Docentes</div>
+              <div class="stat-value" style="color:#16a34a">{{ cantidad_docentes }}</div>
+              <div class="stat-sub">Plantel activo</div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-label">Promedio institucional</div>
+              <div class="stat-value" style="color:#e61c92">{{ promedio_institucional }}</div>
+              <div class="stat-sub">Segundo bimestre</div>
+            </div>
+
+          </div>
+
+
+          </div>
+        <!-- INSTITUCIÓN -->
+        <div id="panel-institucion" class="panel">
+
+          <p class="section-title">
+            Información institucional
+          </p>
+
+          <table class="tabla">
+            <tbody>
+
+              <tr>
+                <td style="font-weight:600;color:#64748b">Niveles educativos</td>
+                <td>Inicial, Primario y Secundario</td>
+              </tr>
+
+              <tr>
+                <td style="font-weight:600;color:#64748b">Estudiantes activos</td>
+                <td>{{ cantidad_alumnos }}</td>
+              </tr>
+
+              <tr>
+                <td style="font-weight:600;color:#64748b">Docentes</td>
+                <td>{{ cantidad_docentes }}</td>
+              </tr>
+
+              <tr>
+                <td style="font-weight:600;color:#64748b">Preceptores</td>
+                <td>{{ cantidad_preceptores }}</td>
+              </tr>
+
+              <tr>
+                <td style="font-weight:600;color:#64748b">Personal administrativo</td>
+                <td>{{ cantidad_administrativos }}</td>
+              </tr>
+
+              <tr>
+                <td style="font-weight:600;color:#64748b">Promedio general</td>
+                <td>{{ promedio_institucional }}</td>
+              </tr>
+
+            </tbody>
+          </table>
+          
+        </div>
+        <!-- DOCENTES -->
+        <div id="panel-docentes" class="panel">
+
+          <p class="section-title">
+            Gestión docente
+          </p>
+
+          <table class="tabla">
+
+            <thead>
+                <tr>
+                    <th>Docente</th>
+                    <th>Materia</th>
+                    <th>Nivel</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for docente in docentes %}
+                <tr>
+                    <td>{{ docente.nombre }}</td>
+                    <td>{{ docente.materia }}</td>
+                    <td>{{ docente.nivel }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="3">
+                        No hay docentes registrados.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+
+          </table>
+
+        </div>
+
+        <!-- REPORTES -->
+        <div id="panel-reportes" class="panel">
+
+          <p class="section-title">
+            Reporte institucional
+          </p>
+
+          <div class="report-layout">
+
+            <!-- Resumen -->
+            <div class="report-card">
+
+              <h3>📋 Resumen general</h3>
+
+              <table class="tabla">
+                <tbody>
+
+                  <tr>
+                    <td>Total de estudiantes</td>
+                    <td><strong>{{ cantidad_alumnos }}</strong></td>
+                  </tr>
+
+                  <tr>
+                    <td>Total de docentes</td>
+                    <td><strong>{{ cantidad_docentes }}</strong></td>
+                  </tr>
+
+                  <tr>
+                    <td>Preceptores</td>
+                    <td><strong>{{ cantidad_preceptores }}</strong></td>
+                  </tr>
+
+                  <tr>
+                    <td>Administrativos</td>
+                    <td><strong>{{ cantidad_administrativos }}</strong></td>
+                  </tr>
+
+                  <tr>
+                    <td>Promedio institucional</td>
+                    <td>
+                      <strong style="color:#e61c92">
+                        {{ promedio_institucional }}
+                      </strong>
+                    </td>
+                  </tr>
+
+                </tbody>
+              </table>
+
+            </div>
+
+            <!-- Plantel -->
+            <div class="report-card">
+
+              <h3>👥 Distribución del personal</h3>
+
+              <div class="report-list">
+
+                <div>
+                  <span>Docentes</span>
+                  <strong>{{ cantidad_docentes }}</strong>
+                </div>
+
+                <div>
+                  <span>Preceptores</span>
+                  <strong>{{ cantidad_preceptores }}</strong>
+                </div>
+
+                <div>
+                  <span>Administrativos</span>
+                  <strong>{{ cantidad_administrativos }}</strong>
+                </div>
+
+              </div>
+
+            </div>
+
+            <!-- Noticias -->
+            <div class="report-card">
+
+              <h3>📰 Últimas noticias institucionales</h3>
+
+              <ul class="report-news">
+
+                {% for noticia in ultimas_noticias %}
+                  <li>
+                    <strong>{{ noticia.titulo }}</strong>
+                    <br>
+                    <small>
+                      {{ noticia.fecha_publicacion|date:"d/m/Y" }}
+                    </small>
+                  </li>
+                {% empty %}
+                  <li>No hay noticias publicadas.</li>
+                {% endfor %}
+
+              </ul>
+
+            </div>
+
+        
+          <!-- Asistencia -->
+          <div class="report-card">
+
+            <h3>📅 Asistencia institucional</h3>
+
+            <div class="report-list">
+
+              <div>
+                <span>Presentes</span>
+                <strong>{{ presentes }}</strong>
+              </div>
+
+              <div>
+                <span>Ausentes</span>
+                <strong>{{ ausentes }}</strong>
+              </div>
+
+              <div>
+                <span>Tardanzas</span>
+                <strong>{{ tardanzas }}</strong>
+              </div>
+
+            </div>
+
+          </div>
+
+          <!-- Alumnos por nivel -->
+          <div class="report-card">
+
+            <h3>🎓 Alumnos por nivel</h3>
+
+            <div class="report-list">
+
+              <div>
+                <span>Inicial</span>
+                <strong>{{ alumnos_inicial }}</strong>
+              </div>
+
+              <div>
+                <span>Primario</span>
+                <strong>{{ alumnos_primario }}</strong>
+              </div>
+
+              <div>
+                <span>Secundario</span>
+                <strong>{{ alumnos_secundario }}</strong>
+              </div>
+
+            </div>
+
+          </div>
+          <!-- o inscripciones o postulaciones -->
+          <div class="report-card">
+
+            <h3>📝 Inscripciones</h3>
+
+            <div class="report-list">
+
+              <div>
+                <span>Solicitudes pendientes</span>
+                <strong>{{ solicitudes_pendientes }}</strong>
+              </div>
+
+            </div>
+
+          </div>
+          <div class="report-card">
+
+            <h3>💼 Recursos Humanos</h3>
+
+            <div class="report-list">
+
+              <div>
+                <span>Postulaciones recibidas</span>
+                <strong>{{ postulaciones }}</strong>
+              </div>
+
+            </div>
+
+          </div>
+          </div>   
+        </div>
+        <!-- COMUNICADOS -->
+        <div id="panel-comunicados" class="panel">
+
+          <p class="section-title">
+            Comunicados institucionales
+          </p>
+
+          <div class="form-section" style="margin-top:20px">
+
+            <form method="POST" action="{% url 'crear-comunicado' %}" class="form-card">
+              {% csrf_token %}
+
+              <h2>Nuevo comunicado</h2>
+
+              <div class="form-group full">
+                <label for="titulo">Título</label>
+                <input
+                  type="text"
+                  id="titulo"
+                  name="titulo"
+                  placeholder="Ej: Suspensión de actividades"
+                  required
+                >
+              </div>
+
+              <div class="form-group full">
+                <label for="contenido">Mensaje</label>
+                <textarea
+                  id="contenido"
+                  name="contenido"
+                  rows="5"
+                  placeholder="Escriba el comunicado institucional..."
+                  required
+                ></textarea>
+              </div>
+
+              <button type="submit" class="btn-form">
+                Publicar comunicado
+              </button>
+
+            </form>
+
+          </div>
+
+        </div>
+
+        
+
+        <!-- PERFIL -->
+        <div id="panel-perfil" class="panel">
+
+          <p class="section-title">
+            Mi perfil
+          </p>
+
+          <table class="tabla">
+
+            <tbody>
+
+              <tr>
+                <td style="font-weight:600;color:#64748b">Nombre completo</td>
+                <td>{{ persona.nombre }} {{ persona.apellido }}</td>
+              </tr>
+
+              <tr>
+                <td style="font-weight:600;color:#64748b">DNI</td>
+                <td>{{ persona.dni }}</td>
+              </tr>
+
+              <tr>
+                <td style="font-weight:600;color:#64748b">Fecha de nacimiento</td>
+                <td>{{ persona.fecha_nacimiento|date:"d/m/Y" }}</td>
+              </tr>
+
+              <tr>
+                <td style="font-weight:600;color:#64748b">Cargo</td>
+                <td>Equipo Directivo</td>
+              </tr>
+
+              <tr>
+                <td style="font-weight:600;color:#64748b">Correo electrónico</td>
+                <td>{{ persona.email|default:"No registrado" }}</td>
+              </tr>
+
+              <tr>
+                <td style="font-weight:600;color:#64748b">Teléfono</td>
+                <td>{{ persona.telefono|default:"No registrado" }}</td>
+              </tr>
+
+              <tr>
+                <td style="font-weight:600;color:#64748b">Dirección</td>
+                <td>{{ persona.direccion|default:"No registrada" }}</td>
+              </tr>
+
+            </tbody>
+
+          </table>
+
+        </div>
+
+      </main>
+
+    </div>
+
+  </div>
+
+  <script>
+    function showPanel(id, el) {
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.remove('active'));
+      document.getElementById('panel-' + id).classList.add('active');
+      el.classList.add('active');
+    }
+  </script>
+
+</body>
+</html>

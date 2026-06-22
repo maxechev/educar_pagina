@@ -1,0 +1,78 @@
+{% load static %}
+<div class="blur blur1"></div>
+<div class="blur blur2"></div>
+<div class="blur blur3"></div>
+<div class="blur blur4"></div>
+<div class="blur blur5"></div>
+
+<header>
+  <a href="{% url 'index' %}" class="brand">
+    <img src="{% static 'core/IMG/logo.png' %}" alt="Logo Educar para Transformar">
+    <div>
+      <div class="brand-title">Educar para Transformar</div>
+      <div class="brand-subtitle">Centro Educativo</div>
+    </div>
+  </a>
+
+  <nav>
+    <a href="{% url 'niveles' %}">Niveles educativos</a>
+    <a href="{% url 'bienestar' %}">Bienestar estudiantil</a>
+    <a href="{% url 'noticias' %}">Noticias</a>
+    <a href="{% url 'inscripcion' %}">Inscripción a cursado</a>
+    <a href="{% url 'contacto' %}">Contacto</a>
+  </nav>
+
+  <div class="login">
+      {% if persona %}
+        <div class="user-menu">
+          <span class="user-greeting">
+            <a href="{% url dashboard_url %}" class="user-name" title="Ir a mi panel">Mi Perfil</a>
+          </span>
+          <a href="#" class="btn-logout" onclick="abrirModal(event)">Cerrar sesión</a>
+        </div>
+      {% else %}
+        <a href="{% url 'login' %}">Iniciar sesión</a>
+      {% endif %}
+  </div>
+</header>
+
+  {% if persona %}
+  <div class="modal-overlay" id="modalCerrarSesion">
+    <div class="modal-box">
+      <h2>¿Cerrar sesión?</h2>
+      <p>Vas a salir de tu sesión en el portal educativo.</p>
+      
+      <div class="modal-buttons">
+        <button class="btn-cancelar" onclick="cerrarModal()">
+          Cancelar
+        </button>
+        <button class="btn-cerrar" onclick="confirmarCerrarSesion()">
+          Cerrar sesión
+        </button>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+<script>
+  function abrirModal(event) {
+    if (event) {
+      event.preventDefault();
+    }
+    const modal = document.getElementById('modalCerrarSesion');
+    if (modal) {
+      modal.classList.add('active');
+    }
+  }
+  // Cierra el modal quitando la clase active
+  function cerrarModal() {
+    const modal = document.getElementById('modalCerrarSesion');
+    if (modal) {
+      modal.classList.remove('active');
+    }
+  }
+  // Ejecuta el cierre de sesión redireccionando a Django
+  function confirmarCerrarSesion() {
+    window.location.href = "{% url 'logout' %}";
+  }
+</script>

@@ -1,0 +1,733 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portal del Preceptor</title>
+  <link rel="stylesheet" href="{% static 'core/css/styles.css' %}">
+</head>
+<div class="modal-overlay" id="modalCerrarSesion">
+
+  <div class="modal-box">
+
+    <h2>¿Cerrar sesión?</h2>
+
+    <p>
+      Vas a salir del portal de preceptor.
+    </p>
+
+    <div class="modal-buttons">
+
+      <button class="btn-cancelar" onclick="cerrarModal()">
+        Cancelar
+      </button>
+
+      <button class="btn-cerrar" onclick="confirmarCerrarSesion()">
+        Cerrar sesión
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+
+  function abrirModalCerrarSesion() {
+    document.getElementById("modalCerrarSesion").classList.add("active");
+  }
+
+  function cerrarModal() {
+    document.getElementById("modalCerrarSesion").classList.remove("active");
+  }
+
+  function confirmarCerrarSesion() {
+    window.location.href = "{% url 'logout' %}";
+  }
+
+</script>
+
+<script>
+document.querySelectorAll('.nota-input').forEach(input => {
+    input.addEventListener('focus', () => {
+        input.dataset.placeholder = input.placeholder;
+        input.placeholder = '';
+    });
+
+    input.addEventListener('blur', () => {
+        if (input.value === '') {
+            input.placeholder = input.dataset.placeholder;
+        }
+    });
+});
+</script>
+<script>
+  function showPanel(id, el) {
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.remove('active'));
+    document.getElementById('panel-' + id).classList.add('active');
+    el.classList.add('active');
+  }
+</script>
+  <script>
+    window.onload = function() {
+      const cursoSeleccionado = "{{ curso_seleccionado|default:'' }}";
+      const panelParam = "{{ request.GET.panel|default:'' }}";
+
+      if (cursoSeleccionado) {
+        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.remove('active'));
+        document.getElementById('panel-asistencia-curso').classList.add('active');
+        document.getElementById('menu-asistencias').classList.add('active');
+
+      } else if (panelParam === 'justificaciones') {
+        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.remove('active'));
+        document.getElementById('panel-justificaciones').classList.add('active');
+        document.querySelector('[onclick*="justificaciones"]').classList.add('active');
+      }
+
+      history.replaceState(null, '', window.location.pathname);
+    };
+  </script>
+  <script>
+    function toggleCurso(id) {
+
+        const fila = document.getElementById("curso-" + id);
+        const flecha = document.getElementById("flecha-" + id);
+
+        if (fila.style.display === "none") {
+
+            fila.style.display = "table-row";
+            flecha.innerHTML = "▲";
+
+        } else {
+
+            fila.style.display = "none";
+            flecha.innerHTML = "▼";
+        }
+    }
+  </script>
+<body>
+  <div class="page">
+
+    <header>
+      <a href="{% url 'index' %}" class="brand">
+        <img src="{% static 'core/IMG/logo.png' %}" alt="Logo">
+        <div>
+          <div class="brand-title">Educar para Transformar</div>
+          <div class="brand-subtitle">Portal del Preceptor</div>
+        </div>
+      </a>
+
+      <nav></nav>
+
+      <div class="login">
+        <a href="#" onclick="abrirModalCerrarSesion()" class="btn-logout">Cerrar sesión</a>
+      </div>
+    </header>
+
+    <div class="dashboard-layout">
+
+      <aside class="sidebar">
+        <div class="sidebar-user">
+          <div class="avatar">
+            {{ persona.nombre|slice:":1"|upper }}{{ persona.apellido|slice:":1"|upper }}
+          </div>
+          <strong>{{ persona.nombre }} {{ persona.apellido }}</strong>
+          <span>Preceptor ·
+            {% for curso in cursos %}
+              {{ curso.anio }}° {{ curso.comision }}{% if not forloop.last %}, {% endif %}
+            {% endfor %}
+          </span>
+        </div>
+
+        <nav class="sidebar-nav">
+          <a href="#" class="active" onclick="showPanel('inicio', this); return false;">
+            <span class="nav-icon">🏠</span> Inicio
+          </a>
+          <a href="#" onclick="showPanel('notificaciones', this); return false;">
+            <span class="nav-icon">🔔</span> Notificaciones
+          </a>
+          <a href="#" onclick="showPanel('cursos', this); return false;">
+            <span class="nav-icon">📚</span> Cursos
+          </a>
+          <a id="menu-asistencias"
+            href="#"
+            onclick="showPanel('asistencias', this); return false;">
+            <span class="nav-icon">✅</span> Asistencias
+          </a>
+          <a href="#" onclick="showPanel('justificaciones', this); return false;">
+            <span class="nav-icon">📝</span> Justificaciones
+          </a>
+          <a href="#" onclick="showPanel('comunicados', this); return false;">
+            <span class="nav-icon">📢</span> Comunicados
+          </a>
+          <a href="#" onclick="showPanel('perfil', this); return false;">
+            <span class="nav-icon">👤</span> Mi perfil
+          </a>
+        </nav>
+      </aside>
+
+      <main class="dashboard-main">
+        {% if request.GET.panel == 'justificaciones' and request.GET.guardado == '1' %}
+        <div id="toast-guardado" style="
+          position:fixed; bottom:28px; right:28px;
+          background:#16a34a; color:#fff;
+          padding:12px 20px; border-radius:10px;
+          font-size:14px; font-weight:600;
+          box-shadow:0 4px 16px rgba(0,0,0,.15);
+          z-index:9999; display:flex; align-items:center; gap:8px;
+          animation: fadeInUp .3s ease;
+        ">✅ Observación guardada correctamente</div>
+        <style>
+          @keyframes fadeInUp {
+            from { opacity:0; transform:translateY(12px); }
+            to   { opacity:1; transform:translateY(0); }
+          }
+        </style>
+        <script>
+          setTimeout(function() {
+            var t = document.getElementById('toast-guardado');
+            if (t) {
+              t.style.transition = 'opacity .4s ease';
+              t.style.opacity = '0';
+              setTimeout(function() { t.remove(); }, 400);
+            }
+          }, 3000);
+        </script>
+        {% endif %}
+        <div id="panel-inicio" class="panel active">
+          <p class="section-title">Hola de nuevo, {{ persona.nombre }}</p>
+
+          <div class="stat-grid">
+            <div class="stat-card">
+              <div class="stat-label">Alumnos presentes</div>
+              <div class="stat-value" style="color:#16a34a">
+                {{ total_alumnos }}
+              </div>
+              <div class="stat-sub">Registrados hoy</div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-label">
+                Cursos asignados
+              </div>
+              <div class="stat-value" style="color:#dc4a26">
+                {{ cantidad_cursos }}
+              </div>
+              <div class="stat-sub">Entre cursos asignados</div>
+            </div>
+
+            <div class="stat-card">
+
+              <div class="stat-label">
+                Asistencias pendientes
+              </div>
+
+              <div class="stat-value" style="color:#d97706">
+                {{ cantidad_pendientes }}
+              </div>
+
+              <div class="stat-sub">
+
+                {% if cursos_pendientes %}
+
+                  Falta tomar asistencia en:
+
+                  
+
+                  {% for curso in cursos_pendientes %}
+                    {{ curso }}{% if not forloop.last %}, {% endif %}
+                  {% endfor %}
+
+                {% else %}
+
+                  ✓ Todos los cursos tienen asistencia registrada
+
+                {% endif %}
+
+              </div>
+
+            </div>
+          </div>
+        
+          <p class="section-title" style="font-size:18px">Avisos del día</p>
+          {% for noticia in noticias %}
+          <div class="notif-item">
+            <div class="notif-icon" style="background:#dbeafe">📰</div>
+            <div class="notif-text">
+              <strong>{{ noticia.titulo }}</strong>
+              <span>{{ noticia.contenido }}</span>
+            </div>
+          </div>
+          {% empty %}
+          <p style="color:#64748b">No hay noticias recientes.</p>
+          {% endfor %}
+        </div>
+        <!-- NOTIFICACIONES-->
+        <div id="panel-notificaciones" class="panel">
+
+          <p class="section-title">
+            Notificaciones
+          </p>
+
+          {% for notificacion in notificaciones %}
+            <div class="notif-item">
+
+              <div class="notif-icon"
+                  style="background:{{ notificacion.color }}">
+                {{ notificacion.icono }}
+              </div>
+
+              <div class="notif-text">
+                <strong>{{ notificacion.titulo }}</strong>
+                <span>{{ notificacion.mensaje }}</span>
+              </div>
+
+            </div>
+
+          {% empty %}
+
+            <p style="color:#64748b">
+              No hay notificaciones pendientes.
+            </p>
+
+          {% endfor %}
+
+        </div>
+        <!-- panel-cursos -->
+        <div id="panel-cursos" class="panel">
+          <p class="section-title">Cursos asignados</p>
+
+          <table class="tabla">
+            <thead>
+              <tr>
+                <th>Curso</th>
+                <th>Nivel</th>
+                <th>Turno</th>
+                <th>Alumnos</th>
+                <th>Estado</th>
+                <th></th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {% for curso in cursos %}
+              <!-- FILA DEL CURSO -->
+              <tr onclick="toggleCurso('{{ curso.id_curso }}')" style="cursor:pointer;">
+                <td>{{ curso.anio }}° {{ curso.comision }}</td>
+                <td>{{ curso.nivel }}</td>
+                <td>{{ curso.turno }}</td>
+                <td>{{ curso.cantidad_alumnos }}</td>
+                <td>
+                  <span class="badge badge-green">Activo</span>
+                </td>
+                
+                <td style="text-align:center;">
+                  <span id="flecha-{{ curso.id_curso }}" class="flecha">
+                    ▼
+                  </span>
+                </td>
+              </tr>
+
+              <!-- FILA DESPLEGABLE -->
+              <tr id="curso-{{ curso.id_curso }}" class="curso-detalle" style="display:none;">
+                <td colspan="6">
+
+                  <table class="tabla" style="width:100%; margin:10px 0;">
+                    <thead>
+                      <tr>
+                        <th>Alumno</th>
+                        <th>Legajo</th>
+                        <th>Estado</th>
+                      </tr>
+                    </thead>
+
+                    <tbody>
+                      {% for alumno in curso.alumnos %}
+                      <tr>
+                        <td>
+                          {{ alumno.id_persona.nombre }}
+                          {{ alumno.id_persona.apellido }}
+                        </td>
+
+                        <td>{{ alumno.legajo }}</td>
+
+                        <td>
+                          {% if alumno.estado_hoy == 'Presente' %}
+                            <span class="badge badge-green">
+                              Presente
+                            </span>
+
+                          {% elif alumno.estado_hoy == 'Ausente' %}
+                            <span class="badge badge-red">
+                              Ausente
+                            </span>
+
+                          {% elif alumno.estado_hoy == 'Tardanza' %}
+                            <span class="badge badge-yellow">
+                              Tardanza
+                            </span>
+
+                          {% else %}
+                            <span class="badge">
+                              Sin registrar
+                            </span>
+                          {% endif %}
+
+                        </td>
+                      </tr>
+                      {% empty %}
+                      <tr>
+                        <td colspan="3">
+                          No hay alumnos registrados.
+                        </td>
+                      </tr>
+                      {% endfor %}
+                    </tbody>
+
+                  </table>
+
+                </td>
+              </tr>
+
+              {% endfor %}
+            </tbody>
+
+          </table>
+        </div>
+        <!-- panel-asistencias -->
+        <div id="panel-asistencias" class="panel">
+          <p class="section-title">Tomar asistencia</p>
+
+          <div class="stat-grid">
+            {% for curso in cursos %}
+            <div class="stat-card">
+              <div class="stat-label">
+                {{ curso.anio }}° {{ curso.comision }}
+              </div>
+
+              <div class="stat-value" style="color:#e61c92">
+                {{ curso.cantidad_alumnos }}
+              </div>
+
+              <div class="stat-sub">
+                Alumnos
+              </div>
+
+              {% if curso.asistencia_tomada %}
+
+              <span class="badge badge-green">
+                ✓ Asistencia tomada hoy
+              </span>
+
+            {% else %}
+
+              <a href="?curso_id={{ curso.id_curso }}" class="btn-small">
+                Tomar asistencia
+              </a>
+
+            {% endif %}
+            </div>
+            {% empty %}
+            <p>No tenés cursos asignados.</p>
+            {% endfor %}
+          </div>
+        </div>
+
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="curso_id" value="{{ curso_seleccionado.id_curso }}">
+
+          <div id="panel-asistencia-curso" class="panel">
+            <p class="section-title">Registro de asistencia</p>
+
+            <table class="tabla">
+              <thead>
+                <tr>
+                  <th>Alumno</th>
+                  <th>Presente</th>
+                  <th>Ausente</th>
+                  <th>Tardanza</th>
+                  <th>Observación</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {% for alumno in alumnos %}
+                <tr>
+                  <td>
+                    {{ alumno.id_persona.nombre }}
+                    {{ alumno.id_persona.apellido }}
+                  </td>
+
+                  <td>
+                    <input type="radio"
+                          name="estado_{{ alumno.legajo }}"
+                          value="Presente"
+                          checked>
+                  </td>
+
+                  <td>
+                    <input type="radio"
+                          name="estado_{{ alumno.legajo }}"
+                          value="Ausente">
+                  </td>
+
+                  <td>
+                    <input type="radio"
+                          name="estado_{{ alumno.legajo }}"
+                          value="Tardanza">
+                  </td>
+
+                  <td>
+                    <input type="text"
+                          class="nota-input"
+                          name="obs_{{ alumno.legajo }}"
+                          placeholder="Motivo"
+                          onfocus="this.placeholder=''"
+                          onblur="if(this.value==='') this.placeholder='Motivo'">
+                  </td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="5">No hay alumnos disponibles.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+
+            {% if not asistencia_tomada %}
+            <button type="submit" class="btn-form">
+              Guardar asistencia
+            </button>
+            {% else %}
+            <button type="button"
+                    class="btn-form"
+                    disabled
+                    style="opacity:.6; cursor:not-allowed;">
+              Asistencia ya registrada
+            </button>
+            {% endif %}
+          </div>
+        </form>
+
+        <!-- JUSTIFICACIONES -->
+        <div id="panel-justificaciones" class="panel">
+          <p class="section-title">Justificaciones recibidas</p>
+
+          {% for asistencia in justificaciones %}
+          <div class="tarea-card">
+            <div class="tarea-info">
+              <strong>
+                {{ asistencia.legajo_alumno.id_persona.nombre }}
+                {{ asistencia.legajo_alumno.id_persona.apellido }}
+                · Curso {{ asistencia.legajo_alumno.id_curso.anio }}° {{ asistencia.legajo_alumno.id_curso.comision }}
+              </strong>
+
+              <span>
+                {{ asistencia.fecha|date:"d/m/Y" }}
+                · {{ asistencia.tipo_asistencia }}
+              </span>
+
+              {% if asistencia.observacion %}
+              <small>{{ asistencia.observacion }}</small>
+              {% endif %}
+
+              {% if asistencia.archivo_existe %}
+                  <a
+                      href="/media/{{ asistencia.archivo_justificacion }}"
+                      target="_blank"
+                  >
+                      📄 Ver justificación
+                  </a>
+              {% else %}
+                  <span style="color:#dc3545;">
+                      ⚠ El archivo no se encuentra
+                  </span>
+              {% endif %}
+              <form method="post" action="{% url 'guardar-observacion-justificacion' %}">
+                {% csrf_token %}
+
+                <input
+                    type="hidden"
+                    name="id_asistencia"
+                    value="{{ asistencia.id_asistencia }}"
+                >
+
+                <button
+                    type="button"
+                    class="btn-small"
+                    style="margin-top:10px; background:#f1f5f9; color:#475569; border:1.5px solid #e2e8f0;"
+                    onclick="
+                      var panel = this.nextElementSibling;
+                      var visible = panel.style.display !== 'none';
+                      panel.style.display = visible ? 'none' : 'block';
+                      this.textContent = visible ? '📝 Agregar observación' : '✕ Cancelar';
+                    "
+                >📝 Agregar observación</button>
+
+                <div style="display:none; margin-top:10px;">
+                  <label style="
+                    display:block;
+                    font-size:12px;
+                    font-weight:600;
+                    color:#64748b;
+                    text-transform:uppercase;
+                    letter-spacing:.05em;
+                    margin-bottom:6px;
+                  ">📝 Observación del preceptor</label>
+
+                  <textarea
+                      name="observacion"
+                      rows="3"
+                      placeholder="Escriba una observación sobre esta justificación..."
+                      style="
+                        width:100%;
+                        box-sizing:border-box;
+                        padding:10px 12px;
+                        border:1.5px solid #e2e8f0;
+                        border-radius:8px;
+                        font-size:14px;
+                        color:#334155;
+                        background:#f8fafc;
+                        resize:vertical;
+                        outline:none;
+                        transition:border-color .2s, box-shadow .2s;
+                        font-family:inherit;
+                        line-height:1.5;
+                      "
+                      onfocus="this.style.borderColor='#6366f1'; this.style.boxShadow='0 0 0 3px rgba(99,102,241,.12)'; this.style.background='#fff';"
+                      onblur="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'; this.style.background='#f8fafc';"
+                  >{{ asistencia.observacion|default:'' }}</textarea>
+
+                  <button
+                      type="submit"
+                      class="btn-small"
+                      style="margin-top:10px;"
+                  >Guardar observación</button>
+                </div>
+              </form>
+            </div>
+
+            <span class="badge badge-yellow">
+              Recibida
+            </span>
+          </div>
+          {% empty %}
+          <p>No hay justificaciones registradas.</p>
+          {% endfor %}
+        </div>
+
+        <!-- COMUNICADOS -->
+        <div id="panel-comunicados" class="panel">
+
+          <p class="section-title">
+            Comunicados para cursos
+          </p>
+
+          <div class="form-section" style="margin-top:20px">
+
+            <form method="POST" action="{% url 'crear-comunicado' %}" class="form-card">
+              {% csrf_token %}
+
+              <h2>Nuevo comunicado</h2>
+
+              <div class="form-grid">
+                <div class="form-group">
+                  <label for="curso">Curso</label>
+                  <select id="curso" name="curso" required>
+
+                    {% for curso in cursos %}
+                      <option value="{{ curso.id_curso }}">
+                        {{ curso.nivel }} {{ curso.anio }}° {{ curso.comision }} - {{ curso.turno }}
+                      </option>
+                    {% empty %}
+                      <option disabled>No tenés cursos asignados</option>
+                    {% endfor %}
+
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label for="titulo">Asunto</label>
+                  <input
+                    type="text"
+                    id="titulo"
+                    name="titulo"
+                    placeholder="Ej: Reunión de tutores"
+                    required
+                  >
+                </div>
+              </div>
+
+              <div class="form-group full">
+                <label for="contenido">Mensaje</label>
+                <textarea
+                  id="contenido"
+                  name="contenido"
+                  rows="5"
+                  placeholder="Escriba el comunicado..."
+                  required
+                ></textarea>
+              </div>
+
+              <button type="submit" class="btn-form">
+                Publicar comunicado
+              </button>
+
+            </form>
+
+          </div>
+
+        </div>
+
+        <!-- PERFIL -->
+        <div id="panel-perfil" class="panel">
+          <p class="section-title">Mi perfil</p>
+
+          <table class="tabla">
+            <tbody>
+              <tr>
+                <td style="font-weight:600;color:#64748b">Nombre completo</td>
+                <td>{{ persona.nombre }} {{ persona.apellido }}</td>
+              </tr>
+              <tr>
+                <td style="font-weight:600;color:#64748b">DNI</td>
+                <td>{{ persona.dni }}</td>
+              </tr>
+              <tr>
+                <td style="font-weight:600;color:#64748b">Cargo</td>
+                <td>Preceptor/a</td>
+              </tr>
+              <tr>
+                <td style="font-weight:600;color:#64748b">Cursos asignados</td>
+                <td>
+                  {% for curso in cursos %}
+                    {{ curso.anio }}° {{ curso.comision }}{% if not forloop.last %}, {% endif %}
+                  {% empty %}
+                    Sin cursos asignados
+                  {% endfor %}
+                </td>
+              </tr>
+              <tr>
+                <td style="font-weight:600;color:#64748b">Correo institucional</td>
+                <td>{{ persona.email }}</td>
+              </tr>
+              <tr>
+                <td style="font-weight:600;color:#64748b">Teléfono</td>
+                <td>{{ persona.telefono }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+</body>
+</html>

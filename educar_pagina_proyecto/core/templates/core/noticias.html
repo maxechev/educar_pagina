@@ -1,0 +1,68 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Noticias</title>
+  <link rel="stylesheet" href="{% static 'core/css/styles.css' %}">
+</head>
+
+<body>
+
+  <div class="page">
+    {% include 'core/plantillas/cabecera.html' %}
+
+    <main>
+
+      <section class="hero">
+        <h1>Noticias institucionales</h1>
+
+        <p>
+          Enterate de las últimas novedades, actividades y eventos
+          relacionados con nuestra comunidad educativa.
+        </p>
+      </section>
+
+    <section class="cards">
+
+        {% for noticia in noticias %}
+
+        <div class="card">
+
+        {% if noticia.imagen %}
+            <img
+                src="/media/{{ noticia.imagen }}"
+                alt="Noticia institucional"
+                class="card-image">
+        {% endif %}
+
+        <div class="card-content">
+
+            <div class="card-title">
+                <div class="icon icon-blue">📰</div>
+                <span>{{ noticia.titulo }}</span>
+            </div>
+
+            <p>
+                {{ noticia.contenido }}
+            </p>
+
+            <small class="fecha-noticia">
+                {{ noticia.fecha_publicacion|date:"d F Y" }}
+            </small>
+
+        </div>
+
+        </div>
+
+        {% endfor %}
+
+    </section>
+
+    </main>
+
+  </div>
+
+</body>
+</html>

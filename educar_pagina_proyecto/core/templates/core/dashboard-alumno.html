@@ -1,0 +1,747 @@
+{% load static %}
+{% load custom_tags %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portal del Alumno</title>
+  <link rel="stylesheet" href="{% static 'core/css/styles.css' %}">
+</head>
+
+<div class="modal-overlay" id="modalCerrarSesion">
+
+  <div class="modal-box">
+
+    <h2>¿Cerrar sesión?</h2>
+
+    <p>
+      Vas a salir del portal de alumno.
+    </p>
+
+    <div class="modal-buttons">
+
+      <button class="btn-cancelar" onclick="cerrarModal()">
+        Cancelar
+      </button>
+
+      <button class="btn-cerrar" onclick="confirmarCerrarSesion()">
+        Cerrar sesión
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+
+  function abrirModalCerrarSesion() {
+    document.getElementById("modalCerrarSesion").classList.add("active");
+  }
+
+  function cerrarModal() {
+    document.getElementById("modalCerrarSesion").classList.remove("active");
+  }
+
+  function confirmarCerrarSesion() {
+    window.location.href = "{% url 'logout' %}";
+  }
+
+</script>
+
+<body>
+  <div class="page">
+    <header>
+      <a href="{% url 'index' %}" class="brand">
+        <img src="{% static 'core/IMG/logo.png' %}" alt="Logo">
+        <div>
+          <div class="brand-title">Educar para Transformar</div>
+          <div class="brand-subtitle">Portal del Alumno</div>
+        </div>
+      </a>
+      <nav></nav>
+      <div class="login">
+        <a href="#" onclick="abrirModalCerrarSesion()" class="btn-logout">Cerrar sesión</a>
+      </div>
+    </header>
+
+    <div class="dashboard-layout">
+      <aside class="sidebar">
+        <div class="sidebar-user">
+          <div class="avatar">
+            {{ persona.nombre|slice:":1"|upper }}{{ persona.apellido|slice:":1"|upper }}
+          </div>
+          <strong>{{ persona.nombre }} {{ persona.apellido }}</strong>
+          <span>
+              {{ alumno.id_curso.anio }}° Año
+              {{ alumno.id_curso.comision }}
+              ·
+              {{ alumno.id_curso.nivel }}
+          </span>
+        </div>
+        <nav class="sidebar-nav">
+          <a href="#" class="active" onclick="showPanel('inicio', this); return false;">
+            <span class="nav-icon">🏠</span> Inicio
+          </a>
+          <a href="#" onclick="showPanel('notas', this); return false;">
+            <span class="nav-icon">📊</span> Mis notas
+          </a>
+          <a href="#" onclick="showPanel('materias', this); return false;">
+            <span class="nav-icon">📚</span> Materias
+          </a>
+          <a href="#" onclick="showPanel('tareas-evaluaciones', this); return false;">
+            <span class="nav-icon">📝</span> Tareas y evaluaciones
+          </a>
+          <a href="#" onclick="showPanel('horario', this); return false;">
+            <span class="nav-icon">📅</span> Horario
+          </a>
+          <a href="#" onclick="showPanel('deportes', this); return false;">
+            <span class="nav-icon">⚽</span> Deportes
+          </a>
+          <a href="#" onclick="showPanel('asistencia', this); return false;">
+            <span class="nav-icon">✅</span> Asistencia
+          </a>
+          <a href="#" onclick="showPanel('comunicados', this); return false;">
+            <span class="nav-icon">📢</span> Comunicados
+          </a>
+          <a href="#" onclick="showPanel('contacto', this); return false;">
+            <span class="nav-icon">📞</span> Contacto
+          </a>
+          <a href="#" onclick="showPanel('perfil', this); return false;">
+            <span class="nav-icon">👤</span> Mi perfil
+          </a>
+        </nav>
+      </aside>
+
+      <main class="dashboard-main">
+
+        <!-- INICIO -->
+        <div id="panel-inicio" class="panel active">
+          <p class="section-title">Hola de nuevo, {{ persona.nombre }}</p>
+          <div class="stat-grid">
+            <div class="stat-card">
+              <div class="stat-label">Promedio general</div>
+              <div class="stat-value" style="color:#16a34a">{{ promedio_general }}</div>
+              <div class="stat-sub">Sobre 10 puntos</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Asistencia</div>
+              <div class="stat-value" style="color:#1d66c2">{{ asistencia_pct }}%</div>
+              <div class="stat-sub">Este ciclo lectivo</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Materias aprobadas</div>
+              <div class="stat-value">{{ materias_aprobadas }} / {{ total_materias }}</div>
+              <div class="stat-sub">Materias aprobadas / totales</div>
+            </div>
+          </div>
+        </div> 
+
+        <!-- NOTAS -->
+        <div id="panel-notas" class="panel">
+          <p class="section-title">Mis notas</p>
+          <table class="tabla">
+            <thead>
+              <tr>
+                <th>Materia</th>
+                <th>1° Bimestre</th>
+                <th>2° Bimestre</th>
+                <th>3° Bimestre</th> <!-- 👈 Fila de cabecera -->
+                <th>Promedio</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for nota in notas_resumen %}
+              <tr>
+                <td>{{ nota.materia }}</td>
+                <td>{% if nota.trim1 %}{{ nota.trim1 }}{% else %}-{% endif %}</td>
+                <td>{% if nota.trim2 %}{{ nota.trim2 }}{% else %}-{% endif %}</td>
+                <td>{% if nota.trim3 %}{{ nota.trim3 }}{% else %}-{% endif %}</td> <!-- 👈 Celda de dato -->
+                <td>{% if nota.promedio %}{{ nota.promedio }}{% else %}-{% endif %}</td>
+                <td>
+                  {% if nota.estado == 'Aprobado' %}
+                    <span class="badge badge-green">Aprobado</span>
+                  {% elif nota.estado == 'En curso' %}
+                    <span class="badge">En curso</span>
+                  {% else %}
+                    <span class="badge">{{ nota.estado }}</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="6">No hay calificaciones registradas.</td> <!-- 👈 colspan cambiado a 6 -->
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <!-- MATERIAS -->
+        <div id="panel-materias" class="panel">
+
+          <p class="section-title">Materias del curso</p>
+
+          <table class="tabla">
+            <thead>
+              <tr>
+                <th>Materia</th>
+                <th>Horario</th>
+              </tr>
+            </thead>
+
+            <tbody>
+
+              {% for materia in materias %}
+              <tr>
+                <td>{{ materia.id_materia.nombre }}</td>
+                <td>{{ materia.horario_formateado }}</td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="2">No hay materias asignadas.</td>
+              </tr>
+              {% endfor %}
+
+            </tbody>
+          </table>
+
+          <p class="section-title" style="margin-top: 30px;">Disciplina deportiva</p>
+
+          <table class="tabla">
+            <thead>
+              <tr>
+                <th>Disciplina</th>
+                <th>Instalación</th>
+                <th>Horario</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {% if disciplina %}
+              <tr>
+                <td>{{ disciplina.nombre }}</td>
+                <td>{{ disciplina.id_instalacion.nombre }}</td>
+                <td>{{ disciplina_horario_formateado }}</td>
+              </tr>
+              {% else %}
+              <tr>
+                <td colspan="3">No tenés una disciplina deportiva asignada.</td>
+              </tr>
+              {% endif %}
+            </tbody>
+          </table>
+
+        </div>
+
+                <!-- TAREAS Y EVALUACIONES -->
+        <div id="panel-tareas-evaluaciones" class="panel">
+          <p class="section-title">Tareas y evaluaciones</p>
+          
+          {% if tareas_alumno %}
+            <table class="tabla">
+              <thead>
+                <tr>
+                  <th>Materia</th>
+                  <th>Docente</th>
+                  <th>Tarea / Evaluación</th>
+                  <th>Fecha de entrega</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+              
+              <tbody>
+                {% for item in tareas_alumno %}
+                <tr>
+                  <td>{{ item.materia_nombre }}</td>
+                  <td>{{ item.docente_nombre }}</td>
+                  
+                  <!-- Título de la tarea -->
+                  <td style="font-weight: 600;">
+                    {{ item.tarea.titulo|default:"Evaluación" }}
+                    {% if item.tarea.descripcion %}
+                      <br><small style="color:#64748b; font-size:12px;">{{ item.tarea.descripcion|truncatechars:50 }}</small>
+                    {% endif %}
+                  </td>
+                  
+                  <!-- Fecha de entrega -->
+                  <td>
+                      {% if item.tarea.fecha %}
+                        {{ item.tarea.fecha|date:"d/m/Y" }}
+                      {% else %}
+                        -
+                      {% endif %}
+                  </td>
+                  
+                  <!-- Estado (solo lectura) -->
+                  <td>
+                    {% if item.tarea.estado == 'Pendiente' %}
+                      <span class="badge badge-yellow">Pendiente</span>
+                    {% elif item.tarea.estado == 'Completada' %}
+                      <span class="badge badge-green">Completada</span>
+                    {% elif item.tarea.estado == 'Entregada' %}
+                      <span class="badge badge-blue">Entregada</span>
+                    {% else %}
+                      <span class="badge">{{ item.tarea.estado|default:"-" }}</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                
+                <!-- Subtítulo para cada materia (opcional) -->
+                {% if forloop.first %}
+                <tr style="background:#f1f5f9; font-weight:600;">
+                  <td colspan="5" style="padding:8px 12px; color:#475569;">
+                    📚 {{ item.materia_nombre }}
+                  </td>
+                </tr>
+                {% endif %}
+                
+                {% endfor %}
+              </tbody>
+            </table>
+          {% else %}
+            <div style="text-align:center; padding:40px 20px; color:#94a3b8;">
+              <span style="font-size:48px; display:block; margin-bottom:10px;">📝</span>
+              No hay tareas o evaluaciones asignadas en este momento.
+            </div>
+          {% endif %}
+        </div>
+
+        <!-- HORARIO -->
+        <div id="panel-horario" class="panel">
+          <p class="section-title">Horario semanal</p>
+          
+          {% if hay_horarios %}
+            <div style="display: grid; gap: 15px;">
+              {% for dia, clases in horario_por_dia.items %}
+                {% if clases %}
+                  <div style="padding: 12px; background: #f0f9ff; border-left: 4px solid #1d66c2; border-radius: 4px;">
+                    <strong style="color: #1d66c2; text-transform: capitalize;">{{ dia }}:</strong>
+                    <div style="margin-top: 6px; color: #64748b;">
+                      {% for clase in clases %}
+                        <div>
+                          {% if clase.es_deporte %}
+                            <span class="badge" style="background:#dcfce7;color:#166534;margin-right:6px;">Deporte</span>
+                          {% endif %}
+                          {{ clase.materia }} - {{ clase.hora }}
+                        </div>
+                      {% endfor %}
+                    </div>
+                  </div>
+                {% endif %}
+              {% endfor %}
+            </div>
+          {% else %}
+            <p style="color: #94a3b8;">No hay horarios registrados.</p>
+          {% endif %}
+        </div>
+
+        <!-- DEPORTES -->
+        <div id="panel-deportes" class="panel">
+          <p class="section-title">Inscripción deportiva</p>
+
+          {% if disciplina %}
+          <div class="stat-card" style="margin-bottom: 24px;">
+            <div class="stat-label">Tu disciplina actual</div>
+            <div class="stat-value" style="font-size: 22px; color: #16a34a;">{{ disciplina.nombre }}</div>
+            <div class="stat-sub">
+              {{ disciplina.id_instalacion.nombre }} · {{ disciplina_horario_formateado }}
+            </div>
+          </div>
+          {% else %}
+          <div class="stat-card" style="margin-bottom: 24px;">
+            <div class="stat-label">Estado</div>
+            <div class="stat-sub">Todavía no estás inscripto en ninguna disciplina deportiva.</div>
+          </div>
+          {% endif %}
+
+          {% if panel_activo == 'deportes' %}
+            {% if messages %}
+              {% for message in messages %}
+                <div
+                  class="{% if message.tags == 'success' %}mensaje-exito{% elif message.tags == 'info' %}mensaje-exito{% else %}mensaje-error{% endif %}"
+                  style="margin-bottom: 16px;"
+                >
+                  {{ message }}
+                </div>
+              {% endfor %}
+            {% endif %}
+          {% endif %}
+
+          <p class="section-title">Disciplinas disponibles</p>
+
+          <table class="tabla">
+            <thead>
+              <tr>
+                <th>Disciplina</th>
+                <th>Instalación</th>
+                <th>Horario</th>
+                <th>Acción</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for dep in disciplinas_disponibles %}
+              <tr>
+                <td>{{ dep.nombre }}</td>
+                <td>{{ dep.id_instalacion.nombre }}</td>
+                <td>{{ dep.horario_formateado }}</td>
+                <td>
+                  {% if disciplina and disciplina.id_disciplina == dep.id_disciplina %}
+                    <span class="badge badge-green">Inscripto</span>
+                  {% else %}
+                    <form method="post" style="display: inline;">
+                      {% csrf_token %}
+                      <input type="hidden" name="accion" value="inscribir_deporte">
+                      <input type="hidden" name="id_disciplina" value="{{ dep.id_disciplina }}">
+                      <button
+                        type="submit"
+                        class="btn-form"
+                        style="margin-top: 0; padding: 8px 16px; font-size: 14px;"
+                      >
+                        {% if disciplina %}Cambiar{% else %}Inscribirme{% endif %}
+                      </button>
+                    </form>
+                  {% endif %}
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="4">No hay disciplinas deportivas disponibles.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <!-- ASISTENCIA -->
+        <div id="panel-asistencia" class="panel">
+          <p class="section-title">Asistencia</p>
+          <div class="stat-grid">
+            <div class="stat-card">
+              <div class="stat-label">Días presentes</div>
+              <div class="stat-value" style="color:#16a34a">{{ presentes }}</div>
+              <div class="stat-sub">Días de clase cursados</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Inasistencias</div>
+              <div class="stat-value" style="color:#dc2626">{{ ausencias }}</div>
+              <div class="stat-sub">En este ciclo lectivo</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Llegadas tarde</div>
+              <div class="stat-value" style="color:#d97706">{{ tardanzas }}</div>
+              <div class="stat-sub">Este ciclo lectivo</div>
+            </div>
+          </div>
+          {% if panel_activo == 'asistencia' %}
+            {% if messages %}
+              {% for message in messages %}
+                <div
+                  class="{% if message.tags == 'success' %}mensaje-exito{% else %}mensaje-error{% endif %}"
+                  id="mensaje-{{ forloop.counter }}"
+                >
+                  {{ message }}
+                </div>
+              {% endfor %}
+            {% endif %}
+          {% endif %}
+          <table class="tabla">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Estado</th>
+                <th>Justificación</th>
+                <th>Observación</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {% for asistencia in asistencias %}
+              <tr>
+                <td>{{ asistencia.fecha|date:"d/m/Y" }}</td>
+
+                <td>
+                  {% if asistencia.tipo_asistencia == 'Presente' %}
+                    <span class="badge badge-green">
+                      Presente
+                    </span>
+
+                  {% elif asistencia.tipo_asistencia == 'Ausente' %}
+                    <span class="badge badge-red">
+                      Ausente
+                    </span>
+
+                  {% elif asistencia.tipo_asistencia == 'Tardanza' %}
+                    <span class="badge badge-yellow">
+                      Tardanza
+                    </span>
+                  {% endif %}
+                </td>
+
+                <td>
+                  {% if asistencia.tipo_asistencia == 'Presente' %}
+
+                    <span class="badge badge-green">
+                      No requiere
+                    </span>
+
+                  {% elif asistencia.archivo_justificacion %}
+
+                    <span class="badge badge-green">
+                      Justificada
+                    </span>
+
+                  {% else %}
+
+                    <form method="post"
+                          enctype="multipart/form-data">
+                      {% csrf_token %}
+
+                      <input
+                        type="hidden"
+                        name="asistencia_id"
+                        value="{{ asistencia.id_asistencia }}"
+                      >
+
+                      <label for="archivo-{{ asistencia.id_asistencia }}"
+                            class="btn-archivo">
+                          📎 Subir justificativo
+                      </label>
+
+                      <input
+                        id="archivo-{{ asistencia.id_asistencia }}"
+                        type="file"
+                        name="justificacion"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        required
+                        onchange="this.form.submit()"
+                        style="display:none;"
+                      >
+                    </form>
+
+                  {% endif %}
+                </td>
+
+                <td>{{ asistencia.observacion|default:"-" }}</td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="4">No hay registros de asistencia.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+       <!-- COMUNICADOS -->
+        <div id="panel-comunicados" class="panel">
+            <p class="section-title">Comunicados institucionales</p>
+
+            {% for comunicado in comunicados %}
+            <div class="notif-item">
+                <div class="notif-icon" style="background:#dbeafe">
+                    📢
+                </div>
+
+                <div class="notif-text">
+                    <strong>{{ comunicado.titulo }}</strong>
+                    <span>{{ comunicado.contenido }}</span>
+                    <br>
+                    <small>{{ comunicado.fecha }}</small>
+                </div>
+            </div>
+            {% empty %}
+            <p>No hay comunicados disponibles.</p>
+            {% endfor %}
+
+        </div>
+        <!-- CONTACTO -->
+        <div id="panel-contacto" class="panel">
+
+          <p class="section-title">
+            Contacto con Administración
+          </p>
+
+          <div class="stat-grid">
+
+            <div class="stat-card">
+              <div class="stat-label">WhatsApp</div>
+
+              <div class="stat-sub">
+                +54 9 362 4000000
+              </div>
+
+              <a
+                href="https://wa.me/5493624000000"
+                target="_blank"
+                class="btn-form"
+                style="margin-left:0; margin-top:10px; text-decoration:none; display:inline-block;">
+                Enviar mensaje
+              </a>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-label">Correo electrónico</div>
+
+              <div class="stat-sub">
+                educarparatransformarcolegio@gmail.com
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-label">Redes Sociales</div>
+
+              <div class="stat-sub">
+                Instagram y Facebook:
+                @educarparatransformar
+              </div>
+            </div>
+
+          </div>
+
+          <br>
+
+          <div class="stat-card">
+
+            <h3 style="margin-bottom:20px;">
+              Formulario de consulta
+            </h3>
+
+            {% if messages %}
+              {% for message in messages %}
+                <div style="
+                  background:#dcfce7;
+                  color:#166534;
+                  padding:12px;
+                  border-radius:8px;
+                  margin-bottom:15px;
+                  font-weight:600;
+                ">
+                  ✅ {{ message }}
+                </div>
+              {% endfor %}
+            {% endif %}
+
+            <form action="{% url 'enviar-consulta' %}" method="POST">
+
+              {% csrf_token %}
+              <input type="hidden" name="origen" value="dashboard">
+
+              <input
+                type="hidden"
+                name="nombre"
+                value="{{ persona.nombre }} {{ persona.apellido }}">
+
+              <input
+                type="hidden"
+                name="email"
+                value="{{ persona.email }}">
+
+              <div class="form-group">
+
+                <label>Mensaje</label>
+
+                <textarea
+                  name="mensaje"
+                  rows="5"
+                  required
+                  placeholder="Escriba aquí su consulta..."></textarea>
+
+              </div>
+
+              <br>
+
+              <button type="submit" class="btn-form">
+                Enviar consulta
+              </button>
+
+            </form>
+
+          </div>
+
+        </div>
+        <!-- PERFIL -->
+        <div id="panel-perfil" class="panel">
+          <p class="section-title">Mi perfil</p>
+          <table class="tabla">
+            <tbody>
+            <tr><td style="font-weight:600;color:#64748b">Nombre completo</td><td>{{ persona.nombre }} {{ persona.apellido }}</td></tr>
+            <tr><td style="font-weight:600;color:#64748b">DNI</td><td>{{ persona.dni }}</td></tr>
+            <tr><td style="font-weight:600;color:#64748b">Fecha de nacimiento</td><td>{{ persona.fecha_nacimiento }}</td></tr>
+            <tr><td style="font-weight:600;color:#64748b">Curso</td><td>{{ alumno.id_curso.comision }}</td></tr>
+            <tr><td style="font-weight:600;color:#64748b">Turno</td><td>{{ alumno.id_curso.turno }}</td></tr>
+            <tr><td style="font-weight:600;color:#64748b">Nivel</td><td>{{ alumno.id_curso.nivel }}</td></tr>
+            <tr><td style="font-weight:600;color:#64748b">Tutor responsable</td><td>{{ tutor_relacion.id_tutor.id_persona.nombre }} {{ tutor_relacion.id_tutor.id_persona.apellido }} ({{ tutor_relacion.tipo_parentesco }})</td></tr>
+            <tr><td style="font-weight:600;color:#64748b">Legajo</td><td>{{ alumno.legajo }}</td></tr>
+            <tr><td style="font-weight:600;color:#64748b">Fecha de ingreso</td><td>{{ alumno.fecha_ingreso }}</td></tr>
+            <tr><td style="font-weight:600;color:#64748b">Teléfono de contacto</td><td>{{ persona.telefono }}</td></tr>
+            <tr><td style="font-weight:600;color:#64748b">Correo electrónico</td><td>{{ persona.email }}</td></tr>
+            <tr><td style="font-weight:600;color:#64748b">Dirección</td><td>{{ persona.direccion }}</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <script>
+
+    function showPanel(id, el) {
+      document.querySelectorAll('.panel').forEach(
+        p => p.classList.remove('active')
+      );
+
+      document.querySelectorAll('.sidebar-nav a').forEach(
+        a => a.classList.remove('active')
+      );
+
+      document.getElementById('panel-' + id).classList.add('active');
+
+      if (el) {
+        el.classList.add('active');
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+
+      const panelActivo = "{{ panel_activo|default:'inicio' }}";
+
+      document.querySelectorAll('.panel').forEach(
+        p => p.classList.remove('active')
+      );
+
+      document.querySelectorAll('.sidebar-nav a').forEach(
+        a => a.classList.remove('active')
+      );
+
+      document.getElementById('panel-' + panelActivo)?.classList.add('active');
+
+      document.querySelectorAll('.sidebar-nav a').forEach(link => {
+
+        if (
+          link.getAttribute("onclick") &&
+          link.getAttribute("onclick").includes("'" + panelActivo + "'")
+        ) {
+          link.classList.add("active");
+        }
+
+      });
+
+    });
+
+  </script>
+  <script>
+    setTimeout(() => {
+        document.querySelectorAll('.mensaje-exito, .mensaje-error')
+            .forEach(msg => {
+                msg.style.opacity = '0';
+                setTimeout(() => msg.remove(), 500);
+            });
+    }, 3000);
+  </script>
+</body>
+</html>

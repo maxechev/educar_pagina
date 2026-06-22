@@ -1,0 +1,845 @@
+{% load static %}
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Portal Administrativo</title>
+    <link rel="stylesheet" href="{% static 'core/css/styles.css' %}" />
+  </head>
+
+  <div class="modal-overlay" id="modalCerrarSesion">
+    <div class="modal-box">
+      <h2>¿Cerrar sesión?</h2>
+
+      <p>Vas a salir del portal administrativo.</p>
+
+      <div class="modal-buttons">
+        <button class="btn-cancelar" onclick="cerrarModal()">Cancelar</button>
+
+        <button class="btn-cerrar" onclick="confirmarCerrarSesion()">
+          Cerrar sesión
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function abrirModalCerrarSesion() {
+      document.getElementById("modalCerrarSesion").classList.add("active");
+    }
+
+    function cerrarModal() {
+      document.getElementById("modalCerrarSesion").classList.remove("active");
+    }
+
+    function confirmarCerrarSesion() {
+      window.location.href = "{% url 'logout' %}";
+    }
+  </script>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const textarea = document.querySelector('textarea[name="contenido"]');
+      const contador = document.getElementById("contador-caracteres");
+
+      if (textarea && contador) {
+        textarea.addEventListener("input", function () {
+          contador.textContent = `${this.value.length} / 350 caracteres`;
+        });
+      }
+    });
+  </script>
+
+  <body>
+    <div class="page">
+      <header>
+        <a href="{% url 'index' %}" class="brand">
+          <img src="{% static 'core/IMG/logo.png' %}" alt="Logo" />
+          <div>
+            <div class="brand-title">Educar para Transformar</div>
+            <div class="brand-subtitle">Portal Administrativo</div>
+          </div>
+        </a>
+        <nav></nav>
+        <div class="login">
+          <a href="#" onclick="abrirModalCerrarSesion()" class="btn-logout"
+            >Cerrar sesión</a
+          >
+        </div>
+      </header>
+
+      <div class="dashboard-layout">
+        <aside class="sidebar">
+          <div class="sidebar-user">
+            <div class="avatar">
+              {{ persona.nombre|slice:":1"|upper }}{{persona.apellido|slice:":1"|upper }}
+            </div>
+            <strong>{{ persona.nombre }} {{ persona.apellido }}</strong>
+            <span>Área administrativa</span>
+          </div>
+
+          <nav class="sidebar-nav">
+            <a
+              href="#"
+              class="active"
+              onclick="
+                showPanel('inicio', this);
+                return false;
+              "
+            >
+              <span class="nav-icon">🏠</span> Inicio
+            </a>
+            <a
+              href="#"
+              onclick="
+                showPanel('inscripciones', this);
+                return false;
+              "
+            >
+              <span class="nav-icon">📝</span> Inscripciones
+            </a>
+            <a
+              href="#"
+              onclick="
+                showPanel('pagos', this);
+                return false;
+              "
+            >
+              <span class="nav-icon">💸</span> Pagos
+            </a>
+            <a
+              href="#"
+              onclick="
+                showPanel('documentacion', this);
+                return false;
+              "
+            >
+              <span class="nav-icon">📄</span> Documentación
+            </a>
+            <a
+              href="#"
+              onclick="
+                showPanel('reservas', this);
+                return false;
+              "
+            >
+              <span class="nav-icon">🏨</span> Reservas
+            </a>
+            <a
+              href="#"
+              onclick="
+                showPanel('opiniones', this);
+                return false;
+              "
+            >
+              <span class="nav-icon">💬</span> Opiniones
+            </a>
+            <a
+              href="#"
+              onclick="
+                showPanel('noticias', this);
+                return false;
+              "
+            >
+              <span class="nav-icon">📰</span> Noticias
+            </a>
+            <a
+              href="#"
+              onclick="
+                showPanel('usuarios', this);
+                return false;
+              "
+            >
+              <span class="nav-icon">🔼</span> Gestión de usuarios
+            </a>
+            <a
+              href="#"
+              onclick="
+                showPanel('perfil', this);
+                return false;
+              "
+            >
+              <span class="nav-icon">👤</span> Mi perfil
+            </a>
+          </nav>
+        </aside>
+
+        <main class="dashboard-main">
+          <div id="panel-inicio" class="panel active">
+            <p class="section-title">Hola de nuevo, {{ persona.nombre }}</p>
+
+            <div class="stat-grid">
+              <div class="stat-card">
+                <div class="stat-label">Inscripciones nuevas</div>
+                <div class="stat-value" style="color: #1d66c2">
+                  {{ inscripciones_pendientes }}
+                </div>
+                <div class="stat-sub">Pendientes de revisión</div>
+              </div>
+
+              <div class="stat-card">
+                <div class="stat-label">Cuotas pendientes</div>
+                <div class="stat-value" style="color: #dc2626">
+                  {{ cuotas_pendientes }}
+                </div>
+                <div class="stat-sub">Este mes</div>
+              </div>
+
+              <div class="stat-card">
+                <div class="stat-label">Documentos</div>
+                <div class="stat-value" style="color: #d97706">
+                  {{ documentacion_pendiente }}
+                </div>
+                <div class="stat-sub">Por validar</div>
+              </div>
+            </div>
+          </div>
+
+          <div id="panel-inscripciones" class="panel">
+            <p class="section-title">Gestión de inscripciones</p>
+
+            <table class="tabla">
+              <thead>
+                <tr>
+                  <th>Estudiante</th>
+                  <th>Nivel</th>
+                  <th>Tutor</th>
+                  <th>Fecha</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {% for solicitud in solicitudes %}
+
+                <tr>
+                  <td>
+                    {{ solicitud.nombre_alumno }} {{ solicitud.apellido_alumno }}
+                  </td>
+
+                  <td>{{ solicitud.nivel }}</td>
+
+                  <td>
+                    {{ solicitud.nombre_tutor }} {{ solicitud.apellido_tutor }}
+                  </td>
+
+                  <td>{{ solicitud.fecha_solicitud|date:"d/m/Y" }}</td>
+
+                  <td>
+                    {% if solicitud.estado == 'Pendiente' %}
+
+                    <span class="badge badge-yellow"> Pendiente </span>
+
+                    <form
+                        method="POST"
+                        action="{% url 'aprobar-inscripcion' solicitud.id_solicitud %}"
+                        style="margin-top:5px;"
+                    >
+                        {% csrf_token %}
+                        <button type="submit" class="btn-aprobar">
+                            Aprobar
+                        </button>
+                    </form>
+
+                    <form
+                        method="POST"
+                        action="{% url 'rechazar-inscripcion' solicitud.id_solicitud %}"
+                        style="margin-top:5px;"
+                    >
+                        {% csrf_token %}
+                        <button type="submit" class="btn-rechazar">
+                            Rechazar
+                        </button>
+                    </form>
+
+                    {% else %}
+
+                    <span class="badge badge-green"> Aprobada </span>
+
+                    {% endif %}
+                  </td>
+                </tr>
+
+                {% empty %}
+
+                <tr>
+                  <td colspan="5">No hay solicitudes registradas.</td>
+                </tr>
+
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+          <div id="panel-pagos" class="panel">
+            <p class="section-title">Control de pagos</p>
+
+            <table class="tabla">
+              <thead>
+                <tr>
+                  <th>Alumno</th>
+                  <th>DNI</th>
+                  <th>Tutor</th>
+                  <th>Mes</th>
+                  <th>Importe</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                  {% for pago in pagos_pendientes %}
+                  <tr>
+                      <td>
+                          {{ pago.legajo_alumno.id_persona.nombre }}
+                          {{ pago.legajo_alumno.id_persona.apellido }}
+                      </td>
+
+                      <td>{{ pago.legajo_alumno.id_persona.dni }}</td>
+
+                      <td>
+                          {{ pago.id_tutor.id_persona.nombre }}
+                          {{ pago.id_tutor.id_persona.apellido }}
+                      </td>
+
+                      <td>{{ pago.mes }}</td>
+
+                      <td>${{ pago.importe }}</td>
+
+                      <td>
+                          {% if pago.estado == 'Pendiente' %}
+                              <span class="badge badge-yellow">Pendiente</span>
+                          {% else %}
+                              <span class="badge badge-green">{{ pago.estado }}</span>
+                          {% endif %}
+                      </td>
+
+                      <td>
+                          {% if pago.estado == 'Pendiente' %}
+                          <form method="POST"
+                                action="{% url 'aprobar-pago' pago.id_pago %}">
+                              {% csrf_token %}
+                              <button type="submit" class="btn-form">
+                                  Aprobar
+                              </button>
+                          </form>
+                          {% endif %}
+                      </td>
+                  </tr>
+
+                  {% empty %}
+                  <tr>
+                      <td colspan="7">No hay pagos pendientes.</td>
+                  </tr>
+                  {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+          <!-- DOCUMENTACION -->
+          <div id="panel-documentacion" class="panel">
+
+              <p class="section-title">
+                  Documentación de alumnos
+              </p>
+
+              {% for doc in documentaciones %}
+
+              <div class="tarea-card">
+
+                  <div class="tarea-info">
+
+                      <strong>
+                          {{ doc.legajo_alumno.id_persona.nombre }}
+                          {{ doc.legajo_alumno.id_persona.apellido }}
+                      </strong>
+
+                      <span>
+                          Enviado el {{ doc.fecha_envio|date:"d/m/Y H:i" }}
+                      </span>
+
+                      <div class="documentos-links">
+
+                          <a href="/media/{{ doc.dni_frente }}" target="_blank">
+                              DNI Frente
+                          </a>
+
+                          <a href="/media/{{ doc.dni_dorso }}" target="_blank">
+                              DNI Dorso
+                          </a>
+
+                          <a href="/media/{{ doc.partida_nacimiento }}" target="_blank">
+                              Partida
+                          </a>
+
+                          <a href="/media/{{ doc.certificado_salud }}" target="_blank">
+                              Certificado
+                          </a>
+
+                      </div>
+
+                  </div>
+
+                  <div class="acciones-documentacion">
+
+                      <form method="POST"
+                            action="{% url 'aprobar_documentacion' doc.id_documentacion %}">
+                          {% csrf_token %}
+                          <button type="submit" class="btn-aprobar">
+                              Aprobar
+                          </button>
+                      </form>
+
+                      <button
+                          type="button"
+                          class="btn-rechazar"
+                          onclick="mostrarRechazo('{{ doc.id_documentacion }}')">
+                          Rechazar
+                      </button>
+
+                      <form
+                          id="rechazo-{{ doc.id_documentacion }}"
+                          method="POST"
+                          action="{% url 'rechazar_documentacion' doc.id_documentacion %}"
+                          style="display:none; margin-top:10px;">
+
+                          {% csrf_token %}
+
+                          <textarea
+                              name="observaciones"
+                              placeholder="Escriba el motivo del rechazo..."
+                              required></textarea>
+
+                          <button
+                              type="submit"
+                              class="btn-rechazar">
+                              Confirmar rechazo
+                          </button>
+
+                      </form>
+
+                  </div>
+
+              </div>
+
+              {% empty %}
+
+              <p>No hay documentación pendiente.</p>
+
+              {% endfor %}
+
+          </div>
+
+          <div id="panel-reservas" class="panel">
+            <p class="section-title">Reserva de espacios</p>
+
+            <table class="tabla">
+              <thead>
+                <tr>
+                  <th>Espacio</th>
+                  <th>Solicitante</th>
+                  <th>Fecha</th>
+                  <th>Horario</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {% for reserva in reservas %}
+                <tr>
+                  <td>{{ reserva.id_instalacion.nombre }}</td>
+
+                  <td>
+                    {{ reserva.id_persona_solicitante.nombre }} {{ reserva.id_persona_solicitante.apellido }}
+                  </td>
+
+                  <td>{{ reserva.fecha|date:"d/m/Y" }}</td>
+
+                  <td>
+                    {{ reserva.hora_inicio|time:"H:i" }} - {{ reserva.hora_fin|time:"H:i" }}
+                  </td>
+
+                  <td>
+                    <span class="badge badge-green"> Registrada </span>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="5">No hay reservas registradas.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+
+            <div class="form-section" style="margin-top: 30px">
+              {% if messages %}
+                  {% for message in messages %}
+                      {% if 'reservas' in message.tags %}
+                          <div class="mensaje {{ message.level_tag }}">
+                              {{ message }}
+                          </div>
+                      {% endif %}
+                  {% endfor %}
+              {% endif %}
+              <form method="POST" action="{% url 'crear-reserva' %}">
+                {% csrf_token %}
+                <h2>Nueva reserva</h2>
+
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label for="espacio">Espacio</label>
+                    <select id="espacio" name="espacio" required>
+                      <option value="">Seleccione un espacio</option>
+
+                      {% for instalacion in instalaciones %}
+                      <option value="{{ instalacion.id }}">
+                        {{ instalacion.nombre }}
+                      </option>
+                      {% endfor %}
+                    </select>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="fecha">Fecha</label>
+                    <input type="date" id="fecha" name="fecha" />
+                  </div>
+
+                  <div class="form-group">
+                    <label for="horario">Horario</label>
+                    <input
+                      type="text"
+                      id="horario"
+                      name="horario"
+                      placeholder="Ej: 10:00 - 12:00"
+                    />
+                  </div>
+
+                  <div class="form-group">
+                    <label for="responsable">Responsable</label>
+                    <input
+                      type="text"
+                      id="responsable"
+                      name="responsable"
+                      placeholder="Nombre completo del solicitante"
+                    />
+                  </div>
+                </div>
+
+                <button type="submit" class="btn-form">
+                  Registrar reserva
+                </button>
+              </form>
+            </div>
+          </div>
+
+          <div id="panel-opiniones" class="panel">
+            <p class="section-title">Opiniones anónimas</p>
+
+            {% for opinion in opiniones %}
+            <div class="notif-item">
+              <div class="notif-icon" style="background: #dbeafe">💬</div>
+
+              <div class="notif-text">
+                <strong>{{ opinion.nombre }}</strong>
+                <span>{{ opinion.texto }}</span>
+                <br />
+                <small>{{ opinion.fecha }}</small>
+              </div>
+
+              <form
+                method="POST"
+                action="{% url 'eliminar-opinion' forloop.counter0 %}"
+                style="margin-top: 10px"
+              >
+                {% csrf_token %}
+
+                <button type="submit" class="btn-form">Eliminar</button>
+              </form>
+            </div>
+            {% empty %}
+            <p>No hay opiniones registradas.</p>
+            {% endfor %}
+          </div>
+
+          <div id="panel-usuarios" class="panel">
+            <p class="section-title">Gestión de usuarios del sistema</p>
+            
+            {% if messages %}
+                {% for message in messages %}
+                    {% if 'usuarios' in message.tags %}
+                        <div class="mensaje {{ message.level_tag }}">
+                            {{ message }}
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
+
+            <div class="form-section">
+              <form
+                method="POST"
+                action="{% url 'crear-usuario' %}"
+                class="form-card"
+              >
+                {% csrf_token %}
+
+                <h2>Habilitar acceso</h2>
+
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label>DNI</label>
+                    <input type="text" name="dni" />
+                  </div>
+
+                  <div class="form-group">
+                    <label>Nombre de usuario</label>
+                    <input type="text" name="nombre_usuario" />
+                  </div>
+
+                  <div class="form-group">
+                    <label>Contraseña provisoria</label>
+                    <input type="password" name="contrasenia" />
+                  </div>
+
+                  <div class="form-group">
+                    <label>Correo institucional</label>
+                    <input
+                      type="email"
+                      name="correo"
+                      placeholder="ejemplo@colegio.edu.ar"
+                    />
+                  </div>
+                </div>
+
+                <button type="submit" class="btn-form">Crear usuario</button>
+              </form>
+            </div>
+
+            <div style="margin-top: 40px"></div>
+          </div>
+          <div id="panel-noticias" class="panel">
+            <p class="section-title">Publicar noticia institucional</p>
+
+            <div class="form-section">
+              <form
+                method="POST"
+                action="{% url 'crear-noticia' %}"
+                enctype="multipart/form-data"
+                class="form-card"
+              >
+                {% csrf_token %}
+
+                <div class="form-group">
+                  <label>Título</label>
+
+                  <input
+                    type="text"
+                    name="titulo"
+                    required
+                    placeholder="Título de la noticia"
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label>Contenido</label>
+
+                  <textarea
+                    name="contenido"
+                    rows="8"
+                    maxlength="350"
+                    required
+                    placeholder="Escriba la noticia... (máximo 350 caracteres)"
+                  ></textarea>
+
+                  <small id="contador-caracteres"> 0 / 350 caracteres </small>
+                </div>
+
+                <div class="form-group">
+                  <label>Imagen</label>
+
+                  <input
+                    type="file"
+                    name="imagen"
+                    accept=".jpg,.jpeg,.png,.webp"
+                  />
+
+                  <small> Formatos permitidos: JPG, PNG y WEBP </small>
+                </div>
+
+                <button type="submit" class="btn-form">Publicar noticia</button>
+              </form>
+            </div>
+          </div>
+          <div id="panel-perfil" class="panel">
+            <p class="section-title">Mi perfil</p>
+
+            <table class="tabla">
+              <tbody>
+                <tr>
+                  <td style="font-weight: 600; color: #64748b">Legajo</td>
+                  <td>{{ administrativo.legajo }}</td>
+                </tr>
+                <tr>
+                  <td style="font-weight: 600; color: #64748b">Cargo</td>
+                  <td>{{ administrativo.cargo }}</td>
+                </tr>
+                <tr>
+                  <td style="font-weight: 600; color: #64748b">Sector</td>
+                  <td>{{ administrativo.sector }}</td>
+                </tr>
+                <tr>
+                  <td style="font-weight: 600; color: #64748b">
+                    Fecha de ingreso
+                  </td>
+                  <td>{{ administrativo.fecha_ingreso }}</td>
+                </tr>
+                <tr>
+                  <td style="font-weight: 600; color: #64748b">
+                    Correo electrónico
+                  </td>
+                  <td>{{ persona.email }}</td>
+                </tr>
+                <tr>
+                  <td style="font-weight: 600; color: #64748b">Teléfono</td>
+                  <td>{{ persona.telefono }}</td>
+                </tr>
+                <tr>
+                  <td style="font-weight: 600; color: #64748b">Dirección</td>
+                  <td>{{ persona.direccion }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <script>
+      function showPanel(id, el) {
+        document
+          .querySelectorAll(".panel")
+          .forEach((p) => p.classList.remove("active"));
+        document
+          .querySelectorAll(".sidebar-nav a")
+          .forEach((a) => a.classList.remove("active"));
+        document.getElementById("panel-" + id).classList.add("active");
+        el.classList.add("active");
+      }
+    </script>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+
+          const panel = "{{ panel_activo }}";
+
+          if (panel === "inicio") return;
+
+          const enlace = document.querySelector(
+              `.sidebar-nav a[onclick*="showPanel('${panel}'"]`
+          );
+
+          if (enlace) {
+              showPanel(panel, enlace);
+          }
+      });
+    </script>
+
+    <script>
+      function cargarOpinionesAdmin() {
+        const contenedor = document.getElementById("adminOpiniones");
+
+        if (!contenedor) return;
+
+        const opiniones = JSON.parse(localStorage.getItem("opiniones")) || [];
+
+        contenedor.innerHTML = "";
+
+        if (opiniones.length === 0) {
+          contenedor.innerHTML = `
+          <div class="tarea-card">
+            <div class="tarea-info">
+              <strong>No hay opiniones cargadas</strong>
+            </div>
+          </div>
+        `;
+
+          return;
+        }
+
+        opiniones.forEach((opinion, index) => {
+          contenedor.innerHTML += `
+          <div class="tarea-card">
+
+            <div class="tarea-info">
+              <strong>Anonimo</strong>
+              <span>${opinion}</span>
+            </div>
+
+            <button
+              class="btn-small"
+              onclick="eliminarOpinion(${index})">
+
+              Eliminar
+
+            </button>
+
+          </div>
+        `;
+        });
+      }
+
+      function eliminarOpinion(index) {
+        const opiniones = JSON.parse(localStorage.getItem("opiniones")) || [];
+
+        opiniones.splice(index, 1);
+
+        localStorage.setItem("opiniones", JSON.stringify(opiniones));
+
+        cargarOpinionesAdmin();
+      }
+
+      cargarOpinionesAdmin();
+
+      document.addEventListener("DOMContentLoaded", function () {
+        const hash = window.location.hash;
+
+        if (!hash) return;
+
+        const id = hash.replace("#", "");
+
+        document
+          .querySelectorAll(".panel")
+          .forEach((p) => p.classList.remove("active"));
+
+        document
+          .querySelectorAll(".sidebar-nav a")
+          .forEach((a) => a.classList.remove("active"));
+
+        document.getElementById("panel-" + id)?.classList.add("active");
+
+        const link = document.querySelector(
+          `.sidebar-nav a[onclick*="'${id}'"]`,
+        );
+
+        if (link) {
+          link.classList.add("active");
+        }
+
+        // Borra el #reservas de la URL
+        history.replaceState(null, "", window.location.pathname);
+      });
+
+      function mostrarRechazo(id) {
+
+          const form = document.getElementById(
+              'rechazo-' + id
+          );
+
+          if (form.style.display === 'none') {
+              form.style.display = 'block';
+          } else {
+              form.style.display = 'none';
+          }
+      }
+    </script>
+  </body>
+</html>

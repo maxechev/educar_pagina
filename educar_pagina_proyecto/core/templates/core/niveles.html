@@ -1,0 +1,175 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Niveles Educativos</title>
+  <link rel="stylesheet" href="{% static 'core/css/styles.css' %}">
+</head>
+
+<body>
+  <div class="page">
+    {% include 'core/plantillas/cabecera.html' %}
+  <main>
+    <section class="niveles-section">
+
+      <h2>Niveles Educativos</h2>
+      <p class="gallery-subtitle">
+          Conocé las distintas etapas de formación que ofrece nuestra institución.
+      </p>
+
+      <div class="niveles-slider">
+
+          <!-- Inicial -->
+          <div class="nivel-slide active">
+
+              <img src="{% static 'core/IMG/inicial.jpg' %}" alt="Nivel Inicial">
+
+              <div class="nivel-content">
+                  <h3>Nivel Inicial</h3>
+
+                  <p>
+                      Espacio destinado a niños de 3 a 5 años, orientado a favorecer el desarrollo integral mediante actividades lúdicas, artísticas y de exploración.
+                  </p>
+
+                  <div class="nivel-info">
+                      <div>
+                          <h4>Salas</h4>
+                          <p>3, 4 y 5 años.</p>
+                      </div>
+
+                      <div>
+                          <h4>Horario</h4>
+                          <p>8:00 a 12:00 hs / 13:30 a 17:30 hs</p>
+                      </div>
+
+                      <div>
+                          <h4>Carga horaria</h4>
+                          <p>20 horas semanales.</p>
+                      </div>
+                  </div>
+              </div>
+
+          </div>
+
+          <!-- Primario -->
+          <div class="nivel-slide">
+
+              <img src="{% static 'core/IMG/primaria.jpg' %}" alt="Nivel Primario">
+
+              <div class="nivel-content">
+                  <h3>Nivel Primario</h3>
+
+                  <p>
+                      Formación básica obligatoria destinada a estudiantes de 6 a 12 años.
+                  </p>
+
+                  <div class="nivel-info">
+                      <div>
+                          <h4>Duración</h4>
+                          <p>1° a 7° grado</p>
+                      </div>
+
+                      <div>
+                          <h4>Horario</h4>
+                          <p>7:30 a 12:30 hs / 13:30 a 18:30 hs</p>
+                      </div>
+
+                      <div>
+                          <h4>Carga horaria</h4>
+                          <p>25 a 30 horas semanales</p>
+                      </div>
+                  </div>
+              </div>
+
+          </div>
+
+          <!-- Secundario -->
+          <div class="nivel-slide">
+
+              <img src="{% static 'core/IMG/secundaria.jpg' %}" alt="Nivel Secundario">
+
+              <div class="nivel-content">
+                  <h3>Nivel Secundario</h3>
+
+                  <p>
+                      Formación académica y ciudadana orientada a preparar a los estudiantes para estudios superiores y el mundo laboral.
+                  </p>
+
+                  <div class="nivel-info">
+                      <div>
+                          <h4>Duración</h4>
+                          <p>5 años</p>
+                      </div>
+
+                      <div>
+                          <h4>Horario</h4>
+                          <p>7:00 a 13:00 hs / 13:00 a 19:00 hs</p>
+                      </div>
+
+                      <div>
+                          <h4>Carga horaria</h4>
+                          <p>30 a 40 horas semanales</p>
+                      </div>
+                  </div>
+              </div>
+
+          </div>
+
+          <button class="nivel-arrow nivel-prev" onclick="changeNivel(-1)">
+              &#10094;
+          </button>
+
+          <button class="nivel-arrow nivel-next" onclick="changeNivel(1)">
+              &#10095;
+          </button>
+
+          <div class="slider-dots">
+              <span class="nivel-dot active" onclick="setNivel(0)"></span>
+              <span class="nivel-dot" onclick="setNivel(1)"></span>
+              <span class="nivel-dot" onclick="setNivel(2)"></span>
+          </div>
+
+      </div>
+    </section>
+  </main>
+</body>
+<script>
+  let nivelIndex = 0;
+
+  const nivelSlides = document.querySelectorAll(".nivel-slide");
+  const nivelDots = document.querySelectorAll(".nivel-dot");
+
+  function showNivel(index){
+
+      if(index >= nivelSlides.length){
+          nivelIndex = 0;
+      }
+      else if(index < 0){
+          nivelIndex = nivelSlides.length - 1;
+      }
+      else{
+          nivelIndex = index;
+      }
+
+      nivelSlides.forEach((slide,i)=>{
+          slide.classList.toggle("active", i === nivelIndex);
+      });
+
+      nivelDots.forEach((dot,i)=>{
+          dot.classList.toggle("active", i === nivelIndex);
+      });
+  }
+
+  function changeNivel(step){
+      showNivel(nivelIndex + step);
+  }
+
+  function setNivel(index){
+      showNivel(index);
+  }
+
+  showNivel(0);
+</script>
+</html>

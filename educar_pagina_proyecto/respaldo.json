@@ -1,0 +1,2729 @@
+[
+{
+  "model": "auth.permission",
+  "pk": 1,
+  "fields": {
+    "name": "Can add log entry",
+    "content_type": 1,
+    "codename": "add_logentry"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 2,
+  "fields": {
+    "name": "Can change log entry",
+    "content_type": 1,
+    "codename": "change_logentry"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 3,
+  "fields": {
+    "name": "Can delete log entry",
+    "content_type": 1,
+    "codename": "delete_logentry"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 4,
+  "fields": {
+    "name": "Can view log entry",
+    "content_type": 1,
+    "codename": "view_logentry"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 5,
+  "fields": {
+    "name": "Can add permission",
+    "content_type": 2,
+    "codename": "add_permission"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 6,
+  "fields": {
+    "name": "Can change permission",
+    "content_type": 2,
+    "codename": "change_permission"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 7,
+  "fields": {
+    "name": "Can delete permission",
+    "content_type": 2,
+    "codename": "delete_permission"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 8,
+  "fields": {
+    "name": "Can view permission",
+    "content_type": 2,
+    "codename": "view_permission"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 9,
+  "fields": {
+    "name": "Can add group",
+    "content_type": 3,
+    "codename": "add_group"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 10,
+  "fields": {
+    "name": "Can change group",
+    "content_type": 3,
+    "codename": "change_group"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 11,
+  "fields": {
+    "name": "Can delete group",
+    "content_type": 3,
+    "codename": "delete_group"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 12,
+  "fields": {
+    "name": "Can view group",
+    "content_type": 3,
+    "codename": "view_group"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 13,
+  "fields": {
+    "name": "Can add user",
+    "content_type": 4,
+    "codename": "add_user"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 14,
+  "fields": {
+    "name": "Can change user",
+    "content_type": 4,
+    "codename": "change_user"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 15,
+  "fields": {
+    "name": "Can delete user",
+    "content_type": 4,
+    "codename": "delete_user"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 16,
+  "fields": {
+    "name": "Can view user",
+    "content_type": 4,
+    "codename": "view_user"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 17,
+  "fields": {
+    "name": "Can add content type",
+    "content_type": 5,
+    "codename": "add_contenttype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 18,
+  "fields": {
+    "name": "Can change content type",
+    "content_type": 5,
+    "codename": "change_contenttype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 19,
+  "fields": {
+    "name": "Can delete content type",
+    "content_type": 5,
+    "codename": "delete_contenttype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 20,
+  "fields": {
+    "name": "Can view content type",
+    "content_type": 5,
+    "codename": "view_contenttype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 21,
+  "fields": {
+    "name": "Can add session",
+    "content_type": 6,
+    "codename": "add_session"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 22,
+  "fields": {
+    "name": "Can change session",
+    "content_type": 6,
+    "codename": "change_session"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 23,
+  "fields": {
+    "name": "Can delete session",
+    "content_type": 6,
+    "codename": "delete_session"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 24,
+  "fields": {
+    "name": "Can view session",
+    "content_type": 6,
+    "codename": "view_session"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 25,
+  "fields": {
+    "name": "Can add asistencia",
+    "content_type": 9,
+    "codename": "add_asistencia"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 26,
+  "fields": {
+    "name": "Can change asistencia",
+    "content_type": 9,
+    "codename": "change_asistencia"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 27,
+  "fields": {
+    "name": "Can delete asistencia",
+    "content_type": 9,
+    "codename": "delete_asistencia"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 28,
+  "fields": {
+    "name": "Can view asistencia",
+    "content_type": 9,
+    "codename": "view_asistencia"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 29,
+  "fields": {
+    "name": "Can add aula",
+    "content_type": 10,
+    "codename": "add_aula"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 30,
+  "fields": {
+    "name": "Can change aula",
+    "content_type": 10,
+    "codename": "change_aula"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 31,
+  "fields": {
+    "name": "Can delete aula",
+    "content_type": 10,
+    "codename": "delete_aula"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 32,
+  "fields": {
+    "name": "Can view aula",
+    "content_type": 10,
+    "codename": "view_aula"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 33,
+  "fields": {
+    "name": "Can add calificacion",
+    "content_type": 11,
+    "codename": "add_calificacion"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 34,
+  "fields": {
+    "name": "Can change calificacion",
+    "content_type": 11,
+    "codename": "change_calificacion"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 35,
+  "fields": {
+    "name": "Can delete calificacion",
+    "content_type": 11,
+    "codename": "delete_calificacion"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 36,
+  "fields": {
+    "name": "Can view calificacion",
+    "content_type": 11,
+    "codename": "view_calificacion"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 37,
+  "fields": {
+    "name": "Can add cuota",
+    "content_type": 12,
+    "codename": "add_cuota"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 38,
+  "fields": {
+    "name": "Can change cuota",
+    "content_type": 12,
+    "codename": "change_cuota"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 39,
+  "fields": {
+    "name": "Can delete cuota",
+    "content_type": 12,
+    "codename": "delete_cuota"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 40,
+  "fields": {
+    "name": "Can view cuota",
+    "content_type": 12,
+    "codename": "view_cuota"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 41,
+  "fields": {
+    "name": "Can add curso cursa materias",
+    "content_type": 14,
+    "codename": "add_cursocursamaterias"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 42,
+  "fields": {
+    "name": "Can change curso cursa materias",
+    "content_type": 14,
+    "codename": "change_cursocursamaterias"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 43,
+  "fields": {
+    "name": "Can delete curso cursa materias",
+    "content_type": 14,
+    "codename": "delete_cursocursamaterias"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 44,
+  "fields": {
+    "name": "Can view curso cursa materias",
+    "content_type": 14,
+    "codename": "view_cursocursamaterias"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 45,
+  "fields": {
+    "name": "Can add curso participa viaje",
+    "content_type": 15,
+    "codename": "add_cursoparticipaviaje"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 46,
+  "fields": {
+    "name": "Can change curso participa viaje",
+    "content_type": 15,
+    "codename": "change_cursoparticipaviaje"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 47,
+  "fields": {
+    "name": "Can delete curso participa viaje",
+    "content_type": 15,
+    "codename": "delete_cursoparticipaviaje"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 48,
+  "fields": {
+    "name": "Can view curso participa viaje",
+    "content_type": 15,
+    "codename": "view_cursoparticipaviaje"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 49,
+  "fields": {
+    "name": "Can add directivo",
+    "content_type": 16,
+    "codename": "add_directivo"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 50,
+  "fields": {
+    "name": "Can change directivo",
+    "content_type": 16,
+    "codename": "change_directivo"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 51,
+  "fields": {
+    "name": "Can delete directivo",
+    "content_type": 16,
+    "codename": "delete_directivo"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 52,
+  "fields": {
+    "name": "Can view directivo",
+    "content_type": 16,
+    "codename": "view_directivo"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 53,
+  "fields": {
+    "name": "Can add docente dicta materia",
+    "content_type": 19,
+    "codename": "add_docentedictamateria"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 54,
+  "fields": {
+    "name": "Can change docente dicta materia",
+    "content_type": 19,
+    "codename": "change_docentedictamateria"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 55,
+  "fields": {
+    "name": "Can delete docente dicta materia",
+    "content_type": 19,
+    "codename": "delete_docentedictamateria"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 56,
+  "fields": {
+    "name": "Can view docente dicta materia",
+    "content_type": 19,
+    "codename": "view_docentedictamateria"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 57,
+  "fields": {
+    "name": "Can add inscripcion",
+    "content_type": 23,
+    "codename": "add_inscripcion"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 58,
+  "fields": {
+    "name": "Can change inscripcion",
+    "content_type": 23,
+    "codename": "change_inscripcion"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 59,
+  "fields": {
+    "name": "Can delete inscripcion",
+    "content_type": 23,
+    "codename": "delete_inscripcion"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 60,
+  "fields": {
+    "name": "Can view inscripcion",
+    "content_type": 23,
+    "codename": "view_inscripcion"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 61,
+  "fields": {
+    "name": "Can add instalacion",
+    "content_type": 24,
+    "codename": "add_instalacion"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 62,
+  "fields": {
+    "name": "Can change instalacion",
+    "content_type": 24,
+    "codename": "change_instalacion"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 63,
+  "fields": {
+    "name": "Can delete instalacion",
+    "content_type": 24,
+    "codename": "delete_instalacion"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 64,
+  "fields": {
+    "name": "Can view instalacion",
+    "content_type": 24,
+    "codename": "view_instalacion"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 65,
+  "fields": {
+    "name": "Can add noticia",
+    "content_type": 26,
+    "codename": "add_noticia"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 66,
+  "fields": {
+    "name": "Can change noticia",
+    "content_type": 26,
+    "codename": "change_noticia"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 67,
+  "fields": {
+    "name": "Can delete noticia",
+    "content_type": 26,
+    "codename": "delete_noticia"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 68,
+  "fields": {
+    "name": "Can view noticia",
+    "content_type": 26,
+    "codename": "view_noticia"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 69,
+  "fields": {
+    "name": "Can add persona",
+    "content_type": 28,
+    "codename": "add_persona"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 70,
+  "fields": {
+    "name": "Can change persona",
+    "content_type": 28,
+    "codename": "change_persona"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 71,
+  "fields": {
+    "name": "Can delete persona",
+    "content_type": 28,
+    "codename": "delete_persona"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 72,
+  "fields": {
+    "name": "Can view persona",
+    "content_type": 28,
+    "codename": "view_persona"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 73,
+  "fields": {
+    "name": "Can add personal administrativo",
+    "content_type": 29,
+    "codename": "add_personaladministrativo"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 74,
+  "fields": {
+    "name": "Can change personal administrativo",
+    "content_type": 29,
+    "codename": "change_personaladministrativo"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 75,
+  "fields": {
+    "name": "Can delete personal administrativo",
+    "content_type": 29,
+    "codename": "delete_personaladministrativo"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 76,
+  "fields": {
+    "name": "Can view personal administrativo",
+    "content_type": 29,
+    "codename": "view_personaladministrativo"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 77,
+  "fields": {
+    "name": "Can add preceptor",
+    "content_type": 31,
+    "codename": "add_preceptor"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 78,
+  "fields": {
+    "name": "Can change preceptor",
+    "content_type": 31,
+    "codename": "change_preceptor"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 79,
+  "fields": {
+    "name": "Can delete preceptor",
+    "content_type": 31,
+    "codename": "delete_preceptor"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 80,
+  "fields": {
+    "name": "Can view preceptor",
+    "content_type": 31,
+    "codename": "view_preceptor"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 81,
+  "fields": {
+    "name": "Can add reserva",
+    "content_type": 32,
+    "codename": "add_reserva"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 82,
+  "fields": {
+    "name": "Can change reserva",
+    "content_type": 32,
+    "codename": "change_reserva"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 83,
+  "fields": {
+    "name": "Can delete reserva",
+    "content_type": 32,
+    "codename": "delete_reserva"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 84,
+  "fields": {
+    "name": "Can view reserva",
+    "content_type": 32,
+    "codename": "view_reserva"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 85,
+  "fields": {
+    "name": "Can add solicitud viaje",
+    "content_type": 34,
+    "codename": "add_solicitudviaje"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 86,
+  "fields": {
+    "name": "Can change solicitud viaje",
+    "content_type": 34,
+    "codename": "change_solicitudviaje"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 87,
+  "fields": {
+    "name": "Can delete solicitud viaje",
+    "content_type": 34,
+    "codename": "delete_solicitudviaje"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 88,
+  "fields": {
+    "name": "Can view solicitud viaje",
+    "content_type": 34,
+    "codename": "view_solicitudviaje"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 89,
+  "fields": {
+    "name": "Can add tutor",
+    "content_type": 36,
+    "codename": "add_tutor"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 90,
+  "fields": {
+    "name": "Can change tutor",
+    "content_type": 36,
+    "codename": "change_tutor"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 91,
+  "fields": {
+    "name": "Can delete tutor",
+    "content_type": 36,
+    "codename": "delete_tutor"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 92,
+  "fields": {
+    "name": "Can view tutor",
+    "content_type": 36,
+    "codename": "view_tutor"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 93,
+  "fields": {
+    "name": "Can add tutor tutora alumno",
+    "content_type": 37,
+    "codename": "add_tutortutoraalumno"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 94,
+  "fields": {
+    "name": "Can change tutor tutora alumno",
+    "content_type": 37,
+    "codename": "change_tutortutoraalumno"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 95,
+  "fields": {
+    "name": "Can delete tutor tutora alumno",
+    "content_type": 37,
+    "codename": "delete_tutortutoraalumno"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 96,
+  "fields": {
+    "name": "Can view tutor tutora alumno",
+    "content_type": 37,
+    "codename": "view_tutortutoraalumno"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 97,
+  "fields": {
+    "name": "Can add usuario",
+    "content_type": 38,
+    "codename": "add_usuario"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 98,
+  "fields": {
+    "name": "Can change usuario",
+    "content_type": 38,
+    "codename": "change_usuario"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 99,
+  "fields": {
+    "name": "Can delete usuario",
+    "content_type": 38,
+    "codename": "delete_usuario"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 100,
+  "fields": {
+    "name": "Can view usuario",
+    "content_type": 38,
+    "codename": "view_usuario"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 101,
+  "fields": {
+    "name": "Can add vehiculo",
+    "content_type": 39,
+    "codename": "add_vehiculo"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 102,
+  "fields": {
+    "name": "Can change vehiculo",
+    "content_type": 39,
+    "codename": "change_vehiculo"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 103,
+  "fields": {
+    "name": "Can delete vehiculo",
+    "content_type": 39,
+    "codename": "delete_vehiculo"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 104,
+  "fields": {
+    "name": "Can view vehiculo",
+    "content_type": 39,
+    "codename": "view_vehiculo"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 105,
+  "fields": {
+    "name": "Can add viaje",
+    "content_type": 40,
+    "codename": "add_viaje"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 106,
+  "fields": {
+    "name": "Can change viaje",
+    "content_type": 40,
+    "codename": "change_viaje"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 107,
+  "fields": {
+    "name": "Can delete viaje",
+    "content_type": 40,
+    "codename": "delete_viaje"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 108,
+  "fields": {
+    "name": "Can view viaje",
+    "content_type": 40,
+    "codename": "view_viaje"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 109,
+  "fields": {
+    "name": "Can add viaje utiliza vehiculo",
+    "content_type": 41,
+    "codename": "add_viajeutilizavehiculo"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 110,
+  "fields": {
+    "name": "Can change viaje utiliza vehiculo",
+    "content_type": 41,
+    "codename": "change_viajeutilizavehiculo"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 111,
+  "fields": {
+    "name": "Can delete viaje utiliza vehiculo",
+    "content_type": 41,
+    "codename": "delete_viajeutilizavehiculo"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 112,
+  "fields": {
+    "name": "Can view viaje utiliza vehiculo",
+    "content_type": 41,
+    "codename": "view_viajeutilizavehiculo"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 113,
+  "fields": {
+    "name": "Can add postulacion laboral",
+    "content_type": 30,
+    "codename": "add_postulacionlaboral"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 114,
+  "fields": {
+    "name": "Can change postulacion laboral",
+    "content_type": 30,
+    "codename": "change_postulacionlaboral"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 115,
+  "fields": {
+    "name": "Can delete postulacion laboral",
+    "content_type": 30,
+    "codename": "delete_postulacionlaboral"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 116,
+  "fields": {
+    "name": "Can view postulacion laboral",
+    "content_type": 30,
+    "codename": "view_postulacionlaboral"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 117,
+  "fields": {
+    "name": "Can add solicitud inscripcion",
+    "content_type": 33,
+    "codename": "add_solicitudinscripcion"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 118,
+  "fields": {
+    "name": "Can change solicitud inscripcion",
+    "content_type": 33,
+    "codename": "change_solicitudinscripcion"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 119,
+  "fields": {
+    "name": "Can delete solicitud inscripcion",
+    "content_type": 33,
+    "codename": "delete_solicitudinscripcion"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 120,
+  "fields": {
+    "name": "Can view solicitud inscripcion",
+    "content_type": 33,
+    "codename": "view_solicitudinscripcion"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 121,
+  "fields": {
+    "name": "Can add disciplina deportiva",
+    "content_type": 17,
+    "codename": "add_disciplinadeportiva"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 122,
+  "fields": {
+    "name": "Can change disciplina deportiva",
+    "content_type": 17,
+    "codename": "change_disciplinadeportiva"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 123,
+  "fields": {
+    "name": "Can delete disciplina deportiva",
+    "content_type": 17,
+    "codename": "delete_disciplinadeportiva"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 124,
+  "fields": {
+    "name": "Can view disciplina deportiva",
+    "content_type": 17,
+    "codename": "view_disciplinadeportiva"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 125,
+  "fields": {
+    "name": "Can add docente disciplina",
+    "content_type": 20,
+    "codename": "add_docentedisciplina"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 126,
+  "fields": {
+    "name": "Can change docente disciplina",
+    "content_type": 20,
+    "codename": "change_docentedisciplina"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 127,
+  "fields": {
+    "name": "Can delete docente disciplina",
+    "content_type": 20,
+    "codename": "delete_docentedisciplina"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 128,
+  "fields": {
+    "name": "Can view docente disciplina",
+    "content_type": 20,
+    "codename": "view_docentedisciplina"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 129,
+  "fields": {
+    "name": "Can add arancel",
+    "content_type": 8,
+    "codename": "add_arancel"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 130,
+  "fields": {
+    "name": "Can change arancel",
+    "content_type": 8,
+    "codename": "change_arancel"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 131,
+  "fields": {
+    "name": "Can delete arancel",
+    "content_type": 8,
+    "codename": "delete_arancel"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 132,
+  "fields": {
+    "name": "Can view arancel",
+    "content_type": 8,
+    "codename": "view_arancel"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 133,
+  "fields": {
+    "name": "Can add pago pendiente",
+    "content_type": 27,
+    "codename": "add_pagopendiente"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 134,
+  "fields": {
+    "name": "Can change pago pendiente",
+    "content_type": 27,
+    "codename": "change_pagopendiente"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 135,
+  "fields": {
+    "name": "Can delete pago pendiente",
+    "content_type": 27,
+    "codename": "delete_pagopendiente"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 136,
+  "fields": {
+    "name": "Can view pago pendiente",
+    "content_type": 27,
+    "codename": "view_pagopendiente"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 137,
+  "fields": {
+    "name": "Can add documentacion alumno",
+    "content_type": 21,
+    "codename": "add_documentacionalumno"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 138,
+  "fields": {
+    "name": "Can change documentacion alumno",
+    "content_type": 21,
+    "codename": "change_documentacionalumno"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 139,
+  "fields": {
+    "name": "Can delete documentacion alumno",
+    "content_type": 21,
+    "codename": "delete_documentacionalumno"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 140,
+  "fields": {
+    "name": "Can view documentacion alumno",
+    "content_type": 21,
+    "codename": "view_documentacionalumno"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 141,
+  "fields": {
+    "name": "Can add tarea",
+    "content_type": 35,
+    "codename": "add_tarea"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 142,
+  "fields": {
+    "name": "Can change tarea",
+    "content_type": 35,
+    "codename": "change_tarea"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 143,
+  "fields": {
+    "name": "Can delete tarea",
+    "content_type": 35,
+    "codename": "delete_tarea"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 144,
+  "fields": {
+    "name": "Can view tarea",
+    "content_type": 35,
+    "codename": "view_tarea"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 145,
+  "fields": {
+    "name": "Can add docente",
+    "content_type": 18,
+    "codename": "add_docente"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 146,
+  "fields": {
+    "name": "Can change docente",
+    "content_type": 18,
+    "codename": "change_docente"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 147,
+  "fields": {
+    "name": "Can delete docente",
+    "content_type": 18,
+    "codename": "delete_docente"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 148,
+  "fields": {
+    "name": "Can view docente",
+    "content_type": 18,
+    "codename": "view_docente"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 149,
+  "fields": {
+    "name": "Can add materia",
+    "content_type": 25,
+    "codename": "add_materia"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 150,
+  "fields": {
+    "name": "Can change materia",
+    "content_type": 25,
+    "codename": "change_materia"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 151,
+  "fields": {
+    "name": "Can delete materia",
+    "content_type": 25,
+    "codename": "delete_materia"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 152,
+  "fields": {
+    "name": "Can view materia",
+    "content_type": 25,
+    "codename": "view_materia"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 153,
+  "fields": {
+    "name": "Can add curso",
+    "content_type": 13,
+    "codename": "add_curso"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 154,
+  "fields": {
+    "name": "Can change curso",
+    "content_type": 13,
+    "codename": "change_curso"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 155,
+  "fields": {
+    "name": "Can delete curso",
+    "content_type": 13,
+    "codename": "delete_curso"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 156,
+  "fields": {
+    "name": "Can view curso",
+    "content_type": 13,
+    "codename": "view_curso"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 157,
+  "fields": {
+    "name": "Can add alumno",
+    "content_type": 7,
+    "codename": "add_alumno"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 158,
+  "fields": {
+    "name": "Can change alumno",
+    "content_type": 7,
+    "codename": "change_alumno"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 159,
+  "fields": {
+    "name": "Can delete alumno",
+    "content_type": 7,
+    "codename": "delete_alumno"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 160,
+  "fields": {
+    "name": "Can view alumno",
+    "content_type": 7,
+    "codename": "view_alumno"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 161,
+  "fields": {
+    "name": "Can add evaluacion",
+    "content_type": 22,
+    "codename": "add_evaluacion"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 162,
+  "fields": {
+    "name": "Can change evaluacion",
+    "content_type": 22,
+    "codename": "change_evaluacion"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 163,
+  "fields": {
+    "name": "Can delete evaluacion",
+    "content_type": 22,
+    "codename": "delete_evaluacion"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 164,
+  "fields": {
+    "name": "Can view evaluacion",
+    "content_type": 22,
+    "codename": "view_evaluacion"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 1,
+  "fields": {
+    "app_label": "admin",
+    "model": "logentry"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 2,
+  "fields": {
+    "app_label": "auth",
+    "model": "permission"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 3,
+  "fields": {
+    "app_label": "auth",
+    "model": "group"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 4,
+  "fields": {
+    "app_label": "auth",
+    "model": "user"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 5,
+  "fields": {
+    "app_label": "contenttypes",
+    "model": "contenttype"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 6,
+  "fields": {
+    "app_label": "sessions",
+    "model": "session"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 7,
+  "fields": {
+    "app_label": "core",
+    "model": "alumno"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 8,
+  "fields": {
+    "app_label": "core",
+    "model": "arancel"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 9,
+  "fields": {
+    "app_label": "core",
+    "model": "asistencia"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 10,
+  "fields": {
+    "app_label": "core",
+    "model": "aula"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 11,
+  "fields": {
+    "app_label": "core",
+    "model": "calificacion"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 12,
+  "fields": {
+    "app_label": "core",
+    "model": "cuota"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 13,
+  "fields": {
+    "app_label": "core",
+    "model": "curso"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 14,
+  "fields": {
+    "app_label": "core",
+    "model": "cursocursamaterias"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 15,
+  "fields": {
+    "app_label": "core",
+    "model": "cursoparticipaviaje"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 16,
+  "fields": {
+    "app_label": "core",
+    "model": "directivo"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 17,
+  "fields": {
+    "app_label": "core",
+    "model": "disciplinadeportiva"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 18,
+  "fields": {
+    "app_label": "core",
+    "model": "docente"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 19,
+  "fields": {
+    "app_label": "core",
+    "model": "docentedictamateria"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 20,
+  "fields": {
+    "app_label": "core",
+    "model": "docentedisciplina"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 21,
+  "fields": {
+    "app_label": "core",
+    "model": "documentacionalumno"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 22,
+  "fields": {
+    "app_label": "core",
+    "model": "evaluacion"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 23,
+  "fields": {
+    "app_label": "core",
+    "model": "inscripcion"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 24,
+  "fields": {
+    "app_label": "core",
+    "model": "instalacion"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 25,
+  "fields": {
+    "app_label": "core",
+    "model": "materia"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 26,
+  "fields": {
+    "app_label": "core",
+    "model": "noticia"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 27,
+  "fields": {
+    "app_label": "core",
+    "model": "pagopendiente"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 28,
+  "fields": {
+    "app_label": "core",
+    "model": "persona"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 29,
+  "fields": {
+    "app_label": "core",
+    "model": "personaladministrativo"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 30,
+  "fields": {
+    "app_label": "core",
+    "model": "postulacionlaboral"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 31,
+  "fields": {
+    "app_label": "core",
+    "model": "preceptor"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 32,
+  "fields": {
+    "app_label": "core",
+    "model": "reserva"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 33,
+  "fields": {
+    "app_label": "core",
+    "model": "solicitudinscripcion"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 34,
+  "fields": {
+    "app_label": "core",
+    "model": "solicitudviaje"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 35,
+  "fields": {
+    "app_label": "core",
+    "model": "tarea"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 36,
+  "fields": {
+    "app_label": "core",
+    "model": "tutor"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 37,
+  "fields": {
+    "app_label": "core",
+    "model": "tutortutoraalumno"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 38,
+  "fields": {
+    "app_label": "core",
+    "model": "usuario"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 39,
+  "fields": {
+    "app_label": "core",
+    "model": "vehiculo"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 40,
+  "fields": {
+    "app_label": "core",
+    "model": "viaje"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 41,
+  "fields": {
+    "app_label": "core",
+    "model": "viajeutilizavehiculo"
+  }
+},
+{
+  "model": "sessions.session",
+  "pk": "sm89xx3ogxizw84oxqp9ruphlsi1w4ab",
+  "fields": {
+    "session_data": "eyJ1c3VhcmlvX2lkIjo4fQ:1wXPRY:CMtCppyIR31_DUPY_sAX1GRsz4rszXcN9JSOIYDGN9k",
+    "expire_date": "2026-06-24T20:22:32.725Z"
+  }
+},
+{
+  "model": "core.alumno",
+  "pk": 1,
+  "fields": {
+    "id_persona": 1,
+    "fecha_ingreso": "2024-03-01",
+    "id_disciplina": 3,
+    "id_curso": 1
+  }
+},
+{
+  "model": "core.alumno",
+  "pk": 2,
+  "fields": {
+    "id_persona": 2,
+    "fecha_ingreso": "2024-03-01",
+    "id_disciplina": 5,
+    "id_curso": 1
+  }
+},
+{
+  "model": "core.alumno",
+  "pk": 3,
+  "fields": {
+    "id_persona": 3,
+    "fecha_ingreso": "2024-03-01",
+    "id_disciplina": 7,
+    "id_curso": 2
+  }
+},
+{
+  "model": "core.asistencia",
+  "pk": 1,
+  "fields": {
+    "legajo_alumno": 1,
+    "fecha": "2026-06-16",
+    "tipo_asistencia": "Ausente",
+    "archivo_justificacion": null,
+    "observacion": "Falta justificada por enfermedad."
+  }
+},
+{
+  "model": "core.asistencia",
+  "pk": 2,
+  "fields": {
+    "legajo_alumno": 2,
+    "fecha": "2026-06-16",
+    "tipo_asistencia": "Tardanza",
+    "archivo_justificacion": null,
+    "observacion": "Llegó 15 minutos tarde."
+  }
+},
+{
+  "model": "core.asistencia",
+  "pk": 3,
+  "fields": {
+    "legajo_alumno": 1,
+    "fecha": "2026-06-17",
+    "tipo_asistencia": "Ausente",
+    "archivo_justificacion": "justificaciones/Juan_Gómez_1A_2026-06-17_20260618_010457.png",
+    "observacion": "Presentó certificado médico."
+  }
+},
+{
+  "model": "core.asistencia",
+  "pk": 4,
+  "fields": {
+    "legajo_alumno": 3,
+    "fecha": "2026-06-18",
+    "tipo_asistencia": "Ausente",
+    "archivo_justificacion": null,
+    "observacion": "Ausencia por trámite familiar."
+  }
+},
+{
+  "model": "core.aula",
+  "pk": 1,
+  "fields": {
+    "nombre": "Aula A",
+    "numero": 101,
+    "piso": 1,
+    "capacidad": 30,
+    "tipo": "Teórica",
+    "estado": "Disponible"
+  }
+},
+{
+  "model": "core.aula",
+  "pk": 2,
+  "fields": {
+    "nombre": "Aula B",
+    "numero": 102,
+    "piso": 1,
+    "capacidad": 30,
+    "tipo": "Teórica",
+    "estado": "Disponible"
+  }
+},
+{
+  "model": "core.aula",
+  "pk": 3,
+  "fields": {
+    "nombre": "Lab. Info",
+    "numero": 201,
+    "piso": 2,
+    "capacidad": 25,
+    "tipo": "Laboratorio",
+    "estado": "Disponible"
+  }
+},
+{
+  "model": "core.calificacion",
+  "pk": 1,
+  "fields": {
+    "nota": "8.50",
+    "tipo_evaluacion": "Parcial",
+    "fecha": "2024-05-10",
+    "id_materia": 1,
+    "legajo_alumno": 1
+  }
+},
+{
+  "model": "core.calificacion",
+  "pk": 2,
+  "fields": {
+    "nota": "7.00",
+    "tipo_evaluacion": "Parcial",
+    "fecha": "2024-05-10",
+    "id_materia": 1,
+    "legajo_alumno": 2
+  }
+},
+{
+  "model": "core.calificacion",
+  "pk": 3,
+  "fields": {
+    "nota": "9.25",
+    "tipo_evaluacion": "Parcial",
+    "fecha": "2024-05-10",
+    "id_materia": 2,
+    "legajo_alumno": 1
+  }
+},
+{
+  "model": "core.calificacion",
+  "pk": 4,
+  "fields": {
+    "nota": "6.75",
+    "tipo_evaluacion": "Parcial",
+    "fecha": "2024-05-10",
+    "id_materia": 2,
+    "legajo_alumno": 2
+  }
+},
+{
+  "model": "core.calificacion",
+  "pk": 5,
+  "fields": {
+    "nota": "10.00",
+    "tipo_evaluacion": "Trabajo Práctico",
+    "fecha": "2024-06-01",
+    "id_materia": 1,
+    "legajo_alumno": 3
+  }
+},
+{
+  "model": "core.calificacion",
+  "pk": 6,
+  "fields": {
+    "nota": "8.00",
+    "tipo_evaluacion": "Parcial",
+    "fecha": "2024-05-15",
+    "id_materia": 3,
+    "legajo_alumno": 3
+  }
+},
+{
+  "model": "core.curso",
+  "pk": 1,
+  "fields": {
+    "comision": "A",
+    "anio": 1,
+    "turno": "Mañana",
+    "nivel": "Secundario",
+    "cupo_maximo": 30,
+    "legajo_preceptor": 1,
+    "id_aula": 1
+  }
+},
+{
+  "model": "core.curso",
+  "pk": 2,
+  "fields": {
+    "comision": "B",
+    "anio": 2,
+    "turno": "Tarde",
+    "nivel": "Secundario",
+    "cupo_maximo": 30,
+    "legajo_preceptor": 1,
+    "id_aula": 2
+  }
+},
+{
+  "model": "core.cursocursamaterias",
+  "pk": 1,
+  "fields": {
+    "id_curso": 1,
+    "id_materia": 1,
+    "horarios": "{\"lunes\":\"08:00-09:40\",\"miercoles\":\"08:00-09:40\"}"
+  }
+},
+{
+  "model": "core.cursocursamaterias",
+  "pk": 2,
+  "fields": {
+    "id_curso": 1,
+    "id_materia": 2,
+    "horarios": "{\"martes\":\"08:00-09:20\",\"jueves\":\"08:00-09:20\"}"
+  }
+},
+{
+  "model": "core.cursocursamaterias",
+  "pk": 3,
+  "fields": {
+    "id_curso": 2,
+    "id_materia": 1,
+    "horarios": "{\"lunes\":\"14:00-15:40\",\"miercoles\":\"14:00-15:40\"}"
+  }
+},
+{
+  "model": "core.cursocursamaterias",
+  "pk": 4,
+  "fields": {
+    "id_curso": 2,
+    "id_materia": 3,
+    "horarios": "{\"viernes\":\"14:00-16:00\"}"
+  }
+},
+{
+  "model": "core.cursoparticipaviaje",
+  "pk": 1,
+  "fields": {
+    "id_curso": 1,
+    "id_viaje": 1
+  }
+},
+{
+  "model": "core.directivo",
+  "pk": 1,
+  "fields": {
+    "id_persona": 10
+  }
+},
+{
+  "model": "core.disciplinadeportiva",
+  "pk": 1,
+  "fields": {
+    "nombre": "Atletismo",
+    "horarios": "{\"lunes\":\"16:00-18:00\",\"miercoles\":\"16:00-18:00\"}",
+    "id_instalacion": 3
+  }
+},
+{
+  "model": "core.disciplinadeportiva",
+  "pk": 2,
+  "fields": {
+    "nombre": "Natación",
+    "horarios": "{\"martes\":\"15:00-17:00\",\"jueves\":\"15:00-17:00\"}",
+    "id_instalacion": 2
+  }
+},
+{
+  "model": "core.disciplinadeportiva",
+  "pk": 3,
+  "fields": {
+    "nombre": "Fútbol",
+    "horarios": "{\"lunes\":\"17:00-19:00\",\"viernes\":\"17:00-19:00\"}",
+    "id_instalacion": 3
+  }
+},
+{
+  "model": "core.disciplinadeportiva",
+  "pk": 4,
+  "fields": {
+    "nombre": "Artes Marciales",
+    "horarios": "{\"martes\":\"16:00-18:00\",\"jueves\":\"16:00-18:00\"}",
+    "id_instalacion": 1
+  }
+},
+{
+  "model": "core.disciplinadeportiva",
+  "pk": 5,
+  "fields": {
+    "nombre": "Vóleibol",
+    "horarios": "{\"miercoles\":\"16:00-18:00\",\"viernes\":\"16:00-18:00\"}",
+    "id_instalacion": 1
+  }
+},
+{
+  "model": "core.disciplinadeportiva",
+  "pk": 6,
+  "fields": {
+    "nombre": "Danza",
+    "horarios": "{\"lunes\":\"15:00-17:00\",\"miercoles\":\"15:00-17:00\"}",
+    "id_instalacion": 2
+  }
+},
+{
+  "model": "core.disciplinadeportiva",
+  "pk": 7,
+  "fields": {
+    "nombre": "Básquet",
+    "horarios": "{\"martes\":\"17:00-19:00\",\"jueves\":\"17:00-19:00\"}",
+    "id_instalacion": 1
+  }
+},
+{
+  "model": "core.disciplinadeportiva",
+  "pk": 8,
+  "fields": {
+    "nombre": "Ajedrez",
+    "horarios": "{\"viernes\":\"14:00-16:00\"}",
+    "id_instalacion": 2
+  }
+},
+{
+  "model": "core.docente",
+  "pk": 1,
+  "fields": {
+    "id_persona": 4,
+    "titulo": "Profesor en Matemática",
+    "especialidad": "Matemática",
+    "fecha_ingreso": "2010-03-01"
+  }
+},
+{
+  "model": "core.docente",
+  "pk": 2,
+  "fields": {
+    "id_persona": 5,
+    "titulo": "Profesora en Literatura",
+    "especialidad": "Literatura",
+    "fecha_ingreso": "2012-03-01"
+  }
+},
+{
+  "model": "core.docentedictamateria",
+  "pk": 1,
+  "fields": {
+    "id_docente": 1,
+    "id_materia": 1
+  }
+},
+{
+  "model": "core.docentedictamateria",
+  "pk": 2,
+  "fields": {
+    "id_docente": 2,
+    "id_materia": 2
+  }
+},
+{
+  "model": "core.docentedictamateria",
+  "pk": 3,
+  "fields": {
+    "id_docente": 1,
+    "id_materia": 3
+  }
+},
+{
+  "model": "core.inscripcion",
+  "pk": 1,
+  "fields": {
+    "fecha_inscripcion": "2024-02-20",
+    "estado": "Activa",
+    "id_curso": 1,
+    "legajo_alumno": 1
+  }
+},
+{
+  "model": "core.inscripcion",
+  "pk": 2,
+  "fields": {
+    "fecha_inscripcion": "2024-02-20",
+    "estado": "Activa",
+    "id_curso": 1,
+    "legajo_alumno": 2
+  }
+},
+{
+  "model": "core.inscripcion",
+  "pk": 3,
+  "fields": {
+    "fecha_inscripcion": "2024-02-21",
+    "estado": "Activa",
+    "id_curso": 2,
+    "legajo_alumno": 3
+  }
+},
+{
+  "model": "core.instalacion",
+  "pk": 1,
+  "fields": {
+    "nombre": "Gimnasio",
+    "capacidad": 200,
+    "estado": "Disponible"
+  }
+},
+{
+  "model": "core.instalacion",
+  "pk": 2,
+  "fields": {
+    "nombre": "SUM",
+    "capacidad": 150,
+    "estado": "Disponible"
+  }
+},
+{
+  "model": "core.instalacion",
+  "pk": 3,
+  "fields": {
+    "nombre": "Cancha de fútbol",
+    "capacidad": 100,
+    "estado": "En mantenimiento"
+  }
+},
+{
+  "model": "core.materia",
+  "pk": 1,
+  "fields": {
+    "nombre": "Matemática",
+    "descripcion": "Álgebra y geometría analítica",
+    "carga_horaria": 5,
+    "cantidad_clases": 80
+  }
+},
+{
+  "model": "core.materia",
+  "pk": 2,
+  "fields": {
+    "nombre": "Literatura",
+    "descripcion": "Literatura argentina y universal",
+    "carga_horaria": 4,
+    "cantidad_clases": 64
+  }
+},
+{
+  "model": "core.materia",
+  "pk": 3,
+  "fields": {
+    "nombre": "Informática",
+    "descripcion": "Fundamentos de programación",
+    "carga_horaria": 3,
+    "cantidad_clases": 48
+  }
+},
+{
+  "model": "core.noticia",
+  "pk": 1,
+  "fields": {
+    "titulo": "Inicio del ciclo lectivo 2024",
+    "contenido": "Se informa a la comunidad educativa que el ciclo lectivo 2024 comenzará el 4 de marzo. Los alumnos deberán presentarse con el uniforme reglamentario.",
+    "fecha_publicacion": "2024-02-28",
+    "legajo_personal": 1,
+    "imagen": "noticias/noticia4.jpg"
+  }
+},
+{
+  "model": "core.noticia",
+  "pk": 2,
+  "fields": {
+    "titulo": "Entrega de boletines 1er trimestre",
+    "contenido": "El viernes 28 de junio se realizará la entrega de boletines correspondientes al primer trimestre. Se cita a los tutores a las 17:00 hs.",
+    "fecha_publicacion": "2024-06-20",
+    "legajo_personal": 1,
+    "imagen": "noticias/noticia5.jpg"
+  }
+},
+{
+  "model": "core.noticia",
+  "pk": 3,
+  "fields": {
+    "titulo": "Jornada deportiva",
+    "contenido": "Se realizará una jornada recreativa y deportiva para promover el trabajo en equipo y la vida saludable.",
+    "fecha_publicacion": "2024-09-10",
+    "legajo_personal": 1,
+    "imagen": "noticias/noticia2.jpg"
+  }
+},
+{
+  "model": "core.noticia",
+  "pk": 4,
+  "fields": {
+    "titulo": "Nuevos laboratorios",
+    "contenido": "El centro educativo incorporó nuevos equipos tecnológicos para fortalecer las actividades de informática y ciencias.",
+    "fecha_publicacion": "2024-09-15",
+    "legajo_personal": 1,
+    "imagen": "noticias/noticia3.jpg"
+  }
+},
+{
+  "model": "core.noticia",
+  "pk": 5,
+  "fields": {
+    "titulo": "Inscripciones 2027",
+    "contenido": "Ya se encuentran abiertas las inscripciones para el ciclo lectivo 2027 en nivel inicial, primario y secundario.",
+    "fecha_publicacion": "2024-10-01",
+    "legajo_personal": 1,
+    "imagen": "noticias/noticia1.jpg"
+  }
+},
+{
+  "model": "core.persona",
+  "pk": 1,
+  "fields": {
+    "id_usuario": 1,
+    "dni": "40123456",
+    "nombre": "Juan",
+    "apellido": "Gómez",
+    "fecha_nacimiento": "2008-03-14",
+    "direccion": "Mitre 123",
+    "telefono": "3624-100001",
+    "email": "jgomez@mail.com"
+  }
+},
+{
+  "model": "core.persona",
+  "pk": 2,
+  "fields": {
+    "id_usuario": 2,
+    "dni": "40234567",
+    "nombre": "María",
+    "apellido": "Rodríguez",
+    "fecha_nacimiento": "2008-07-22",
+    "direccion": "Belgrano 456",
+    "telefono": "3624-100002",
+    "email": "mrodriguez@mail.com"
+  }
+},
+{
+  "model": "core.persona",
+  "pk": 3,
+  "fields": {
+    "id_usuario": 3,
+    "dni": "40345678",
+    "nombre": "Lucas",
+    "apellido": "Fernández",
+    "fecha_nacimiento": "2009-01-05",
+    "direccion": "Salta 789",
+    "telefono": "3624-100003",
+    "email": "lfernandez@mail.com"
+  }
+},
+{
+  "model": "core.persona",
+  "pk": 4,
+  "fields": {
+    "id_usuario": 4,
+    "dni": "30456789",
+    "nombre": "Carlos",
+    "apellido": "López",
+    "fecha_nacimiento": "1985-05-10",
+    "direccion": "San Martín 321",
+    "telefono": "3624-200001",
+    "email": "clopez@mail.com"
+  }
+},
+{
+  "model": "core.persona",
+  "pk": 5,
+  "fields": {
+    "id_usuario": 5,
+    "dni": "31567890",
+    "nombre": "Patricia",
+    "apellido": "Martínez",
+    "fecha_nacimiento": "1980-09-30",
+    "direccion": "Rivadavia 654",
+    "telefono": "3624-200002",
+    "email": "pmartinez@mail.com"
+  }
+},
+{
+  "model": "core.persona",
+  "pk": 6,
+  "fields": {
+    "id_usuario": 6,
+    "dni": "28678901",
+    "nombre": "Andrea",
+    "apellido": "Sánchez",
+    "fecha_nacimiento": "1975-12-01",
+    "direccion": "Tucumán 987",
+    "telefono": "3624-300001",
+    "email": "asanchez@mail.com"
+  }
+},
+{
+  "model": "core.persona",
+  "pk": 7,
+  "fields": {
+    "id_usuario": 7,
+    "dni": "25789012",
+    "nombre": "Roberto",
+    "apellido": "Pérez",
+    "fecha_nacimiento": "1970-04-18",
+    "direccion": "Corrientes 111",
+    "telefono": "3624-400001",
+    "email": "rperez@mail.com"
+  }
+},
+{
+  "model": "core.persona",
+  "pk": 8,
+  "fields": {
+    "id_usuario": 8,
+    "dni": "26890123",
+    "nombre": "Nora",
+    "apellido": "Díaz",
+    "fecha_nacimiento": "1972-08-25",
+    "direccion": "Entre Ríos 222",
+    "telefono": "3624-400002",
+    "email": "ndiaz@mail.com"
+  }
+},
+{
+  "model": "core.persona",
+  "pk": 9,
+  "fields": {
+    "id_usuario": 9,
+    "dni": "29901234",
+    "nombre": "Sergio",
+    "apellido": "Gil",
+    "fecha_nacimiento": "1978-02-14",
+    "direccion": "Santa Fe 333",
+    "telefono": "3624-500001",
+    "email": "sgil@mail.com"
+  }
+},
+{
+  "model": "core.persona",
+  "pk": 10,
+  "fields": {
+    "id_usuario": 10,
+    "dni": "27012345",
+    "nombre": "Elena",
+    "apellido": "Morales",
+    "fecha_nacimiento": "1968-11-20",
+    "direccion": "Chaco 444",
+    "telefono": "3624-600001",
+    "email": "emorales@mail.com"
+  }
+},
+{
+  "model": "core.personaladministrativo",
+  "pk": 1,
+  "fields": {
+    "id_persona": 9,
+    "sector": "Secretaría",
+    "cargo": "Secretario",
+    "fecha_ingreso": "2016-03-01"
+  }
+},
+{
+  "model": "core.preceptor",
+  "pk": 1,
+  "fields": {
+    "id_persona": 6,
+    "turno": "Mañana",
+    "fecha_ingreso": "2015-03-01"
+  }
+},
+{
+  "model": "core.reserva",
+  "pk": 1,
+  "fields": {
+    "nombre": "Acto escolar Día del Maestro",
+    "fecha": "2024-09-11",
+    "hora_inicio": "08:00:00",
+    "hora_fin": "12:00:00",
+    "legajo_personal_evaluador": 1,
+    "id_persona_solicitante": 10,
+    "id_instalacion": 2
+  }
+},
+{
+  "model": "core.reserva",
+  "pk": 2,
+  "fields": {
+    "nombre": "Clase de Educación Física 1A",
+    "fecha": "2024-09-12",
+    "hora_inicio": "10:00:00",
+    "hora_fin": "11:30:00",
+    "legajo_personal_evaluador": 1,
+    "id_persona_solicitante": 4,
+    "id_instalacion": 1
+  }
+},
+{
+  "model": "core.solicitudviaje",
+  "pk": 1,
+  "fields": {
+    "fecha_solicitud": "2024-08-01",
+    "estado": "Aprobada",
+    "observaciones": "Visita al Museo del Hombre Chaqueño",
+    "legajo_docente": 1
+  }
+},
+{
+  "model": "core.solicitudviaje",
+  "pk": 2,
+  "fields": {
+    "fecha_solicitud": "2024-09-10",
+    "estado": "Pendiente",
+    "observaciones": "Campamento fin de año 2do",
+    "legajo_docente": 2
+  }
+},
+{
+  "model": "core.tutor",
+  "pk": 1,
+  "fields": {
+    "id_persona": 7,
+    "telefono_contacto": "3624-400001",
+    "email_contacto": "rperez@mail.com"
+  }
+},
+{
+  "model": "core.tutor",
+  "pk": 2,
+  "fields": {
+    "id_persona": 8,
+    "telefono_contacto": "3624-400002",
+    "email_contacto": "ndiaz@mail.com"
+  }
+},
+{
+  "model": "core.tutortutoraalumno",
+  "pk": 1,
+  "fields": {
+    "id_tutor": 1,
+    "id_alumno": 1,
+    "tipo_parentesco": "Padre"
+  }
+},
+{
+  "model": "core.tutortutoraalumno",
+  "pk": 2,
+  "fields": {
+    "id_tutor": 2,
+    "id_alumno": 2,
+    "tipo_parentesco": "Madre"
+  }
+},
+{
+  "model": "core.tutortutoraalumno",
+  "pk": 3,
+  "fields": {
+    "id_tutor": 1,
+    "id_alumno": 3,
+    "tipo_parentesco": "Tío"
+  }
+},
+{
+  "model": "core.usuario",
+  "pk": 1,
+  "fields": {
+    "nombre_usuario": "jgomez",
+    "contrasenia": "pass1234",
+    "correo": "jgomez@colegio.edu.ar"
+  }
+},
+{
+  "model": "core.usuario",
+  "pk": 2,
+  "fields": {
+    "nombre_usuario": "mrodriguez",
+    "contrasenia": "pass1234",
+    "correo": "mrodriguez@colegio.edu.ar"
+  }
+},
+{
+  "model": "core.usuario",
+  "pk": 3,
+  "fields": {
+    "nombre_usuario": "lfernandez",
+    "contrasenia": "pass1234",
+    "correo": "lfernandez@colegio.edu.ar"
+  }
+},
+{
+  "model": "core.usuario",
+  "pk": 4,
+  "fields": {
+    "nombre_usuario": "clopez",
+    "contrasenia": "pass1234",
+    "correo": "clopez@colegio.edu.ar"
+  }
+},
+{
+  "model": "core.usuario",
+  "pk": 5,
+  "fields": {
+    "nombre_usuario": "pmartinez",
+    "contrasenia": "pass1234",
+    "correo": "pmartinez@colegio.edu.ar"
+  }
+},
+{
+  "model": "core.usuario",
+  "pk": 6,
+  "fields": {
+    "nombre_usuario": "asanchez",
+    "contrasenia": "pass1234",
+    "correo": "asanchez@colegio.edu.ar"
+  }
+},
+{
+  "model": "core.usuario",
+  "pk": 7,
+  "fields": {
+    "nombre_usuario": "rperez",
+    "contrasenia": "pass1234",
+    "correo": "rperez@colegio.edu.ar"
+  }
+},
+{
+  "model": "core.usuario",
+  "pk": 8,
+  "fields": {
+    "nombre_usuario": "ndiaz",
+    "contrasenia": "pass1234",
+    "correo": "ndiaz@colegio.edu.ar"
+  }
+},
+{
+  "model": "core.usuario",
+  "pk": 9,
+  "fields": {
+    "nombre_usuario": "sgil",
+    "contrasenia": "pass1234",
+    "correo": "sgil@colegio.edu.ar"
+  }
+},
+{
+  "model": "core.usuario",
+  "pk": 10,
+  "fields": {
+    "nombre_usuario": "emorales",
+    "contrasenia": "pass1234",
+    "correo": "emorales@colegio.edu.ar"
+  }
+},
+{
+  "model": "core.vehiculo",
+  "pk": 1,
+  "fields": {
+    "patente": "AB123CD",
+    "modelo": "Mercedes Sprinter",
+    "capacidad": 19,
+    "estado": "Disponible"
+  }
+},
+{
+  "model": "core.vehiculo",
+  "pk": 2,
+  "fields": {
+    "patente": "EF456GH",
+    "modelo": "Ford Transit",
+    "capacidad": 15,
+    "estado": "Disponible"
+  }
+},
+{
+  "model": "core.viaje",
+  "pk": 1,
+  "fields": {
+    "tipo": "Educativo",
+    "fecha_salida": "2024-08-15",
+    "fecha_regreso": "2024-08-15",
+    "motivo": "Visita al Museo del Hombre Chaqueño",
+    "id_solicitud": 1
+  }
+},
+{
+  "model": "core.viajeutilizavehiculo",
+  "pk": 1,
+  "fields": {
+    "id_viaje": 1,
+    "id_vehiculo": 1,
+    "fecha_uso": "2024-08-15"
+  }
+},
+{
+  "model": "core.arancel",
+  "pk": 1,
+  "fields": {
+    "nivel": "Inicial",
+    "monto": "25000.00"
+  }
+},
+{
+  "model": "core.arancel",
+  "pk": 2,
+  "fields": {
+    "nivel": "Primario",
+    "monto": "30000.00"
+  }
+},
+{
+  "model": "core.arancel",
+  "pk": 3,
+  "fields": {
+    "nivel": "Secundario",
+    "monto": "35000.00"
+  }
+}
+]
