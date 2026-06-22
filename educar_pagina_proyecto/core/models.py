@@ -149,7 +149,7 @@ class Curso(models.Model):
 class CursoCursaMaterias(models.Model):
     id_curso = models.ForeignKey(Curso, models.DO_NOTHING, db_column='id_curso')
     id_materia = models.ForeignKey('Materia', models.DO_NOTHING, db_column='id_materia')
-    horarios = models.TextField(db_collation='utf8mb4_bin', blank=True, null=True)
+    horarios = models.TextField(blank=True, null=True)
 
     class Meta:
         managed = True
@@ -177,7 +177,7 @@ class Directivo(models.Model):
 class DisciplinaDeportiva(models.Model):
     id_disciplina = models.AutoField(primary_key=True)
     nombre = models.CharField(max_length=100)
-    horarios = models.TextField(db_collation='utf8mb4_bin', blank=True, null=True)
+    horarios = models.TextField(blank=True, null=True)
     id_instalacion = models.ForeignKey(
         'Instalacion',
         models.DO_NOTHING,
