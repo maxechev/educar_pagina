@@ -1624,17 +1624,17 @@ def dashboard_padres(request):
 
             pres = Asistencia.objects.filter(
                 legajo_alumno=alumno,
-                observacion__icontains='pres'
+                tipo_asistencia='Presente'
             ).count()
 
             aus = Asistencia.objects.filter(
                 legajo_alumno=alumno,
-                observacion__icontains='aus'
+                tipo_asistencia='Ausente'
             ).count()
 
             tar = Asistencia.objects.filter(
                 legajo_alumno=alumno,
-                observacion__icontains='tard'
+                tipo_asistencia='Tardanza'
             ).count()
 
             presentes += pres
