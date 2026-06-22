@@ -56,7 +56,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id_disciplina', models.AutoField(primary_key=True, serialize=False)),
                 ('nombre', models.CharField(max_length=100)),
-                ('horarios', models.TextField(blank=True, db_collation='utf8mb4_bin', null=True)),
+                ('horarios', models.TextField(blank=True, null=True)),
             ],
             options={
                 'db_table': 'disciplina_deportiva',
@@ -296,7 +296,7 @@ class Migration(migrations.Migration):
             name='CursoCursaMaterias',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('horarios', models.TextField(blank=True, db_collation='utf8mb4_bin', null=True)),
+                ('horarios', models.TextField(blank=True, null=True)),
                 ('id_curso', models.ForeignKey(db_column='id_curso', on_delete=django.db.models.deletion.DO_NOTHING, to='core.curso')),
                 ('id_materia', models.ForeignKey(db_column='id_materia', on_delete=django.db.models.deletion.DO_NOTHING, to='core.materia')),
             ],
