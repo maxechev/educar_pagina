@@ -77,12 +77,8 @@ WSGI_APPLICATION = 'educar_pagina_proyecto.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'railway',
-        'USER': 'root',
-        'PASSWORD': 'eXuSElxFkCqJDbncuZIjGwPiFJrzUAau',
-        'HOST': 'reseau.proxy.rlwy.net',
-        'PORT': '26034',
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
 
