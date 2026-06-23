@@ -1342,11 +1342,30 @@ def aprobar_inscripcion(request, id_solicitud):
         telefono_contacto=solicitud.telefono,
         email_contacto=solicitud.email
     )
+    
+    hoy = date.today()
+
+    edad = (
+        hoy.year
+        - solicitud.fecha_nacimiento.year
+        - (
+            (hoy.month, hoy.day)
+            < (
+                solicitud.fecha_nacimiento.month,
+                solicitud.fecha_nacimiento.day
+            )
+        )
+    )
+    if solicitud.nivel == "Primario":
+        anio = max(1, min(7, edad - 5))
+    else:
+        anio = max(1, min(5, edad - 12))
 
     curso = Curso.objects.filter(
         nivel__iexact=solicitud.nivel,
-        turno__iexact=solicitud.turno
-    ).first()
+        turno__iexact=solicitud.turno,
+        anio=anio
+    ).order_by('comision').first()
 
     if not curso:
         solicitud.estado = 'Error'
