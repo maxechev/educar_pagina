@@ -110,60 +110,67 @@
         <div id="panel-notas" class="panel">
           <p class="section-title">Cargar notas</p>
 
-            <div id="mensaje-nota" style="display:none; padding:12px; margin-bottom:15px; border-radius:6px; font-weight:bold; transition: all 0.3s ease;">
-            </div>
+          <div id="mensaje-nota" style="display:none; padding:12px; margin-bottom:15px; border-radius:6px; font-weight:bold; transition: all 0.3s ease;"></div>
 
-          <table class="tabla">
-            <thead>
-              <tr>
-                <th>Alumno</th>
-                <th>DNI</th>
-                <th>1° Bimestre</th>
-                <th>2° Bimestre</th>
-                <th>3° Bimestre</th>
-                <th>Guardar</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for alumno in alumnos %}
-              <tr>
-                <td style="padding:18px;">
-                  {{ alumno.id_persona.apellido }}, {{ alumno.id_persona.nombre }}
-                </td>
-                <td style="padding:18px; font-size:0.9em; color:#64748b;">
-                  {{ alumno.id_persona.dni }}
-                </td>
-                {% with notas=notas_por_alumno|get_item:alumno.legajo %}
-                <td style="padding:8px;">
-                  <input type="number" step="0.1" min="0" max="10" name="nota1"
-                        value="{{ notas.trim1|default:'' }}"
-                        class="nota-1"
-                        style="width:85px; padding:6px 8px; text-align:center; border:1px solid #cbd5e1; border-radius:4px;">
-                </td>
-                <td style="padding:8px;">
-                  <input type="number" step="0.1" min="0" max="10" name="nota2"
-                        value="{{ notas.trim2|default:'' }}"
-                        class="nota-2"
-                        style="width:85px; padding:6px 8px; text-align:center; border:1px solid #cbd5e1; border-radius:4px;">
-                </td>
-                <td style="padding:8px;">
-                  <input type="number" step="0.1" min="0" max="10" name="nota3"
-                        value="{{ notas.trim3|default:'' }}"
-                        class="nota-3"
-                        style="width:85px; padding:6px 8px; text-align:center; border:1px solid #cbd5e1; border-radius:4px;">
-                </td>
-                {% endwith %}
-                <td style="padding:8px; padding-bottom: 21px; ">
-                  <button type="button" class="btn-small"
-                          onclick="guardarNotaDB({{ alumno.legajo }}, this)"
-                          style="background:#2563eb; color:white; border:none; padding:6px 14px; border-radius:4px; cursor:pointer;">
-                    Guardar
-                  </button>
-                </td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
+          {% for materia in materias %}
+            <h3 style="margin: 24px 0 10px 0; color:#1e3a5f; font-size:1.05em; border-bottom: 2px solid #e2e8f0; padding-bottom:6px;">
+              📘 {{ materia.nombre }}
+            </h3>
+
+            <table class="tabla">
+              <thead>
+                <tr>
+                  <th>Alumno</th>
+                  <th>DNI</th>
+                  <th>1° Bimestre</th>
+                  <th>2° Bimestre</th>
+                  <th>3° Bimestre</th>
+                  <th>Guardar</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for alumno in alumnos %}
+                  {% if alumno.id_curso in materia.cursocursamaterias_set.all|dictsort:"id_curso" %}
+                  {# Solo muestro alumnos cuyo curso cursa esta materia #}
+                  {% endif %}
+                  <tr>
+                    <td style="padding:18px;">{{ alumno.id_persona.apellido }}, {{ alumno.id_persona.nombre }}</td>
+                    <td style="padding:18px; font-size:0.9em; color:#64748b;">{{ alumno.id_persona.dni }}</td>
+                    {% with notas=notas_por_alumno|get_item:alumno.legajo %}
+                    <td style="padding:8px;">
+                      <input type="number" step="0.1" min="0" max="10" name="nota1"
+                            value="{{ notas.trim1|default:'' }}"
+                            class="nota-1"
+                            style="width:85px; padding:6px 8px; text-align:center; border:1px solid #cbd5e1; border-radius:4px;">
+                    </td>
+                    <td style="padding:8px;">
+                      <input type="number" step="0.1" min="0" max="10" name="nota2"
+                            value="{{ notas.trim2|default:'' }}"
+                            class="nota-2"
+                            style="width:85px; padding:6px 8px; text-align:center; border:1px solid #cbd5e1; border-radius:4px;">
+                    </td>
+                    <td style="padding:8px;">
+                      <input type="number" step="0.1" min="0" max="10" name="nota3"
+                            value="{{ notas.trim3|default:'' }}"
+                            class="nota-3"
+                            style="width:85px; padding:6px 8px; text-align:center; border:1px solid #cbd5e1; border-radius:4px;">
+                    </td>
+                    {% endwith %}
+                    <td style="padding:8px;">
+                      <!-- Aquí pasamos materia.id_materia como tercer parámetro -->
+                      <button type="button" class="btn-small"
+                              onclick="guardarNotaDB({{ alumno.legajo }}, this, {{ materia.id_materia }})"
+                              style="background:#2563eb; color:white; border:none; padding:6px 14px; border-radius:4px; cursor:pointer;">
+                        Guardar
+                      </button>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          {% empty %}
+            <p style="color:#64748b;">No tenés materias asignadas.</p>
+          {% endfor %}
         </div>
 
         <!-- TAREAS Y EVALUACIONES -->
@@ -521,7 +528,7 @@
         }
       }
 
-      function guardarNotaDB(legajo, boton) {
+      function guardarNotaDB(legajo, boton, materiaId) {   // ← Agregar materiaId
         const fila = boton.closest('tr');
         const nota1Input = fila.querySelector('.nota-1');
         const nota2Input = fila.querySelector('.nota-2');
@@ -559,6 +566,7 @@
           },
           body: JSON.stringify({
             legajo_alumno: legajo,
+            materia_id: materiaId,    // ← Enviar la materia al backend
             nota1: nota1,
             nota2: nota2,
             nota3: nota3

@@ -2768,59 +2768,42 @@ def guardar_nota(request):
                 'error': f'El alumno con legajo {legajo_alumno} no tiene curso asignado'
             })
 
-        # Obtener las materias que dicta este docente
-        materias_docente = Materia.objects.filter(
-            docentedictamateria__id_docente=docente
-        )
-
-        # Filtrar las materias del curso del alumno que son dictadas por este docente
-        materias = CursoCursaMaterias.objects.filter(
-            id_curso=curso,
-            id_materia__in=materias_docente
-        ).select_related('id_materia')
-
-        if not materias.exists():
+        # Obtener el materia_id enviado por el frontend
+        materia_id = data.get('materia_id')
+        if not materia_id:
             return JsonResponse({
-                'success': False, 
-                'error': f'Usted no dicta ninguna materia en el curso del alumno {alumno.id_persona.apellido}'
+                'success': False,
+                'error': 'No se recibió el ID de materia'
             })
 
-        def procesar_nota(alumno, materia, tipo_eval, nota_raw):
-            if nota_raw is None or str(nota_raw).strip() == '':
-                # Si se borra la nota, se elimina de la base de datos si existe
-                Calificacion.objects.filter(
-                    legajo_alumno=alumno,
-                    id_materia=materia,
-                    tipo_evaluacion=tipo_eval
-                ).delete()
-            else:
-                try:
-                    nota_val = float(nota_raw)
-                    if nota_val < 0 or nota_val > 10:
-                        raise ValueError("La nota debe estar entre 0 y 10")
-                    
-                    # Actualizar o crear la calificación para esta materia específica
-                    Calificacion.objects.update_or_create(
-                        legajo_alumno=alumno,
-                        id_materia=materia,
-                        tipo_evaluacion=tipo_eval,
-                        defaults={'nota': nota_val, 'fecha': date.today()}
-                    )
-                except (ValueError, TypeError):
-                    raise ValueError(f"La nota del {tipo_eval} debe ser un número válido entre 0 y 10")
+        # Verificar que esa materia la dicte este docente
+        materia = Materia.objects.filter(
+            id_materia=materia_id,
+            docentedictamateria__id_docente=docente
+        ).first()
 
-        # Cargar las notas solo para las materias del docente en ese curso
-        for curso_materia in materias:
-            materia = curso_materia.id_materia
-            procesar_nota(alumno, materia, '1° Bimestre', nota1_raw)
-            procesar_nota(alumno, materia, '2° Bimestre', nota2_raw)
-            procesar_nota(alumno, materia, '3° Bimestre', nota3_raw)
+        if not materia:
+            return JsonResponse({
+                'success': False,
+                'error': 'Usted no dicta esa materia o no existe'
+            })
 
-        return JsonResponse({
-            'success': True, 
-            'error': '',
-            'alumno': f'{alumno.id_persona.apellido}, {alumno.id_persona.nombre}'
-        })
+        # Verificar que esa materia pertenezca al curso del alumno
+        pertenece = CursoCursaMaterias.objects.filter(
+            id_curso=curso,
+            id_materia=materia
+        ).exists()
+
+        if not pertenece:
+            return JsonResponse({
+                'success': False,
+                'error': 'Esa materia no corresponde al curso del alumno'
+            })
+
+        # Guardar nota SOLO en la materia específica recibida
+        procesar_nota(alumno, materia, '1° Bimestre', nota1_raw)
+        procesar_nota(alumno, materia, '2° Bimestre', nota2_raw)
+        procesar_nota(alumno, materia, '3° Bimestre', nota3_raw)
 
     except ValueError as ve:
         return JsonResponse({
