@@ -871,7 +871,7 @@ def dashboard_docente(request):
             if dia_cap == 'Miercoles':
                 dia_cap = 'Miércoles'
             horario_dict[rango][dia_cap] = f"{h.id_curso.anio}° {h.id_curso.nivel} ({h.id_curso.comision}) - {h.id_curso.turno}"
-
+    cantidad_tareas = tareas.count()
     return render(request, 'core/dashboard-docente.html', {
         'persona': persona,
         'docente': docente,
@@ -882,7 +882,8 @@ def dashboard_docente(request):
         'calificaciones': calificaciones,
         'notas_por_alumno': notas_por_alumno,
         'horario': horario_dict,
-        'tareas': tareas,             
+        'tareas': tareas,        
+        'cantidad_tareas': cantidad_tareas,     
     })
 
 
