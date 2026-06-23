@@ -841,7 +841,7 @@ def dashboard_docente(request):
             legajo_alumno__id_curso=curso
         ).aggregate(prom=Avg('nota'))['prom']
         cursos_data.append({
-            'curso': getattr(curso, 'comision', str(curso)),
+            'curso': f"{getattr(curso, 'anio', '')}° {getattr(curso, 'comision', '')}",
             'nivel': getattr(curso, 'nivel', ''),
             'turno': getattr(curso, 'turno', ''),
             'alumnos': alumnos_count,
