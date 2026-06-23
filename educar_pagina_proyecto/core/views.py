@@ -1364,7 +1364,9 @@ def aprobar_inscripcion(request, id_solicitud):
         )
     )
 
-    if solicitud.nivel == "Primario":
+    nivel = solicitud.nivel.strip().lower()
+
+    if nivel == "primario":
         anio = max(1, min(7, edad - 5))
     else:
         anio = max(1, min(5, edad - 12))
