@@ -1345,21 +1345,32 @@ def aprobar_inscripcion(request, id_solicitud):
     
     hoy = date.today()
 
+    print("========== DEBUG INSCRIPCION ==========")
+    print("Fecha nacimiento:", solicitud.fecha_nacimiento)
+    print("Tipo fecha:", type(solicitud.fecha_nacimiento))
+    print("Nivel:", repr(solicitud.nivel))
+    print("Turno:", repr(solicitud.turno))
+
     edad = (
         hoy.year
         - solicitud.fecha_nacimiento.year
         - (
             (hoy.month, hoy.day)
-            < (
+            <
+            (
                 solicitud.fecha_nacimiento.month,
                 solicitud.fecha_nacimiento.day
             )
         )
     )
+
     if solicitud.nivel == "Primario":
         anio = max(1, min(7, edad - 5))
     else:
         anio = max(1, min(5, edad - 12))
+
+    print("Edad:", edad)
+    print("Año calculado:", anio)
 
     curso = Curso.objects.filter(
         nivel__iexact=solicitud.nivel,
@@ -1372,6 +1383,15 @@ def aprobar_inscripcion(request, id_solicitud):
         solicitud.save()
 
         return redirect('dashboard-administrativo')
+    
+    print(
+        "Curso encontrado:",
+        curso.id_curso,
+        curso.nivel,
+        curso.anio,
+        curso.comision,
+        curso.turno
+    )
 
     alumno = Alumno.objects.create(
         id_persona=persona_alumno,
