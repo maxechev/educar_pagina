@@ -2800,7 +2800,7 @@ def guardar_nota(request):
                 'error': 'Esa materia no corresponde al curso del alumno'
             })
 
-    def procesar_nota(alumno, materia, tipo_eval, nota_raw):
+        def procesar_nota(alumno, materia, tipo_eval, nota_raw):
             if nota_raw is None or str(nota_raw).strip() == '':
                 Calificacion.objects.filter(
                     legajo_alumno=alumno,
@@ -2820,12 +2820,9 @@ def guardar_nota(request):
                     )
                 except (ValueError, TypeError):
                     raise ValueError(f"La nota del {tipo_eval} debe ser un número válido entre 0 y 10")
-
-        # Guardar nota SOLO en la materia específica recibida
         procesar_nota(alumno, materia, '1° Bimestre', nota1_raw)
         procesar_nota(alumno, materia, '2° Bimestre', nota2_raw)
         procesar_nota(alumno, materia, '3° Bimestre', nota3_raw)
-        
         return JsonResponse({
             'success': True,
             'error': '',
