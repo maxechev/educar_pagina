@@ -4,22 +4,17 @@ import re
 from django.core.files.storage import FileSystemStorage
 from datetime import datetime, date
 from django.conf import settings
-from datetime import date
-from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils import timezone
-import re
 import resend
 import os
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.db.models import Avg
 import json
 from django.core.mail import EmailMessage
 from django.contrib import messages
-from django.utils import timezone
-from datetime import date
 from django.views.decorators.cache import never_cache
-from django.shortcuts import get_object_or_404, redirect
+from django.utils.dateparse import parse_datetime
 from .models import (
     Inscripcion,
     Materia,
@@ -30,7 +25,6 @@ from .models import (
     Docente,
     Alumno,
     Preceptor,
-    Curso,
     Tutor,
     TutorTutoraAlumno,
     PersonalAdministrativo,
@@ -42,7 +36,6 @@ from .models import (
     DisciplinaDeportiva,
     Reserva,
     Instalacion,
-    Persona,
     Cuota,
     PostulacionLaboral,
     SolicitudInscripcion,
@@ -55,10 +48,6 @@ COMUNICADOS_FILE = os.path.join(
     os.path.dirname(__file__),
     'comunicados.json'
 )
-import json
-import os
-from django.db.models import Avg
-from django.views.decorators.cache import never_cache
 
 OPINIONES_FILE = os.path.join(os.path.dirname(__file__), 'opiniones.json')
 
@@ -335,452 +324,301 @@ def noticias(request):
         'dashboard_url': dashboard_url
     })
 
-@never_cache
-def dashboard_alumno(request):
-    persona, dashboard_url = obtener_datos_sesion(request)
-    if not persona:
-        return redirect('login')
-    if dashboard_url != 'dashboard-alumno':
-        return redirect(dashboard_url)
-        
-    alumno = Alumno.objects.filter(
-        id_persona=persona
-    ).select_related(
-        'id_curso',
-        'id_disciplina',
-        'id_disciplina__id_instalacion',
-    ).first()
+# --- FUNCIONES AUXILIARES PARA DASHBOARD ALUMNO ---
 
-    if request.method == 'POST' and request.POST.get('accion') == 'inscribir_deporte':
-        request.session['panel_activo'] = 'deportes'
-        id_disciplina = request.POST.get('id_disciplina')
-
-        if not id_disciplina:
-            messages.error(request, 'Debes seleccionar una disciplina.')
-            return redirect('dashboard-alumno')
-
-        disciplina_elegida = DisciplinaDeportiva.objects.filter(
-            id_disciplina=id_disciplina
-        ).first()
-
-        if not disciplina_elegida:
-            messages.error(request, 'La disciplina seleccionada no existe.')
-            return redirect('dashboard-alumno')
-
-        if alumno.id_disciplina_id == disciplina_elegida.id_disciplina:
-            messages.info(
-                request,
-                f'Ya estás inscripto en {disciplina_elegida.nombre}.'
-            )
-            return redirect('dashboard-alumno')
-
-        alumno.id_disciplina = disciplina_elegida
-        alumno.save(update_fields=['id_disciplina'])
-
-        messages.success(
-            request,
-            f'Te inscribiste correctamente en {disciplina_elegida.nombre}.'
-        )
-        return redirect('dashboard-alumno')
-
-    if request.method == 'POST' and request.FILES.get('justificacion'):
-
-        asistencia_id = request.POST.get('asistencia_id')
-
-        asistencia = Asistencia.objects.filter(
-            id_asistencia=asistencia_id,
-            legajo_alumno=alumno
-        ).first()
-        if not asistencia:
-            request.session["panel_activo"] = "asistencia"
-            messages.error(
-                request,
-                'No se encontró la asistencia seleccionada.'
-            )
-            return redirect('dashboard-alumno')
-        if asistencia.archivo_justificacion:
-            request.session["panel_activo"] = "asistencia"
-            messages.error(
-                request,
-                'Esta asistencia ya posee una justificación.'
-            )
-            return redirect('dashboard-alumno')
-        if asistencia:
-
-            archivo = request.FILES['justificacion']
-            extensiones_permitidas = [
-                '.pdf',
-                '.jpg',
-                '.jpeg',
-                '.png'
-            ]
-            tipos_permitidos = [
-                'application/pdf',
-                'image/jpeg',
-                'image/png'
-            ]
-
-            if archivo.content_type not in tipos_permitidos:
-                request.session["panel_activo"] = "asistencia"
-                messages.error(
-                    request,
-                    'Tipo de archivo no válido.'
-                )
-                return redirect('dashboard-alumno')
-            if archivo.size > 5 * 1024 * 1024:
-                request.session["panel_activo"] = "asistencia"
-                messages.error(
-                    request,
-                    'El archivo no puede superar los 5 MB.'
-                )
-                return redirect('dashboard-alumno')
-            extension = os.path.splitext(
-                archivo.name
-            )[1].lower()
-
-            if extension not in extensiones_permitidas:
-                request.session["panel_activo"] = "asistencia"
-                messages.error(
-                    request,
-                    'Solo se permiten archivos PDF, JPG, JPEG y PNG.'
-                )
-                return redirect('dashboard-alumno')
-            nombre_alumno = (
-                f"{persona.nombre}_{persona.apellido}"
-                .replace(" ", "_")
-            )
-
-            curso = f"{alumno.id_curso.anio}{alumno.id_curso.comision}"
-
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-
-            nombre_archivo = (
-                f"{nombre_alumno}_{curso}_{asistencia.fecha}_{timestamp}"
-                f"{extension}"
-            )
-
-            carpeta = os.path.join(
-                settings.MEDIA_ROOT,
-                'justificaciones'
-            )
-
-            os.makedirs(
-                carpeta,
-                exist_ok=True
-            )
-
-            fs = FileSystemStorage(
-                location=carpeta
-            )
-
-            fs.save(
-                nombre_archivo,
-                archivo
-            )
-
-            asistencia.archivo_justificacion = (
-                f"justificaciones/{nombre_archivo}"
-            )
-
-            asistencia.save()
-
-            request.session["panel_activo"] = "asistencia"
-
-            messages.success(
-                request,
-                'Justificación enviada correctamente.'
-            )
-
-            return redirect('dashboard-alumno')
-
-
-    curso_alumno = f"{alumno.id_curso.nivel} {alumno.id_curso.anio}° {alumno.id_curso.comision}"
-    
-    materias = CursoCursaMaterias.objects.filter(
-        id_curso=alumno.id_curso
-    ).select_related('id_materia')
-    
-    # Procesar horarios para mostrar en el panel
-    # Inicializar días en orden
-    horario_por_dia = {
-        'lunes': [],
-        'martes': [],
-        'miércoles': [],
-        'jueves': [],
-        'viernes': []
+def _normalize_dia(dia_raw):
+    """Normaliza el nombre del día para evitar errores de tildes."""
+    d = dia_raw.strip().lower()
+    if d == 'miercoles':
+        return 'miércoles'
+    mapping = {
+        'lunes': 'lunes', 'martes': 'martes', 'miércoles': 'miércoles',
+        'jueves': 'jueves', 'viernes': 'viernes'
     }
+    return mapping.get(d, d)
 
-    # Función para normalizar nombres de días (maneja variantes sin tilde)
-    def _normalize_dia(dia_raw):
-        d = dia_raw.strip().lower()
-        if d in ('miercoles', 'miercoles'):
-            return 'miércoles'
-        if d == 'miercoles':
-            return 'miércoles'
-        # cubrir otras variantes comunes
-        mapping = {
-            'lunes': 'lunes',
-            'martes': 'martes',
-            'miércoles': 'miércoles',
-            'miercoles': 'miércoles',
-            'jueves': 'jueves',
-            'viernes': 'viernes'
-        }
-        return mapping.get(d, d)
-
-    # Llenar con datos de las materias
-    for materia in materias:
-        if materia.horarios:
-            try:
-                horarios = json.loads(materia.horarios)
-
-                # Crear formato legible
-                horario_items = []
-                for dia, hora in horarios.items():
-                    dia_norm = _normalize_dia(dia)
-                    horario_items.append(f"{dia_norm.capitalize()}: {hora}")
-
-                    # Agregar a la lista de horarios por día si corresponde
-                    if dia_norm in horario_por_dia:
-                        horario_por_dia[dia_norm].append({
-                            'materia': materia.id_materia.nombre,
-                            'hora': hora
-                        })
-
-                materia.horario_formateado = " | ".join(horario_items)
-
-            except Exception:
-                materia.horario_formateado = str(materia.horarios)
-        else:
-            materia.horario_formateado = "Sin horario"
-
-    disciplina = alumno.id_disciplina
-    disciplina_horario_formateado = "Sin horario"
-
-    if disciplina:
-        if disciplina.horarios:
-            try:
-                horarios_disciplina = json.loads(disciplina.horarios)
-                horario_items = []
-                for dia, hora in horarios_disciplina.items():
-                    dia_norm = _normalize_dia(dia)
-                    horario_items.append(f"{dia_norm.capitalize()}: {hora}")
-
-                    if dia_norm in horario_por_dia:
-                        horario_por_dia[dia_norm].append({
-                            'materia': disciplina.nombre,
-                            'hora': hora,
-                            'es_deporte': True,
-                        })
-
-                disciplina_horario_formateado = " | ".join(horario_items)
-            except Exception:
-                disciplina_horario_formateado = str(disciplina.horarios)
-
-    disciplinas_disponibles = DisciplinaDeportiva.objects.select_related(
-        'id_instalacion'
-    ).all()
-
-    for dep in disciplinas_disponibles:
-        if dep.horarios:
-            try:
-                horarios_dep = json.loads(dep.horarios)
-                horario_items = []
-                for dia, hora in horarios_dep.items():
-                    dia_norm = _normalize_dia(dia)
-                    horario_items.append(f"{dia_norm.capitalize()}: {hora}")
-                dep.horario_formateado = " | ".join(horario_items)
-            except Exception:
-                dep.horario_formateado = str(dep.horarios)
-        else:
-            dep.horario_formateado = "Sin horario"
-            
-    
-    tutor_relacion = TutorTutoraAlumno.objects.filter(
-        id_alumno=alumno
-    ).select_related(
-        'id_tutor',
-        'id_tutor__id_persona'
-    ).first()
-
-    
-    calificaciones = Calificacion.objects.filter(
-        legajo_alumno=alumno
-    ).select_related('id_materia')
-
-    asistencias = Asistencia.objects.filter(
-        legajo_alumno=alumno
-    ).order_by('-fecha')
-
-    presentes = asistencias.filter(
-        tipo_asistencia='Presente'
-    ).count()
-
-    ausencias = asistencias.filter(
-        tipo_asistencia='Ausente'
-    ).count()
-
-    tardanzas = asistencias.filter(
-        tipo_asistencia='Tardanza'
-    ).count()
-
-    # Porcentaje de asistencia (presente / total registros)
-    total_asistencias = presentes + ausencias + tardanzas
-    if total_asistencias > 0:
-        asistencia_pct = round((presentes / total_asistencias) * 100)
-    else:
-        asistencia_pct = 0
-
-    # Agrupar calificaciones por materia para el panel de notas
-    from collections import OrderedDict
-
-    from collections import OrderedDict
-
+def _obtener_notas_resumen(materias, calificaciones):
     notas_resumen = []
-    # Iterar por las materias asignadas al curso
     for curso_materia in materias:
         mat = curso_materia.id_materia
         califs_mat = calificaciones.filter(id_materia=mat).order_by('fecha')
-
-        trim1 = ''
-        trim2 = ''
-        trim3 = ''
+        trim1, trim2, trim3 = '', '', ''
         numeric_notes = []
         estado = ''
 
         for c in califs_mat:
             display_val = float(c.nota) if c.nota is not None else (c.tipo_evaluacion or '')
-
-            # Asignar según tipo de evaluación
-            if c.tipo_evaluacion == '1° Bimestre':
-                trim1 = display_val
-            elif c.tipo_evaluacion == '2° Bimestre':
-                trim2 = display_val
-            elif c.tipo_evaluacion == '3° Bimestre':
-                trim3 = display_val
+            if c.tipo_evaluacion == '1° Bimestre': trim1 = display_val
+            elif c.tipo_evaluacion == '2° Bimestre': trim2 = display_val
+            elif c.tipo_evaluacion == '3° Bimestre': trim3 = display_val
             else:
-                # Fallback por compatibilidad
-                if not trim1:
-                    trim1 = display_val
-                elif not trim2:
-                    trim2 = display_val
-                elif not trim3:
-                    trim3 = display_val
+                if not trim1: trim1 = display_val
+                elif not trim2: trim2 = display_val
+                elif not trim3: trim3 = display_val
 
             if c.nota is not None:
-                try:
-                    numeric_notes.append(float(c.nota))
-                except Exception:
-                    pass
+                try: numeric_notes.append(float(c.nota))
+                except Exception: pass
 
             if c.tipo_evaluacion and 'aprob' in c.tipo_evaluacion.lower():
                 estado = 'Aprobado'
 
         promedio_mat = round(sum(numeric_notes) / len(numeric_notes), 2) if numeric_notes else ''
-
         notas_resumen.append({
-            'materia': mat.nombre,
-            'trim1': trim1,
-            'trim2': trim2,
-            'trim3': trim3,
-            'promedio': promedio_mat,
-            'estado': estado or 'En curso'
+            'materia': mat.nombre, 'trim1': trim1, 'trim2': trim2, 'trim3': trim3,
+            'promedio': promedio_mat, 'estado': estado or 'En curso'
         })
+    return notas_resumen
 
-    # Promedio general del alumno (promedio de todas las calificaciones numéricas)
+def _calcular_promedio_general(calificaciones):
     all_numeric = [float(c.nota) for c in calificaciones if c.nota is not None]
-    promedio_general = round(sum(all_numeric) / len(all_numeric), 1) if all_numeric else 0
+    return round(sum(all_numeric) / len(all_numeric), 1) if all_numeric else 0
 
-    # Materias aprobadas: sólo se cuentan si hay un registro cuyo tipo indica 'Aprobado'
-    materias_aprobadas = sum(1 for n in notas_resumen if n.get('estado') == 'Aprobado')
-    total_materias = len(notas_resumen)
-    COMUNICADOS_FILE = os.path.join(
-        settings.BASE_DIR,
-        "core",
-        "comunicados.json"
-    )
+def _obtener_horarios_alumno(materias):
+    horario_por_dia = {'lunes': [], 'martes': [], 'miércoles': [], 'jueves': [], 'viernes': []}
+    for materia in materias:
+        if materia.horarios:
+            try:
+                horarios = json.loads(materia.horarios)
+                horario_items = []
+                for dia, hora in horarios.items():
+                    dia_norm = _normalize_dia(dia)
+                    horario_items.append(f"{dia_norm.capitalize()}: {hora}")
+                    if dia_norm in horario_por_dia:
+                        horario_por_dia[dia_norm].append({'materia': materia.id_materia.nombre, 'hora': hora})
+                materia.horario_formateado = " | ".join(horario_items)
+            except Exception:
+                materia.horario_formateado = str(materia.horarios)
+        else:
+            materia.horario_formateado = "Sin horario"
+    return horario_por_dia
 
+def _obtener_horario_disciplina(disciplina, horario_por_dia):
+    if not disciplina or not disciplina.horarios:
+        return "Sin horario"
+    try:
+        horarios_disciplina = json.loads(disciplina.horarios)
+        horario_items = []
+        for dia, hora in horarios_disciplina.items():
+            dia_norm = _normalize_dia(dia)
+            horario_items.append(f"{dia_norm.capitalize()}: {hora}")
+            if dia_norm in horario_por_dia:
+                horario_por_dia[dia_norm].append({
+                    'materia': disciplina.nombre, 'hora': hora, 'es_deporte': True
+                })
+        return " | ".join(horario_items)
+    except Exception:
+        return str(disciplina.horarios)
+
+def _obtener_disciplinas_disponibles():
+    disciplinas = DisciplinaDeportiva.objects.select_related('id_instalacion').all()
+    for dep in disciplinas:
+        if dep.horarios:
+            try:
+                horarios_dep = json.loads(dep.horarios)
+                horario_items = [f"{_normalize_dia(dia).capitalize()}: {hora}" for dia, hora in horarios_dep.items()]
+                dep.horario_formateado = " | ".join(horario_items)
+            except Exception:
+                dep.horario_formateado = str(dep.horarios)
+        else:
+            dep.horario_formateado = "Sin horario"
+    return disciplinas
+
+def _obtener_comunicados_alumno(alumno):
     comunicados_alumno = []
     ultimos_comunicados = []
+    curso_alumno = f"{alumno.id_curso.nivel} {alumno.id_curso.anio}° {alumno.id_curso.comision}"
+    comunicados_file = os.path.join(settings.BASE_DIR, "core", "comunicados.json")
 
-    if os.path.exists(COMUNICADOS_FILE):
+    if os.path.exists(comunicados_file):
         try:
-            with open(COMUNICADOS_FILE, 'r', encoding='utf-8') as f:
+            with open(comunicados_file, 'r', encoding='utf-8') as f:
                 file_content = f.read().strip()
                 comunicados = json.loads(file_content) if file_content else []
-
                 comunicados_alumno = [
                     c for c in comunicados
-                    if (
-                        c.get('rol') == 'Directivo'
-                        or (
-                            c.get('rol') == 'Preceptor'
-                            and c.get('curso', '').strip().lower() == curso_alumno.strip().lower()
-                        )
+                    if c.get('rol') == 'Directivo' or (
+                        c.get('rol') == 'Preceptor' and
+                        c.get('curso', '').strip().lower() == curso_alumno.strip().lower()
                     )
                 ]
-
-                
                 comunicados_alumno.reverse()
-
-            
-            ultimos_comunicados = comunicados_alumno[:3]
-
+                ultimos_comunicados = comunicados_alumno[:3]
         except json.JSONDecodeError:
-            comunicados_alumno = []
-            ultimos_comunicados = []
-    
+            pass
+    return comunicados_alumno, ultimos_comunicados
+
+def _obtener_tareas_alumno(alumno, materias):
     tareas_alumno = []
-    if materias.exists():
-        for curso_materia in materias:
-            materia_real = curso_materia.id_materia
-            tarea_materia = Tarea.objects.filter(
-                materia=materia_real,
-                curso_destinado=alumno.id_curso
-            ).select_related('docente', 'docente__id_persona', 'curso_destinado').order_by('-fecha_creacion')
-            
-            for tarea in tarea_materia:
-                tareas_alumno.append({
-                    'tarea': tarea,
-                    'materia_nombre': materia_real.nombre,
-                    'docente_nombre': f'{tarea.docente.id_persona.apellido} {tarea.docente.id_persona.nombre}',
-                    'curso_destinado': tarea.curso_destinado.comision if tarea.curso_destinado else '-',
-                })
+    for curso_materia in materias:
+        materia_real = curso_materia.id_materia
+        tarea_materia = Tarea.objects.filter(
+            materia=materia_real, curso_destinado=alumno.id_curso
+        ).select_related('docente', 'docente__id_persona', 'curso_destinado').order_by('-fecha_creacion')
+
+        for tarea in tarea_materia:
+            tareas_alumno.append({
+                'tarea': tarea,
+                'materia_nombre': materia_real.nombre,
+                'docente_nombre': f'{tarea.docente.id_persona.apellido} {tarea.docente.id_persona.nombre}',
+                'curso_destinado': tarea.curso_destinado.comision if tarea.curso_destinado else '-',
+            })
     tareas_alumno.sort(key=lambda x: x['tarea'].fecha_creacion, reverse=True)
+    return tareas_alumno
+@never_cache
+def dashboard_alumno(request):
+    persona, dashboard_url = obtener_datos_sesion(request)
+    if not persona or dashboard_url != 'dashboard-alumno':
+        return redirect('login')
+        
+    alumno = Alumno.objects.filter(id_persona=persona).select_related(
+        'id_curso', 'id_disciplina', 'id_disciplina__id_instalacion'
+    ).first()
+
+    if not alumno:
+        return redirect('login')
+
+    # 1. Obtención de datos básicos
+    materias = CursoCursaMaterias.objects.filter(id_curso=alumno.id_curso).select_related('id_materia')
+    calificaciones = Calificacion.objects.filter(legajo_alumno=alumno).select_related('id_materia')
+    asistencias = Asistencia.objects.filter(legajo_alumno=alumno).order_by('-fecha')
+
+    # 2. Cálculos de asistencia
+    presentes = asistencias.filter(tipo_asistencia='Presente').count()
+    ausencias = asistencias.filter(tipo_asistencia='Ausente').count()
+    tardanzas = asistencias.filter(tipo_asistencia='Tardanza').count()
+    total_asistencias = presentes + ausencias + tardanzas
+    asistencia_pct = round((presentes / total_asistencias) * 100) if total_asistencias else 0
+
+    # 3. Llamada a funciones auxiliares (Responsabilidad delegada)
+    notas_resumen = _obtener_notas_resumen(materias, calificaciones)
+    promedio_general = _calcular_promedio_general(calificaciones)
+    materias_aprobadas = sum(1 for nota in notas_resumen if nota.get('estado') == 'Aprobado')
+    
+    horario_por_dia = _obtener_horarios_alumno(materias)
+    disciplina = alumno.id_disciplina
+    disciplina_horario_formateado = _obtener_horario_disciplina(disciplina, horario_por_dia)
+    disciplinas_disponibles = _obtener_disciplinas_disponibles()
+    
+    tutor_relacion = TutorTutoraAlumno.objects.filter(id_alumno=alumno).select_related(
+        'id_tutor', 'id_tutor__id_persona'
+    ).first()
+    
+    comunicados_alumno, ultimos_comunicados = _obtener_comunicados_alumno(alumno)
+    tareas_alumno = _obtener_tareas_alumno(alumno, materias)
 
     panel_activo = request.session.pop("panel_activo", "inicio")
     hay_horarios = any(clases for clases in horario_por_dia.values())
     
-    alumno = Alumno.objects.select_related(
-        'id_curso'
-    ).get(
-        id_persona=persona
-    )
     return render(request, 'core/dashboard-alumno.html', {
-        'persona': persona,
-        'alumno': alumno,
-        'comunicados': comunicados_alumno,
-        'ultimas_noticias': ultimos_comunicados,
-        'calificaciones': calificaciones,
-        'asistencias': asistencias,
-        'presentes': presentes,
-        'ausencias': ausencias,
-        'tardanzas': tardanzas,
-        'promedio_general': promedio_general,
-        'asistencia_pct': asistencia_pct,
-        'materias_aprobadas': materias_aprobadas,
-        'total_materias': total_materias,
-        'notas_resumen': notas_resumen,
-        'materias': materias,
-        'disciplina': disciplina,
+        'persona': persona, 'alumno': alumno, 'comunicados': comunicados_alumno,
+        'ultimas_noticias': ultimos_comunicados, 'calificaciones': calificaciones,
+        'asistencias': asistencias, 'presentes': presentes, 'ausencias': ausencias,
+        'tardanzas': tardanzas, 'promedio_general': promedio_general,
+        'asistencia_pct': asistencia_pct, 'materias_aprobadas': materias_aprobadas,
+        'total_materias': len(notas_resumen), 'notas_resumen': notas_resumen,
+        'materias': materias, 'disciplina': disciplina,
         'disciplina_horario_formateado': disciplina_horario_formateado,
-        'disciplinas_disponibles': disciplinas_disponibles,
-        'tutor_relacion': tutor_relacion,
-        'horario_por_dia': horario_por_dia,
-        'hay_horarios': hay_horarios,
-        "panel_activo": panel_activo,
-        'tareas_alumno': tareas_alumno,
+        'disciplinas_disponibles': disciplinas_disponibles, 'tutor_relacion': tutor_relacion,
+        'horario_por_dia': horario_por_dia, 'hay_horarios': hay_horarios,
+        'panel_activo': panel_activo, 'tareas_alumno': tareas_alumno,
     })
+    
+@never_cache
+def inscribir_deporte(request):
+    if request.method != 'POST':
+        return redirect('dashboard-alumno')
+
+    persona = obtener_persona(request)
+    if not persona:
+        return redirect('login')
+
+    alumno = Alumno.objects.filter(id_persona=persona).first()
+    if not alumno:
+        return redirect('login')
+
+    request.session['panel_activo'] = 'deportes'
+    id_disciplina = request.POST.get('id_disciplina')
+
+    if not id_disciplina:
+        messages.error(request, 'Debes seleccionar una disciplina.')
+        return redirect('dashboard-alumno')
+
+    disciplina = DisciplinaDeportiva.objects.filter(id_disciplina=id_disciplina).first()
+    if not disciplina:
+        messages.error(request, 'La disciplina seleccionada no existe.')
+        return redirect('dashboard-alumno')
+
+    if alumno.id_disciplina_id == disciplina.id_disciplina:
+        messages.info(request, f'Ya estás inscripto en {disciplina.nombre}.')
+    else:
+        alumno.id_disciplina = disciplina
+        alumno.save(update_fields=['id_disciplina'])
+        messages.success(request, f'Te inscribiste correctamente en {disciplina.nombre}.')
+
+    return redirect('dashboard-alumno')
+
+
+@never_cache
+def enviar_justificacion(request):
+    if request.method != 'POST':
+        return redirect('dashboard-alumno')
+
+    persona = obtener_persona(request)
+    if not persona:
+        return redirect('login')
+
+    alumno = Alumno.objects.filter(id_persona=persona).first()
+    if not alumno:
+        return redirect('login')
+
+    request.session["panel_activo"] = "asistencia"
+    asistencia_id = request.POST.get('asistencia_id')
+    
+    asistencia = Asistencia.objects.filter(id_asistencia=asistencia_id, legajo_alumno=alumno).first()
+    if not asistencia:
+        messages.error(request, 'No se encontró la asistencia seleccionada.')
+        return redirect('dashboard-alumno')
+        
+    if asistencia.archivo_justificacion:
+        messages.error(request, 'Esta asistencia ya posee una justificación.')
+        return redirect('dashboard-alumno')
+
+    archivo = request.FILES.get('justificacion')
+    if not archivo:
+        messages.error(request, 'Debe seleccionar un archivo.')
+        return redirect('dashboard-alumno')
+
+    # Validaciones de archivo
+    extensiones_permitidas = ['.pdf', '.jpg', '.jpeg', '.png']
+    tipos_permitidos = ['application/pdf', 'image/jpeg', 'image/png']
+
+    if archivo.content_type not in tipos_permitidos or os.path.splitext(archivo.name)[1].lower() not in extensiones_permitidas:
+        messages.error(request, 'Solo se permiten archivos PDF, JPG, JPEG y PNG.')
+        return redirect('dashboard-alumno')
+        
+    if archivo.size > 5 * 1024 * 1024:
+        messages.error(request, 'El archivo no puede superar los 5 MB.')
+        return redirect('dashboard-alumno')
+
+    # Guardado
+    nombre_alumno = f"{persona.nombre}_{persona.apellido}".replace(" ", "_")
+    curso = f"{alumno.id_curso.anio}{alumno.id_curso.comision}"
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    extension = os.path.splitext(archivo.name)[1].lower()
+    nombre_archivo = f"{nombre_alumno}_{curso}_{asistencia.fecha}_{timestamp}{extension}"
+
+    carpeta = os.path.join(settings.MEDIA_ROOT, 'justificaciones')
+    os.makedirs(carpeta, exist_ok=True)
+    
+    fs = FileSystemStorage(location=carpeta)
+    fs.save(nombre_archivo, archivo)
+
+    asistencia.archivo_justificacion = f"justificaciones/{nombre_archivo}"
+    asistencia.save()
+
+    messages.success(request, 'Justificación enviada correctamente.')
+    return redirect('dashboard-alumno')
 
 @never_cache
 def dashboard_docente(request):
@@ -789,7 +627,6 @@ def dashboard_docente(request):
         return redirect('login')
     if dashboard_url != 'dashboard-docente':
         return redirect(dashboard_url)
-    from django.db.models import Avg
     
     docente = Docente.objects.filter(id_persona=persona).first()
 
@@ -2097,8 +1934,6 @@ def guardar_opinion(request):
         else:
             opiniones = []
 
-        # Agregar la nueva opinión
-        from datetime import datetime
         opiniones.append({
             'nombre': nombre,
             'texto': opinion,
@@ -2629,7 +2464,6 @@ def crear_tarea(request):
         fecha_pub = None
         
         if programar and fecha_pub_str:
-            from django.utils.dateparse import parse_datetime
             fecha_pub = parse_datetime(fecha_pub_str)
             estado = 'Programado'
         elif estado == 'Publicado':
@@ -2692,7 +2526,6 @@ def editar_tarea(request, tarea_id):
         tarea.programa_publicacion = programar
         
         if programar and fecha_pub_str:
-            from django.utils.dateparse import parse_datetime
             tarea.fecha_publicacion = parse_datetime(fecha_pub_str)
             tarea.estado = 'Programado'
         else:

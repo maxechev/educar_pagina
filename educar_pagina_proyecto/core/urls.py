@@ -51,6 +51,8 @@ urlpatterns = [
     path('postulacion/programar-publicacion', views.programar_publicacion, name='programar_publicacion'),
     path('rechazar-inscripcion/<int:id_solicitud>/',views.rechazar_inscripcion,name='rechazar-inscripcion'),
     path('guardar-observacion-justificacion/', views.guardar_observacion_justificacion, name='guardar-observacion-justificacion'),
+    path('alumno/inscribir-deporte/', views.inscribir_deporte, name='inscribir_deporte'),
+    path('alumno/enviar-justificacion/', views.enviar_justificacion, name='enviar_justificacion'),
 ]
 if settings.DEBUG:
     urlpatterns += static(
