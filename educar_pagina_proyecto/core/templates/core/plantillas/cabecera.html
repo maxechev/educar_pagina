@@ -64,14 +64,12 @@
       modal.classList.add('active');
     }
   }
-  // Cierra el modal quitando la clase active
   function cerrarModal() {
     const modal = document.getElementById('modalCerrarSesion');
     if (modal) {
       modal.classList.remove('active');
     }
   }
-  // Ejecuta el cierre de sesión redireccionando a Django
   function confirmarCerrarSesion() {
     window.location.href = "{% url 'logout' %}";
   }

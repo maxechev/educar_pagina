@@ -1,38 +1,81 @@
 from django.contrib import admin
-from .models import *
 
-admin.site.register(Alumno)
-admin.site.register(Asistencia)
-admin.site.register(Aula)
-admin.site.register(Calificacion)
-admin.site.register(Cuota)
-admin.site.register(Curso)
-admin.site.register(CursoCursaMaterias)
-admin.site.register(CursoParticipaViaje)
-admin.site.register(Directivo)
-admin.site.register(DisciplinaDeportiva)
-admin.site.register(Docente)
-admin.site.register(DocenteDictaMateria)
-admin.site.register(DocenteDisciplina)
-admin.site.register(Evaluacion)
-admin.site.register(Tarea)
-admin.site.register(Inscripcion)
-admin.site.register(Instalacion)
-admin.site.register(Materia)
-admin.site.register(Noticia)
-admin.site.register(Persona)
-admin.site.register(PersonalAdministrativo)
-admin.site.register(Preceptor)
-admin.site.register(Reserva)
-admin.site.register(SolicitudViaje)
-admin.site.register(Tutor)
-admin.site.register(TutorTutoraAlumno)
-admin.site.register(Usuario)
-admin.site.register(Vehiculo)
-admin.site.register(Viaje)
-admin.site.register(ViajeUtilizaVehiculo)
-admin.site.register(PostulacionLaboral)
-admin.site.register(SolicitudInscripcion)
-admin.site.register(PagoPendiente)
-admin.site.register(Arancel)
-admin.site.register(DocumentacionAlumno)
+from .models import (
+    Alumno,
+    Arancel,
+    Asistencia,
+    Aula,
+    Calificacion,
+    Cuota,
+    Curso,
+    CursoCursaMaterias,
+    CursoParticipaViaje,
+    Directivo,
+    DisciplinaDeportiva,
+    Docente,
+    DocenteDictaMateria,
+    DocenteDisciplina,
+    DocumentacionAlumno,
+    Evaluacion,
+    Inscripcion,
+    Instalacion,
+    Materia,
+    Noticia,
+    PagoPendiente,
+    Persona,
+    PersonalAdministrativo,
+    PostulacionLaboral,
+    Preceptor,
+    Reserva,
+    SolicitudInscripcion,
+    SolicitudViaje,
+    Tarea,
+    Tutor,
+    TutorTutoraAlumno,
+    Usuario,
+    Vehiculo,
+    Viaje,
+    ViajeUtilizaVehiculo,
+)
+
+
+MODELOS_ADMINISTRABLES = (
+    Alumno,
+    Arancel,
+    Asistencia,
+    Aula,
+    Calificacion,
+    Cuota,
+    Curso,
+    CursoCursaMaterias,
+    CursoParticipaViaje,
+    Directivo,
+    DisciplinaDeportiva,
+    Docente,
+    DocenteDictaMateria,
+    DocenteDisciplina,
+    DocumentacionAlumno,
+    Evaluacion,
+    Inscripcion,
+    Instalacion,
+    Materia,
+    Noticia,
+    PagoPendiente,
+    Persona,
+    PersonalAdministrativo,
+    PostulacionLaboral,
+    Preceptor,
+    Reserva,
+    SolicitudInscripcion,
+    SolicitudViaje,
+    Tarea,
+    Tutor,
+    TutorTutoraAlumno,
+    Usuario,
+    Vehiculo,
+    Viaje,
+    ViajeUtilizaVehiculo,
+)
+
+for modelo in MODELOS_ADMINISTRABLES:
+    admin.site.register(modelo)
