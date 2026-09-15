@@ -2886,3 +2886,72 @@ def guardar_observacion_justificacion(request):
             )
 
     return redirect(reverse('dashboard-preceptor') + '?panel=justificaciones&guardado=1')
+
+@never_cache
+def lista_alumnos_admin(request):
+    """Vista para mostrar el panel de alumnos dentro del dashboard administrativo."""
+    persona, dashboard_url = obtener_datos_sesion(request)
+    if not persona or dashboard_url != 'dashboard-administrativo':
+        return redirect('login')
+    
+    # Forzar que el panel activo sea 'alumnos'
+    request.session['panel_activo'] = 'alumnos'
+    
+    # Reutilizar la lógica del dashboard administrativo
+    administrativo = PersonalAdministrativo.objects.filter(id_persona=persona).first()
+    instalaciones = Instalacion.objects.all()
+    reservas = Reserva.objects.select_related('id_instalacion', 'id_persona_solicitante').all()
+    
+    if os.path.exists(OPINIONES_FILE):
+        with open(OPINIONES_FILE, 'r', encoding='utf-8') as f:
+            opiniones = json.load(f)
+    else:
+        opiniones = []
+    
+    cuotas = Cuota.objects.select_related('id_tutor__id_persona', 'id_legajo_alumno__id_persona')
+    cuotas_pendientes = PagoPendiente.objects.exclude(estado='Pagada').count()
+    solicitudes = SolicitudInscripcion.objects.all().order_by('-fecha_solicitud')
+    inscripciones_pendientes = SolicitudInscripcion.objects.filter(estado="Pendiente").count()
+    pagos_pendientes = PagoPendiente.objects.all()
+    documentacion_pendiente = DocumentacionAlumno.objects.filter(estado='Pendiente').count()
+    documentaciones = DocumentacionAlumno.objects.filter(estado='Pendiente').order_by('-fecha_envio')
+    
+    # Datos de alumnos
+    alumnos = Alumno.objects.select_related('id_persona', 'id_curso').all().order_by('id_persona__apellido', 'id_persona__nombre')
+    
+    # Si viene un legajo, mostrar detalle
+    legajo_detalle = request.GET.get('legajo')
+    alumno_detalle = None
+    if legajo_detalle:
+        alumno_detalle = get_object_or_404(
+            Alumno.objects.select_related('id_persona', 'id_curso'), 
+            legajo=legajo_detalle
+        )
+    
+    return render(request, 'core/dashboard-administrativo.html', {
+        'persona': persona,
+        'administrativo': administrativo,
+        'instalaciones': instalaciones,
+        'reservas': reservas,
+        'opiniones': opiniones,
+        'cuotas': cuotas,
+        'cuotas_pendientes': cuotas_pendientes,
+        'solicitudes': solicitudes,
+        'inscripciones_pendientes': inscripciones_pendientes,
+        'pagos_pendientes': pagos_pendientes,
+        'documentaciones': documentaciones,
+        'documentacion_pendiente': documentacion_pendiente,
+        'panel_activo': 'alumnos',
+        'alumnos': alumnos,
+        'alumno_detalle': alumno_detalle,
+    })
+    
+@never_cache
+def detalle_alumno_admin(request, legajo):
+    """Vista para mostrar el detalle de un alumno dentro del dashboard."""
+    persona, dashboard_url = obtener_datos_sesion(request)
+    if not persona or dashboard_url != 'dashboard-administrativo':
+        return redirect('login')
+    
+    # Redirigir a la lista con el parámetro legajo
+    return redirect(f"{reverse('lista-alumnos-admin')}?legajo={legajo}")
