@@ -1610,22 +1610,20 @@ def dashboard_padres(request):
     if dashboard_url != 'dashboard-padres':
         return redirect(dashboard_url)
 
-    tutor = Tutor.objects.filter(
-        id_persona=persona
-    ).first()
+    tutor = Tutor.objects.filter(id_persona=persona).first()
 
+    # 1. INICIALIZAR VARIABLES AQUÍ (fuera del if) para evitar UnboundLocalError
     hijos = []
-    documentacion = None 
+    documentacion = None
+    legajos_hijos = []  # <--- CLAVE: Se inicializa como lista vacía
 
     presentes = 0
     ausencias = 0
     tardanzas = 0
-
     suma_promedios = 0
     cantidad_promedios = 0
 
     if tutor:
-
         relaciones = TutorTutoraAlumno.objects.filter(
             id_tutor=tutor
         ).select_related(
@@ -1634,15 +1632,15 @@ def dashboard_padres(request):
             'id_alumno__id_curso'
         )
 
-        for relacion in relaciones:
+        # 2. OBTENER LOS LEGAJOS DE LOS HIJOS ACTUALES
+        legajos_hijos = list(relaciones.values_list('id_alumno', flat=True))
 
+        for relacion in relaciones:
             alumno = relacion.id_alumno
 
             promedio = Calificacion.objects.filter(
                 legajo_alumno=alumno
-            ).aggregate(
-                promedio=Avg('nota')
-            )['promedio']
+            ).aggregate(promedio=Avg('nota'))['promedio']
 
             promedio = float(promedio) if promedio else 0
 
@@ -1650,28 +1648,15 @@ def dashboard_padres(request):
                 suma_promedios += promedio
                 cantidad_promedios += 1
 
-            pres = Asistencia.objects.filter(
-                legajo_alumno=alumno,
-                tipo_asistencia='Presente'
-            ).count()
-
-            aus = Asistencia.objects.filter(
-                legajo_alumno=alumno,
-                tipo_asistencia='Ausente'
-            ).count()
-
-            tar = Asistencia.objects.filter(
-                legajo_alumno=alumno,
-                tipo_asistencia='Tardanza'
-            ).count()
+            pres = Asistencia.objects.filter(legajo_alumno=alumno, tipo_asistencia='Presente').count()
+            aus = Asistencia.objects.filter(legajo_alumno=alumno, tipo_asistencia='Ausente').count()
+            tar = Asistencia.objects.filter(legajo_alumno=alumno, tipo_asistencia='Tardanza').count()
 
             presentes += pres
             ausencias += aus
             tardanzas += tar
             
-            documentacion = DocumentacionAlumno.objects.filter(
-                legajo_alumno=alumno
-            ).first()
+            documentacion = DocumentacionAlumno.objects.filter(legajo_alumno=alumno).first()
 
             hijos.append({
                 'alumno': alumno,
@@ -1685,27 +1670,11 @@ def dashboard_padres(request):
             })
 
     # 📊 promedio general
-    promedio_general = round(
-        suma_promedios / cantidad_promedios,
-        2
-    ) if cantidad_promedios else 0
-
+    promedio_general = round(suma_promedios / cantidad_promedios, 2) if cantidad_promedios else 0
     total_asistencias = presentes + ausencias
+    porcentaje_asistencia = round((presentes / total_asistencias) * 100, 0) if total_asistencias else 0
 
-    porcentaje_asistencia = round(
-        (presentes / total_asistencias) * 100,
-        0
-    ) if total_asistencias else 0
-
-    # 📢 COMUNICADOS (JSON) SOLO DIRECTIVOS
-    COMUNICADOS_FILE = os.path.join(
-        settings.BASE_DIR,
-        "core",
-        "comunicados.json"
-    )
-
-
-
+    COMUNICADOS_FILE = os.path.join(settings.BASE_DIR, "core", "comunicados.json")
     comunicados_filtrados = []
     vistos = set()
 
@@ -1716,60 +1685,40 @@ def dashboard_padres(request):
             return datetime.min
 
     if os.path.exists(COMUNICADOS_FILE):
-
         try:
             with open(COMUNICADOS_FILE, 'r', encoding='utf-8') as f:
                 file_content = f.read().strip()
                 comunicados = json.loads(file_content) if file_content else []
 
-            for relacion in relaciones:
+            if tutor: # Solo procesar si hay tutor
+                for relacion in relaciones:
+                    alumno = relacion.id_alumno
+                    curso_alumno = f"{alumno.id_curso.nivel} {alumno.id_curso.anio}° {alumno.id_curso.comision}"
 
-                alumno = relacion.id_alumno
-                curso_alumno = f"{alumno.id_curso.nivel} {alumno.id_curso.anio}° {alumno.id_curso.comision}"
+                    for c in comunicados:
+                        clave = (c.get('titulo'), c.get('fecha'), c.get('rol'))
+                        if clave in vistos:
+                            continue
 
-                for c in comunicados:
+                        if c.get('rol') == 'Directivo':
+                            comunicados_filtrados.append(c)
+                            vistos.add(clave)
+                        elif (c.get('rol') == 'Preceptor' and c.get('curso', '').strip().lower() == curso_alumno.strip().lower()):
+                            comunicados_filtrados.append(c)
+                            vistos.add(clave)
 
-                    clave = (
-                        c.get('titulo'),
-                        c.get('fecha'),
-                        c.get('rol')
-                    )
-
-                    if clave in vistos:
-                        continue
-
-                    # Directivo siempre
-                    if c.get('rol') == 'Directivo':
-                        comunicados_filtrados.append(c)
-                        vistos.add(clave)
-
-                    # Preceptor solo si coincide curso
-                    elif (
-                        c.get('rol') == 'Preceptor'
-                        and c.get('curso', '').strip().lower() == curso_alumno.strip().lower()
-                    ):
-                        comunicados_filtrados.append(c)
-                        vistos.add(clave)
-
-            # 🔥 ORDEN CORRECTO (más nuevos primero)
-            comunicados_filtrados.sort(
-                key=parse_fecha,
-                reverse=True
-            )
-
+            comunicados_filtrados.sort(key=parse_fecha, reverse=True)
         except json.JSONDecodeError:
             comunicados_filtrados = []
+
     panel_activo = request.session.pop("panel_activo", "inicio")
     
+    # 3. USAR legajos_hijos (que siempre existe, aunque esté vacío)
     cuotas_pendientes = Cuota.objects.filter(
         id_legajo_alumno__in=legajos_hijos,
         estado='Pendiente'
     ).count()
 
-    legajos_hijos = TutorTutoraAlumno.objects.filter(
-        id_tutor=tutor
-    ).values_list('id_alumno', flat=True)
-    
     cuotas = Cuota.objects.filter(
         id_legajo_alumno__in=legajos_hijos
     ).select_related(
