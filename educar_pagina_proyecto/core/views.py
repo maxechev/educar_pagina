@@ -1615,6 +1615,7 @@ def dashboard_padres(request):
     ).first()
 
     hijos = []
+    documentacion = None 
 
     presentes = 0
     ausencias = 0
