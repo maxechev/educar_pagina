@@ -1243,7 +1243,6 @@ def enviar_consulta(request):
 
         return redirect('contacto')
 
-
 @never_cache
 def dashboard_administrativo(request):
     persona, dashboard_url = obtener_datos_sesion(request)
@@ -1263,9 +1262,13 @@ def dashboard_administrativo(request):
         'id_persona_solicitante'
     ).all()
     
+    # Lectura segura del archivo de opiniones
     if os.path.exists(OPINIONES_FILE):
-        with open(OPINIONES_FILE, 'r', encoding='utf-8') as f:
-            opiniones = json.load(f)
+        try:
+            with open(OPINIONES_FILE, 'r', encoding='utf-8') as f:
+                opiniones = json.load(f)
+        except (json.JSONDecodeError, FileNotFoundError):
+            opiniones = []
     else:
         opiniones = []
     
@@ -1292,7 +1295,15 @@ def dashboard_administrativo(request):
         estado='Pendiente'
     ).order_by('-fecha_envio')
     
-    panel_activo = request.session.pop("panel_activo", "inicio")
+    # 🔥 CORRECCIÓN CLAVE: Leer primero de la URL (?panel=...), sino de la sesión
+    panel_activo = request.GET.get('panel') or request.session.pop("panel_activo", "inicio")
+    
+    # Guardar en sesión para que persista si recarga la página sin el ?panel=
+    if request.GET.get('panel'):
+        request.session['panel_activo'] = panel_activo
+
+    # Agregamos noticias por si el panel de inicio o el de noticias las necesita
+    noticias = Noticia.objects.all().order_by('-fecha_publicacion')
     
     return render(request, 'core/dashboard-administrativo.html', {
         'persona': persona,
@@ -1308,8 +1319,8 @@ def dashboard_administrativo(request):
         'documentaciones': documentaciones,
         'documentacion_pendiente': documentacion_pendiente,
         'panel_activo': panel_activo,
+        'noticias': noticias,
     })
-
 @never_cache
 def aprobar_inscripcion(request, id_solicitud):
 
