@@ -858,24 +858,11 @@
 
     <!-- SCRIPTS MEJORADOS PARA QUE LOS PANELES FUNCIONEN SIEMPRE -->
     <script>
-      function showPanel(id, el) {
-        document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
-        document.querySelectorAll(".sidebar-nav a").forEach((a) => a.classList.remove("active"));
-        
-        const targetPanel = document.getElementById("panel-" + id);
-        if (targetPanel) {
-            targetPanel.classList.add("active");
-        }
-        if (el) {
-            el.classList.add("active");
-        }
-      }
-
       document.addEventListener("DOMContentLoaded", function () {
           const panel = "{{ panel_activo }}";
-          if (!panel || panel === "inicio") return;
+          if (panel === "inicio") return;
 
-          // Caso especial para el panel de Alumnos
+          // Caso especial para el panel de Alumnos (usa URL directa, no onclick)
           if (panel === "alumnos") {
               document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
               document.querySelectorAll(".sidebar-nav a").forEach((a) => a.classList.remove("active"));
@@ -885,7 +872,7 @@
 
               const enlaceAlumnos = document.querySelector('.sidebar-nav a[href*="lista-alumnos-admin"]');
               if (enlaceAlumnos) enlaceAlumnos.classList.add("active");
-              return;
+              return; // Salimos aquí porque ya lo activamos
           }
 
           // Para los demás paneles que usan onclick
@@ -894,13 +881,6 @@
               showPanel(panel, enlace);
           }
       });
-
-      function mostrarRechazo(id) {
-          const form = document.getElementById('rechazo-' + id);
-          if (form.style.display === 'none' || form.style.display === '') {
-              form.style.display = 'block';
-          } else {
-              form.style.display = 'none';
-          }
-      }
     </script>
+  </body>
+</html>
