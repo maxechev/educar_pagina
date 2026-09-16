@@ -120,7 +120,7 @@
             <a href="#" onclick="showPanel('reservas', this); return false;">
               <span class="nav-icon">🏨</span> Reservas
             </a>
-            <a href="{% url 'lista-alumnos-admin' %}" class="{% if panel_activo == 'alumnos' %}active{% endif %}">
+            <a href="{% url 'lista-alumnos-admin' %}" id="enlace-alumnos" class="{% if panel_activo == 'alumnos' %}active{% endif %}">
               <span class="nav-icon">🎓</span> Alumnos
             </a>
             <a href="#" onclick="showPanel('opiniones', this); return false;">
@@ -883,7 +883,8 @@
               const panelAlumnos = document.getElementById("alumnos");
               if (panelAlumnos) panelAlumnos.classList.add("active");
 
-              const enlaceAlumnos = document.querySelector('.sidebar-nav a[href*="lista-alumnos-admin"]');
+              // 🔥 CAMBIO AQUÍ: Buscamos por ID en lugar de por href 🔥
+              const enlaceAlumnos = document.getElementById("enlace-alumnos");
               if (enlaceAlumnos) enlaceAlumnos.classList.add("active");
               return;
           }
