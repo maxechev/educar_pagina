@@ -580,7 +580,7 @@
       padding: 11px 24px; font-size: 14px; font-weight: 600;
       color: #334155; text-decoration: none; transition: 0.2s;
     }
-    .sidebar-nav a:hover, .sidebar-nav a.active { background: #dbeafe; color: #1d66c2; }
+    .sidebar-nav a.active {background-color: #dbeafe !important; color: #1d66c2 !important;font-weight: 700 !important;}
     .sidebar-nav a .nav-icon { font-size: 18px; }
     .dashboard-main { flex: 1; padding: 40px 36px; overflow-y: auto; }
     .section-title { font-size: 24px; font-weight: bold; color: #0f172a; margin-bottom: 24px; }
