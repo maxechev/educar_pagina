@@ -626,7 +626,7 @@
             <div style="margin-top: 40px"></div>
           </div>
 
-          <!-- Panel de Alumnos -->
+                    <!-- Panel de Alumnos -->
           <div id="alumnos" class="panel {% if panel_activo == 'alumnos' %}active{% endif %}">
               <h2 class="section-title">📚 Gestión de Alumnos</h2>
               
@@ -650,7 +650,7 @@
               </div>
 
               {% if alumno_detalle %}
-              <!-- VISTA DE DETALLE DEL ALUMNO (Solo se muestra si hay un legajo en la URL) -->
+              <!-- VISTA DE DETALLE DEL ALUMNO -->
               <div style="background: white; border-radius: 16px; padding: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 24px;">
                   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                       <h3 style="margin: 0; color: #0f172a; font-size: 20px;">
@@ -731,7 +731,7 @@
               </div>
 
               {% else %}
-              <!-- LISTA DE ALUMNOS (Solo se muestra si NO hay un alumno detalle seleccionado) -->
+              <!-- LISTA DE ALUMNOS -->
               <div style="background: white; border-radius: 16px; padding: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
                   <h3 style="margin: 0 0 20px 0; color: #0f172a; font-size: 20px;">Listado de Alumnos</h3>
                   
@@ -779,6 +779,7 @@
                   {% endif %}
               </div>
               {% endif %}
+          </div> <!-- 🔥 AQUÍ FALTABA ESTE CIERRE DEL DIV DE ALUMNOS 🔥 -->
 
           <!-- Panel de Noticias -->
           <div id="panel-noticias" class="panel">
@@ -795,38 +796,18 @@
 
                 <div class="form-group">
                   <label>Título</label>
-
-                  <input
-                    type="text"
-                    name="titulo"
-                    required
-                    placeholder="Título de la noticia"
-                  />
+                  <input type="text" name="titulo" required placeholder="Título de la noticia" />
                 </div>
 
                 <div class="form-group">
                   <label>Contenido</label>
-
-                  <textarea
-                    name="contenido"
-                    rows="8"
-                    maxlength="350"
-                    required
-                    placeholder="Escriba la noticia... (máximo 350 caracteres)"
-                  ></textarea>
-
+                  <textarea name="contenido" rows="8" maxlength="350" required placeholder="Escriba la noticia... (máximo 350 caracteres)"></textarea>
                   <small id="contador-caracteres"> 0 / 350 caracteres </small>
                 </div>
 
                 <div class="form-group">
                   <label>Imagen</label>
-
-                  <input
-                    type="file"
-                    name="imagen"
-                    accept=".jpg,.jpeg,.png,.webp"
-                  />
-
+                  <input type="file" name="imagen" accept=".jpg,.jpeg,.png,.webp" />
                   <small> Formatos permitidos: JPG, PNG y WEBP </small>
                 </div>
 
@@ -834,6 +815,7 @@
               </form>
             </div>
           </div>
+
           <div id="panel-perfil" class="panel">
             <p class="section-title">Mi perfil</p>
 
@@ -852,15 +834,11 @@
                   <td>{{ administrativo.sector }}</td>
                 </tr>
                 <tr>
-                  <td style="font-weight: 600; color: #64748b">
-                    Fecha de ingreso
-                  </td>
+                  <td style="font-weight: 600; color: #64748b">Fecha de ingreso</td>
                   <td>{{ administrativo.fecha_ingreso }}</td>
                 </tr>
                 <tr>
-                  <td style="font-weight: 600; color: #64748b">
-                    Correo electrónico
-                  </td>
+                  <td style="font-weight: 600; color: #64748b">Correo electrónico</td>
                   <td>{{ persona.email }}</td>
                 </tr>
                 <tr>
@@ -878,25 +856,26 @@
       </div>
     </div>
 
+    <!-- SCRIPTS MEJORADOS PARA QUE LOS PANELES FUNCIONEN SIEMPRE -->
     <script>
       function showPanel(id, el) {
-        document
-          .querySelectorAll(".panel")
-          .forEach((p) => p.classList.remove("active"));
-        document
-          .querySelectorAll(".sidebar-nav a")
-          .forEach((a) => a.classList.remove("active"));
-        document.getElementById("panel-" + id).classList.add("active");
-        el.classList.add("active");
+        document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
+        document.querySelectorAll(".sidebar-nav a").forEach((a) => a.classList.remove("active"));
+        
+        const targetPanel = document.getElementById("panel-" + id);
+        if (targetPanel) {
+            targetPanel.classList.add("active");
+        }
+        if (el) {
+            el.classList.add("active");
+        }
       }
-    </script>
 
-    <script>
       document.addEventListener("DOMContentLoaded", function () {
           const panel = "{{ panel_activo }}";
-          if (panel === "inicio") return;
+          if (!panel || panel === "inicio") return;
 
-          // Caso especial para el panel de Alumnos (usa URL directa, no onclick)
+          // Caso especial para el panel de Alumnos
           if (panel === "alumnos") {
               document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
               document.querySelectorAll(".sidebar-nav a").forEach((a) => a.classList.remove("active"));
@@ -906,7 +885,7 @@
 
               const enlaceAlumnos = document.querySelector('.sidebar-nav a[href*="lista-alumnos-admin"]');
               if (enlaceAlumnos) enlaceAlumnos.classList.add("active");
-              return; // Salimos aquí porque ya lo activamos
+              return;
           }
 
           // Para los demás paneles que usan onclick
@@ -915,105 +894,13 @@
               showPanel(panel, enlace);
           }
       });
-    </script>
-
-    <script>
-      function cargarOpinionesAdmin() {
-        const contenedor = document.getElementById("adminOpiniones");
-
-        if (!contenedor) return;
-
-        const opiniones = JSON.parse(localStorage.getItem("opiniones")) || [];
-
-        contenedor.innerHTML = "";
-
-        if (opiniones.length === 0) {
-          contenedor.innerHTML = `
-          <div class="tarea-card">
-            <div class="tarea-info">
-              <strong>No hay opiniones cargadas</strong>
-            </div>
-          </div>
-        `;
-
-          return;
-        }
-
-        opiniones.forEach((opinion, index) => {
-          contenedor.innerHTML += `
-          <div class="tarea-card">
-
-            <div class="tarea-info">
-              <strong>Anonimo</strong>
-              <span>${opinion}</span>
-            </div>
-
-            <button
-              class="btn-small"
-              onclick="eliminarOpinion(${index})">
-
-              Eliminar
-
-            </button>
-
-          </div>
-        `;
-        });
-      }
-
-      function eliminarOpinion(index) {
-        const opiniones = JSON.parse(localStorage.getItem("opiniones")) || [];
-
-        opiniones.splice(index, 1);
-
-        localStorage.setItem("opiniones", JSON.stringify(opiniones));
-
-        cargarOpinionesAdmin();
-      }
-
-      cargarOpinionesAdmin();
-
-      document.addEventListener("DOMContentLoaded", function () {
-        const hash = window.location.hash;
-
-        if (!hash) return;
-
-        const id = hash.replace("#", "");
-
-        document
-          .querySelectorAll(".panel")
-          .forEach((p) => p.classList.remove("active"));
-
-        document
-          .querySelectorAll(".sidebar-nav a")
-          .forEach((a) => a.classList.remove("active"));
-
-        document.getElementById("panel-" + id)?.classList.add("active");
-
-        const link = document.querySelector(
-          `.sidebar-nav a[onclick*="'${id}'"]`,
-        );
-
-        if (link) {
-          link.classList.add("active");
-        }
-
-        // Borra el #reservas de la URL
-        history.replaceState(null, "", window.location.pathname);
-      });
 
       function mostrarRechazo(id) {
-
-          const form = document.getElementById(
-              'rechazo-' + id
-          );
-
-          if (form.style.display === 'none') {
+          const form = document.getElementById('rechazo-' + id);
+          if (form.style.display === 'none' || form.style.display === '') {
               form.style.display = 'block';
           } else {
               form.style.display = 'none';
           }
       }
     </script>
-  </body>
-</html>
