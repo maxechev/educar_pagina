@@ -1762,12 +1762,16 @@ def dashboard_padres(request):
     panel_activo = request.session.pop("panel_activo", "inicio")
     
     cuotas_pendientes = Cuota.objects.filter(
-        id_tutor=tutor,
+        id_legajo_alumno__in=legajos_hijos,
         estado='Pendiente'
     ).count()
 
-    cuotas = Cuota.objects.filter(
+    legajos_hijos = TutorTutoraAlumno.objects.filter(
         id_tutor=tutor
+    ).values_list('id_alumno', flat=True)
+    
+    cuotas = Cuota.objects.filter(
+        id_legajo_alumno__in=legajos_hijos
     ).select_related(
         'id_legajo_alumno__id_persona'
     ).order_by('-id_cuota')
