@@ -46,6 +46,8 @@ urlpatterns = [
     # Gestión de Alumnos (Administrativo)
     path('administrativo/alumnos/', views.lista_alumnos_admin, name='lista-alumnos-admin'),
     path('administrativo/alumnos/<int:legajo>/', views.detalle_alumno_admin, name='detalle-alumno-admin'),
+    path('administrativo/profesores/', views.lista_profesores_admin, name='lista-profesores-admin'),
+    path('administrativo/profesores/<int:legajo>/', views.detalle_profesor_admin, name='detalle-profesor-admin'),
     # Comunicaciones - noticias y comunicados
     path('contacto/opinion/', views.guardar_opinion, name='guardar-opinion'),
     path('crear-comunicado/',views.crear_comunicado,name='crear-comunicado'),

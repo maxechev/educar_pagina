@@ -73,7 +73,8 @@
         <aside class="sidebar">
           <div class="sidebar-user">
             <div class="avatar">
-              {{ persona.nombre|slice:":1"|upper }}{{persona.apellido|slice:":1"|upper }}
+              {{ persona.nombre|slice:":1"|upper
+              }}{{persona.apellido|slice:":1"|upper }}
             </div>
             <strong>{{ persona.nombre }} {{ persona.apellido }}</strong>
             <span>Área administrativa</span>
@@ -117,13 +118,36 @@
             >
               <span class="nav-icon">📄</span> Documentación
             </a>
-            <a href="#" onclick="showPanel('reservas', this); return false;">
+            <a
+              href="#"
+              onclick="
+                showPanel('reservas', this);
+                return false;
+              "
+            >
               <span class="nav-icon">🏨</span> Reservas
             </a>
-            <a href="{% url 'lista-alumnos-admin' %}" id="enlace-alumnos" class="{% if panel_activo == 'alumnos' %}active{% endif %}">
+            <a
+              href="{% url 'lista-alumnos-admin' %}"
+              id="enlace-alumnos"
+              class="{% if panel_activo == 'alumnos' %}active{% endif %}"
+            >
               <span class="nav-icon">🎓</span> Alumnos
             </a>
-            <a href="#" onclick="showPanel('opiniones', this); return false;">
+            <a
+              href="{% url 'lista-profesores-admin' %}"
+              id="enlace-profesores"
+              class="{% if panel_activo == 'profesores' %}active{% endif %}"
+            >
+              <span class="nav-icon">👨‍🏫</span> Profesores
+            </a>
+            <a
+              href="#"
+              onclick="
+                showPanel('opiniones', this);
+                return false;
+              "
+            >
               <span class="nav-icon">💬</span> Opiniones
             </a>
             <a
@@ -206,7 +230,8 @@
 
                 <tr>
                   <td>
-                    {{ solicitud.nombre_alumno }} {{ solicitud.apellido_alumno }}
+                    {{ solicitud.nombre_alumno }} {{ solicitud.apellido_alumno
+                    }}
                   </td>
 
                   <td>{{ solicitud.nivel }}</td>
@@ -223,25 +248,23 @@
                     <span class="badge badge-yellow"> Pendiente </span>
 
                     <form
-                        method="POST"
-                        action="{% url 'aprobar-inscripcion' solicitud.id_solicitud %}"
-                        style="margin-top:5px;"
+                      method="POST"
+                      action="{% url 'aprobar-inscripcion' solicitud.id_solicitud %}"
+                      style="margin-top: 5px"
                     >
-                        {% csrf_token %}
-                        <button type="submit" class="btn-aprobar">
-                            Aprobar
-                        </button>
+                      {% csrf_token %}
+                      <button type="submit" class="btn-aprobar">Aprobar</button>
                     </form>
 
                     <form
-                        method="POST"
-                        action="{% url 'rechazar-inscripcion' solicitud.id_solicitud %}"
-                        style="margin-top:5px;"
+                      method="POST"
+                      action="{% url 'rechazar-inscripcion' solicitud.id_solicitud %}"
+                      style="margin-top: 5px"
                     >
-                        {% csrf_token %}
-                        <button type="submit" class="btn-rechazar">
-                            Rechazar
-                        </button>
+                      {% csrf_token %}
+                      <button type="submit" class="btn-rechazar">
+                        Rechazar
+                      </button>
                     </form>
 
                     {% else %}
@@ -279,164 +302,147 @@
               </thead>
 
               <tbody>
-                  {% for pago in pagos_pendientes %}
-                  <tr>
-                      <td>
-                          {{ pago.legajo_alumno.id_persona.nombre }}
-                          {{ pago.legajo_alumno.id_persona.apellido }}
-                      </td>
+                {% for pago in pagos_pendientes %}
+                <tr>
+                  <td>
+                    {{ pago.legajo_alumno.id_persona.nombre }} {{
+                    pago.legajo_alumno.id_persona.apellido }}
+                  </td>
 
-                      <td>{{ pago.legajo_alumno.id_persona.dni }}</td>
+                  <td>{{ pago.legajo_alumno.id_persona.dni }}</td>
 
-                      <td>
-                          {{ pago.id_tutor.id_persona.nombre }}
-                          {{ pago.id_tutor.id_persona.apellido }}
-                      </td>
+                  <td>
+                    {{ pago.id_tutor.id_persona.nombre }} {{
+                    pago.id_tutor.id_persona.apellido }}
+                  </td>
 
-                      <td>{{ pago.mes }}</td>
+                  <td>{{ pago.mes }}</td>
 
-                      <td>${{ pago.importe }}</td>
+                  <td>${{ pago.importe }}</td>
 
-                      <td>
-                          {% if pago.estado == 'Pendiente' %}
-                              <span class="badge badge-yellow">Pendiente</span>
-                          {% else %}
-                              <span class="badge badge-green">{{ pago.estado }}</span>
-                          {% endif %}
-                      </td>
+                  <td>
+                    {% if pago.estado == 'Pendiente' %}
+                    <span class="badge badge-yellow">Pendiente</span>
+                    {% else %}
+                    <span class="badge badge-green">{{ pago.estado }}</span>
+                    {% endif %}
+                  </td>
 
-                      <td>
+                  <td>
+                    {% if pago.estado == 'Pendiente' %}
 
-                          {% if pago.estado == 'Pendiente' %}
+                    <form
+                      method="POST"
+                      action="{% url 'aprobar-pago' pago.id_pago %}"
+                      style="display: inline"
+                    >
+                      {% csrf_token %}
 
-                          <form method="POST"
-                                action="{% url 'aprobar-pago' pago.id_pago %}"
-                                style="display:inline;">
-                              {% csrf_token %}
+                      <button type="submit" class="btn-aprobar">Aprobar</button>
+                    </form>
 
-                              <button type="submit"
-                                      class="btn-aprobar">
-                                  Aprobar
-                              </button>
-                          </form>
+                    <form
+                      method="POST"
+                      action="{% url 'rechazar-pago' pago.id_pago %}"
+                      style="display: inline"
+                    >
+                      {% csrf_token %}
 
-                          <form method="POST"
-                                action="{% url 'rechazar-pago' pago.id_pago %}"
-                                style="display:inline;">
-                              {% csrf_token %}
+                      <button type="submit" class="btn-rechazar">
+                        Rechazar
+                      </button>
+                    </form>
 
-                              <button type="submit"
-                                      class="btn-rechazar">
-                                  Rechazar
-                              </button>
-                          </form>
+                    {% endif %}
+                  </td>
+                </tr>
 
-                          {% endif %}
-
-                      </td>
-                  </tr>
-
-                  {% empty %}
-                  <tr>
-                      <td colspan="7">No hay pagos pendientes.</td>
-                  </tr>
-                  {% endfor %}
+                {% empty %}
+                <tr>
+                  <td colspan="7">No hay pagos pendientes.</td>
+                </tr>
+                {% endfor %}
               </tbody>
             </table>
           </div>
 
           <!-- DOCUMENTACION -->
           <div id="panel-documentacion" class="panel">
+            <p class="section-title">Documentación de alumnos</p>
 
-              <p class="section-title">
-                  Documentación de alumnos
-              </p>
+            {% for doc in documentaciones %}
 
-              {% for doc in documentaciones %}
+            <div class="tarea-card">
+              <div class="tarea-info">
+                <strong>
+                  {{ doc.legajo_alumno.id_persona.nombre }} {{
+                  doc.legajo_alumno.id_persona.apellido }}
+                </strong>
 
-              <div class="tarea-card">
+                <span> Enviado el {{ doc.fecha_envio|date:"d/m/Y H:i" }} </span>
 
-                  <div class="tarea-info">
+                <div class="documentos-links">
+                  <a href="/media/{{ doc.dni_frente }}" target="_blank">
+                    DNI Frente
+                  </a>
 
-                      <strong>
-                          {{ doc.legajo_alumno.id_persona.nombre }}
-                          {{ doc.legajo_alumno.id_persona.apellido }}
-                      </strong>
+                  <a href="/media/{{ doc.dni_dorso }}" target="_blank">
+                    DNI Dorso
+                  </a>
 
-                      <span>
-                          Enviado el {{ doc.fecha_envio|date:"d/m/Y H:i" }}
-                      </span>
+                  <a href="/media/{{ doc.partida_nacimiento }}" target="_blank">
+                    Partida
+                  </a>
 
-                      <div class="documentos-links">
-
-                          <a href="/media/{{ doc.dni_frente }}" target="_blank">
-                              DNI Frente
-                          </a>
-
-                          <a href="/media/{{ doc.dni_dorso }}" target="_blank">
-                              DNI Dorso
-                          </a>
-
-                          <a href="/media/{{ doc.partida_nacimiento }}" target="_blank">
-                              Partida
-                          </a>
-
-                          <a href="/media/{{ doc.certificado_salud }}" target="_blank">
-                              Certificado
-                          </a>
-
-                      </div>
-
-                  </div>
-
-                  <div class="acciones-documentacion">
-
-                      <form method="POST"
-                            action="{% url 'aprobar_documentacion' doc.id_documentacion %}">
-                          {% csrf_token %}
-                          <button type="submit" class="btn-aprobar">
-                              Aprobar
-                          </button>
-                      </form>
-
-                      <button
-                          type="button"
-                          class="btn-rechazar"
-                          onclick="mostrarRechazo('{{ doc.id_documentacion }}')">
-                          Rechazar
-                      </button>
-
-                      <form
-                          id="rechazo-{{ doc.id_documentacion }}"
-                          method="POST"
-                          action="{% url 'rechazar_documentacion' doc.id_documentacion %}"
-                          style="display:none; margin-top:10px;">
-
-                          {% csrf_token %}
-
-                          <textarea
-                              name="observaciones"
-                              placeholder="Escriba el motivo del rechazo..."
-                              required></textarea>
-
-                          <button
-                              type="submit"
-                              class="btn-rechazar">
-                              Confirmar rechazo
-                          </button>
-
-                      </form>
-
-                  </div>
-
+                  <a href="/media/{{ doc.certificado_salud }}" target="_blank">
+                    Certificado
+                  </a>
+                </div>
               </div>
 
-              {% empty %}
+              <div class="acciones-documentacion">
+                <form
+                  method="POST"
+                  action="{% url 'aprobar_documentacion' doc.id_documentacion %}"
+                >
+                  {% csrf_token %}
+                  <button type="submit" class="btn-aprobar">Aprobar</button>
+                </form>
 
-              <p>No hay documentación pendiente.</p>
+                <button
+                  type="button"
+                  class="btn-rechazar"
+                  onclick="mostrarRechazo('{{ doc.id_documentacion }}')"
+                >
+                  Rechazar
+                </button>
 
-              {% endfor %}
+                <form
+                  id="rechazo-{{ doc.id_documentacion }}"
+                  method="POST"
+                  action="{% url 'rechazar_documentacion' doc.id_documentacion %}"
+                  style="display: none; margin-top: 10px"
+                >
+                  {% csrf_token %}
 
+                  <textarea
+                    name="observaciones"
+                    placeholder="Escriba el motivo del rechazo..."
+                    required
+                  ></textarea>
+
+                  <button type="submit" class="btn-rechazar">
+                    Confirmar rechazo
+                  </button>
+                </form>
+              </div>
+            </div>
+
+            {% empty %}
+
+            <p>No hay documentación pendiente.</p>
+
+            {% endfor %}
           </div>
 
           <div id="panel-reservas" class="panel">
@@ -459,13 +465,15 @@
                   <td>{{ reserva.id_instalacion.nombre }}</td>
 
                   <td>
-                    {{ reserva.id_persona_solicitante.nombre }} {{ reserva.id_persona_solicitante.apellido }}
+                    {{ reserva.id_persona_solicitante.nombre }} {{
+                    reserva.id_persona_solicitante.apellido }}
                   </td>
 
                   <td>{{ reserva.fecha|date:"d/m/Y" }}</td>
 
                   <td>
-                    {{ reserva.hora_inicio|time:"H:i" }} - {{ reserva.hora_fin|time:"H:i" }}
+                    {{ reserva.hora_inicio|time:"H:i" }} - {{
+                    reserva.hora_fin|time:"H:i" }}
                   </td>
 
                   <td>
@@ -481,15 +489,10 @@
             </table>
 
             <div class="form-section" style="margin-top: 30px">
-              {% if messages %}
-                  {% for message in messages %}
-                      {% if 'reservas' in message.tags %}
-                          <div class="mensaje {{ message.level_tag }}">
-                              {{ message }}
-                          </div>
-                      {% endif %}
-                  {% endfor %}
-              {% endif %}
+              {% if messages %} {% for message in messages %} {% if 'reservas'
+              in message.tags %}
+              <div class="mensaje {{ message.level_tag }}">{{ message }}</div>
+              {% endif %} {% endfor %} {% endif %}
               <form method="POST" action="{% url 'crear-reserva' %}">
                 {% csrf_token %}
                 <h2>Nueva reserva</h2>
@@ -572,16 +575,11 @@
 
           <div id="panel-usuarios" class="panel">
             <p class="section-title">Gestión de usuarios del sistema</p>
-            
-            {% if messages %}
-                {% for message in messages %}
-                    {% if 'usuarios' in message.tags %}
-                        <div class="mensaje {{ message.level_tag }}">
-                            {{ message }}
-                        </div>
-                    {% endif %}
-                {% endfor %}
-            {% endif %}
+
+            {% if messages %} {% for message in messages %} {% if 'usuarios' in
+            message.tags %}
+            <div class="mensaje {{ message.level_tag }}">{{ message }}</div>
+            {% endif %} {% endfor %} {% endif %}
 
             <div class="form-section">
               <form
@@ -626,160 +624,686 @@
             <div style="margin-top: 40px"></div>
           </div>
 
-                    <!-- Panel de Alumnos -->
-          <div id="alumnos" class="panel {% if panel_activo == 'alumnos' %}active{% endif %}">
-              <h2 class="section-title">📚 Gestión de Alumnos</h2>
-              
-              <!-- Estadísticas -->
-              <div class="stat-grid">
-                  <div class="stat-card">
-                      <div class="stat-label">Total de Alumnos</div>
-                      <div class="stat-value">{{ alumnos.count }}</div>
-                      <div class="stat-sub">Registrados en el sistema</div>
-                  </div>
-                  <div class="stat-card">
-                      <div class="stat-label">Niveles Educativos</div>
-                      <div class="stat-value" style="color: #e61c92;">3</div>
-                      <div class="stat-sub">Inicial, Primario, Secundario</div>
-                  </div>
-                  <div class="stat-card">
-                      <div class="stat-label">Cursos Activos</div>
-                      <div class="stat-value" style="color: #76c640;">{{ alumnos|length }}</div>
-                      <div class="stat-sub">Alumnos con inscripción activa</div>
-                  </div>
+          <!-- Panel de Alumnos -->
+          <div
+            id="alumnos"
+            class="panel {% if panel_activo == 'alumnos' %}active{% endif %}"
+          >
+            <h2 class="section-title">📚 Gestión de Alumnos</h2>
+
+            <!-- Estadísticas -->
+            <div class="stat-grid">
+              <div class="stat-card">
+                <div class="stat-label">Total de Alumnos</div>
+                <div class="stat-value">{{ alumnos.count }}</div>
+                <div class="stat-sub">Registrados en el sistema</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Niveles Educativos</div>
+                <div class="stat-value" style="color: #e61c92">3</div>
+                <div class="stat-sub">Inicial, Primario, Secundario</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Cursos Activos</div>
+                <div class="stat-value" style="color: #76c640">
+                  {{ alumnos|length }}
+                </div>
+                <div class="stat-sub">Alumnos con inscripción activa</div>
+              </div>
+            </div>
+
+            {% if alumno_detalle %}
+            <!-- VISTA DE DETALLE DEL ALUMNO -->
+            <div
+              style="
+                background: white;
+                border-radius: 16px;
+                padding: 24px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+                margin-bottom: 24px;
+              "
+            >
+              <div
+                style="
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: center;
+                  margin-bottom: 20px;
+                "
+              >
+                <h3 style="margin: 0; color: #0f172a; font-size: 20px">
+                  📋 Ficha del Alumno: {{ alumno_detalle.id_persona.apellido }},
+                  {{ alumno_detalle.id_persona.nombre }}
+                </h3>
+                <a
+                  href="{% url 'lista-alumnos-admin' %}"
+                  class="btn-small"
+                  style="background: #1d66c4"
+                >
+                  ← Volver a la lista
+                </a>
               </div>
 
-              {% if alumno_detalle %}
-              <!-- VISTA DE DETALLE DEL ALUMNO -->
-              <div style="background: white; border-radius: 16px; padding: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 24px;">
-                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                      <h3 style="margin: 0; color: #0f172a; font-size: 20px;">
-                          📋 Ficha del Alumno: {{ alumno_detalle.id_persona.apellido }}, {{ alumno_detalle.id_persona.nombre }}
-                      </h3>
-                      <a href="{% url 'lista-alumnos-admin' %}" class="btn-small" style="background: #1D66C4;">
-                          ← Volver a la lista
+              <div
+                style="
+                  display: grid;
+                  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+                  gap: 24px;
+                "
+              >
+                <!-- Datos Personales -->
+                <div
+                  style="
+                    background: #f8fafc;
+                    border-radius: 12px;
+                    padding: 20px;
+                  "
+                >
+                  <h4
+                    style="color: #1d66c4; margin-bottom: 16px; font-size: 16px"
+                  >
+                    Datos Personales
+                  </h4>
+                  <div style="display: flex; flex-direction: column; gap: 12px">
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        padding: 8px 0;
+                        border-bottom: 1px solid #e2e8f0;
+                      "
+                    >
+                      <span style="color: #64748b; font-weight: 600"
+                        >Legajo:</span
+                      >
+                      <span style="color: #0f172a; font-weight: bold"
+                        >{{ alumno_detalle.legajo }}</span
+                      >
+                    </div>
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        padding: 8px 0;
+                        border-bottom: 1px solid #e2e8f0;
+                      "
+                    >
+                      <span style="color: #64748b; font-weight: 600">DNI:</span>
+                      <span style="color: #0f172a"
+                        >{{ alumno_detalle.id_persona.dni }}</span
+                      >
+                    </div>
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        padding: 8px 0;
+                        border-bottom: 1px solid #e2e8f0;
+                      "
+                    >
+                      <span style="color: #64748b; font-weight: 600"
+                        >Nombre:</span
+                      >
+                      <span style="color: #0f172a"
+                        >{{ alumno_detalle.id_persona.nombre }}</span
+                      >
+                    </div>
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        padding: 8px 0;
+                        border-bottom: 1px solid #e2e8f0;
+                      "
+                    >
+                      <span style="color: #64748b; font-weight: 600"
+                        >Apellido:</span
+                      >
+                      <span style="color: #0f172a"
+                        >{{ alumno_detalle.id_persona.apellido }}</span
+                      >
+                    </div>
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        padding: 8px 0;
+                        border-bottom: 1px solid #e2e8f0;
+                      "
+                    >
+                      <span style="color: #64748b; font-weight: 600"
+                        >Fecha de Nacimiento:</span
+                      >
+                      <span style="color: #0f172a"
+                        >{{
+                        alumno_detalle.id_persona.fecha_nacimiento|date:"d/m/Y"
+                        }}</span
+                      >
+                    </div>
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        padding: 8px 0;
+                        border-bottom: 1px solid #e2e8f0;
+                      "
+                    >
+                      <span style="color: #64748b; font-weight: 600"
+                        >Domicilio:</span
+                      >
+                      <span style="color: #0f172a"
+                        >{{ alumno_detalle.id_persona.direccion|default:"No
+                        registrado" }}</span
+                      >
+                    </div>
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        padding: 8px 0;
+                        border-bottom: 1px solid #e2e8f0;
+                      "
+                    >
+                      <span style="color: #64748b; font-weight: 600"
+                        >Teléfono:</span
+                      >
+                      <span style="color: #0f172a"
+                        >{{ alumno_detalle.id_persona.telefono|default:"No
+                        registrado" }}</span
+                      >
+                    </div>
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        padding: 8px 0;
+                      "
+                    >
+                      <span style="color: #64748b; font-weight: 600"
+                        >Correo Electrónico:</span
+                      >
+                      <span style="color: #0f172a"
+                        >{{ alumno_detalle.id_persona.email|default:"No
+                        registrado" }}</span
+                      >
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Datos Académicos -->
+                <div
+                  style="
+                    background: #f8fafc;
+                    border-radius: 12px;
+                    padding: 20px;
+                  "
+                >
+                  <h4
+                    style="color: #1d66c4; margin-bottom: 16px; font-size: 16px"
+                  >
+                    📚 Datos Académicos
+                  </h4>
+                  <div style="display: flex; flex-direction: column; gap: 12px">
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        padding: 8px 0;
+                        border-bottom: 1px solid #e2e8f0;
+                      "
+                    >
+                      <span style="color: #64748b; font-weight: 600"
+                        >Nivel Educativo:</span
+                      >
+                      <span class="badge badge-blue"
+                        >{{ alumno_detalle.id_curso.nivel }}</span
+                      >
+                    </div>
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        padding: 8px 0;
+                        border-bottom: 1px solid #e2e8f0;
+                      "
+                    >
+                      <span style="color: #64748b; font-weight: 600"
+                        >Curso:</span
+                      >
+                      <span style="color: #0f172a; font-weight: bold"
+                        >{{ alumno_detalle.id_curso.anio }}° {{
+                        alumno_detalle.id_curso.comision }}</span
+                      >
+                    </div>
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        padding: 8px 0;
+                        border-bottom: 1px solid #e2e8f0;
+                      "
+                    >
+                      <span style="color: #64748b; font-weight: 600"
+                        >Turno:</span
+                      >
+                      <span style="color: #0f172a"
+                        >{{ alumno_detalle.id_curso.turno }}</span
+                      >
+                    </div>
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        padding: 8px 0;
+                        border-bottom: 1px solid #e2e8f0;
+                      "
+                    >
+                      <span style="color: #64748b; font-weight: 600"
+                        >Fecha de Ingreso:</span
+                      >
+                      <span style="color: #0f172a"
+                        >{{ alumno_detalle.fecha_ingreso|date:"d/m/Y" }}</span
+                      >
+                    </div>
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        padding: 8px 0;
+                      "
+                    >
+                      <span style="color: #64748b; font-weight: 600"
+                        >Estado:</span
+                      >
+                      <span class="badge badge-green">Activo</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {% else %}
+            <!-- LISTA DE ALUMNOS -->
+            <div
+              style="
+                background: white;
+                border-radius: 16px;
+                padding: 24px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+              "
+            >
+              <h3 style="margin: 0 0 20px 0; color: #0f172a; font-size: 20px">
+                Listado de Alumnos
+              </h3>
+
+              {% if alumnos %}
+              <table class="tabla">
+                <thead>
+                  <tr>
+                    <th>Legajo</th>
+                    <th>Apellido y Nombre</th>
+                    <th>DNI</th>
+                    <th>Curso</th>
+                    <th>Nivel</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for alumno in alumnos %}
+                  <tr>
+                    <td><strong>{{ alumno.legajo }}</strong></td>
+                    <td>
+                      {{ alumno.id_persona.apellido }}, {{
+                      alumno.id_persona.nombre }}
+                    </td>
+                    <td>{{ alumno.id_persona.dni }}</td>
+                    <td>
+                      {{ alumno.id_curso.anio }}° {{ alumno.id_curso.comision }}
+                    </td>
+                    <td>
+                      <span class="badge badge-blue"
+                        >{{ alumno.id_curso.nivel }}</span
+                      >
+                    </td>
+                    <td>
+                      <span class="badge badge-green">Activo</span>
+                    </td>
+                    <td>
+                      <a
+                        href="{% url 'detalle-alumno-admin' alumno.legajo %}"
+                        class="btn-small"
+                      >
+                        Más info →
                       </a>
-                  </div>
-
-                  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 24px;">
-                      <!-- Datos Personales -->
-                      <div style="background: #f8fafc; border-radius: 12px; padding: 20px;">
-                          <h4 style="color: #1D66C4; margin-bottom: 16px; font-size: 16px;"> Datos Personales</h4>
-                          <div style="display: flex; flex-direction: column; gap: 12px;">
-                              <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e2e8f0;">
-                                  <span style="color: #64748b; font-weight: 600;">Legajo:</span>
-                                  <span style="color: #0f172a; font-weight: bold;">{{ alumno_detalle.legajo }}</span>
-                              </div>
-                              <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e2e8f0;">
-                                  <span style="color: #64748b; font-weight: 600;">DNI:</span>
-                                  <span style="color: #0f172a;">{{ alumno_detalle.id_persona.dni }}</span>
-                              </div>
-                              <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e2e8f0;">
-                                  <span style="color: #64748b; font-weight: 600;">Nombre:</span>
-                                  <span style="color: #0f172a;">{{ alumno_detalle.id_persona.nombre }}</span>
-                              </div>
-                              <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e2e8f0;">
-                                  <span style="color: #64748b; font-weight: 600;">Apellido:</span>
-                                  <span style="color: #0f172a;">{{ alumno_detalle.id_persona.apellido }}</span>
-                              </div>
-                              <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e2e8f0;">
-                                  <span style="color: #64748b; font-weight: 600;">Fecha de Nacimiento:</span>
-                                  <span style="color: #0f172a;">{{ alumno_detalle.id_persona.fecha_nacimiento|date:"d/m/Y" }}</span>
-                              </div>
-                              <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e2e8f0;">
-                                  <span style="color: #64748b; font-weight: 600;">Domicilio:</span>
-                                  <span style="color: #0f172a;">{{ alumno_detalle.id_persona.direccion|default:"No registrado" }}</span>
-                              </div>
-                              <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e2e8f0;">
-                                  <span style="color: #64748b; font-weight: 600;">Teléfono:</span>
-                                  <span style="color: #0f172a;">{{ alumno_detalle.id_persona.telefono|default:"No registrado" }}</span>
-                              </div>
-                              <div style="display: flex; justify-content: space-between; padding: 8px 0;">
-                                  <span style="color: #64748b; font-weight: 600;">Correo Electrónico:</span>
-                                  <span style="color: #0f172a;">{{ alumno_detalle.id_persona.email|default:"No registrado" }}</span>
-                              </div>
-                          </div>
-                      </div>
-
-                      <!-- Datos Académicos -->
-                      <div style="background: #f8fafc; border-radius: 12px; padding: 20px;">
-                          <h4 style="color: #1D66C4; margin-bottom: 16px; font-size: 16px;">📚 Datos Académicos</h4>
-                          <div style="display: flex; flex-direction: column; gap: 12px;">
-                              <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e2e8f0;">
-                                  <span style="color: #64748b; font-weight: 600;">Nivel Educativo:</span>
-                                  <span class="badge badge-blue">{{ alumno_detalle.id_curso.nivel }}</span>
-                              </div>
-                              <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e2e8f0;">
-                                  <span style="color: #64748b; font-weight: 600;">Curso:</span>
-                                  <span style="color: #0f172a; font-weight: bold;">{{ alumno_detalle.id_curso.anio }}° {{ alumno_detalle.id_curso.comision }}</span>
-                              </div>
-                              <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e2e8f0;">
-                                  <span style="color: #64748b; font-weight: 600;">Turno:</span>
-                                  <span style="color: #0f172a;">{{ alumno_detalle.id_curso.turno }}</span>
-                              </div>
-                              <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e2e8f0;">
-                                  <span style="color: #64748b; font-weight: 600;">Fecha de Ingreso:</span>
-                                  <span style="color: #0f172a;">{{ alumno_detalle.fecha_ingreso|date:"d/m/Y" }}</span>
-                              </div>
-                              <div style="display: flex; justify-content: space-between; padding: 8px 0;">
-                                  <span style="color: #64748b; font-weight: 600;">Estado:</span>
-                                  <span class="badge badge-green">Activo</span>
-                              </div>
-                          </div>
-                      </div>
-                  </div>
-              </div>
-
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
               {% else %}
-              <!-- LISTA DE ALUMNOS -->
-              <div style="background: white; border-radius: 16px; padding: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
-                  <h3 style="margin: 0 0 20px 0; color: #0f172a; font-size: 20px;">Listado de Alumnos</h3>
-                  
-                  {% if alumnos %}
-                  <table class="tabla">
-                      <thead>
-                          <tr>
-                              <th>Legajo</th>
-                              <th>Apellido y Nombre</th>
-                              <th>DNI</th>
-                              <th>Curso</th>
-                              <th>Nivel</th>
-                              <th>Estado</th>
-                              <th>Acciones</th>
-                          </tr>
-                      </thead>
-                      <tbody>
-                          {% for alumno in alumnos %}
-                          <tr>
-                              <td><strong>{{ alumno.legajo }}</strong></td>
-                              <td>{{ alumno.id_persona.apellido }}, {{ alumno.id_persona.nombre }}</td>
-                              <td>{{ alumno.id_persona.dni }}</td>
-                              <td>{{ alumno.id_curso.anio }}° {{ alumno.id_curso.comision }}</td>
-                              <td>
-                                  <span class="badge badge-blue">{{ alumno.id_curso.nivel }}</span>
-                              </td>
-                              <td>
-                                  <span class="badge badge-green">Activo</span>
-                              </td>
-                              <td>
-                                  <a href="{% url 'detalle-alumno-admin' alumno.legajo %}" class="btn-small">
-                                      Más info →
-                                  </a>
-                              </td>
-                          </tr>
-                          {% endfor %}
-                      </tbody>
-                  </table>
-                  {% else %}
-                  <div style="text-align: center; padding: 60px 20px; background: #f8fafc; border-radius: 12px;">
-                      <div style="font-size: 48px; margin-bottom: 16px;">📋</div>
-                      <h3 style="color: #0f172a; margin-bottom: 8px;">No hay alumnos registrados</h3>
-                      <p style="color: #64748b;">Los alumnos aparecerán aquí una vez que se aprueben las inscripciones.</p>
-                  </div>
-                  {% endif %}
+              <div
+                style="
+                  text-align: center;
+                  padding: 60px 20px;
+                  background: #f8fafc;
+                  border-radius: 12px;
+                "
+              >
+                <div style="font-size: 48px; margin-bottom: 16px">📋</div>
+                <h3 style="color: #0f172a; margin-bottom: 8px">
+                  No hay alumnos registrados
+                </h3>
+                <p style="color: #64748b">
+                  Los alumnos aparecerán aquí una vez que se aprueben las
+                  inscripciones.
+                </p>
               </div>
               {% endif %}
-          </div> <!-- 🔥 AQUÍ FALTABA ESTE CIERRE DEL DIV DE ALUMNOS 🔥 -->
+            </div>
+            {% endif %}
+          </div>
+
+          <!-- Panel de Profesores -->
+          <div
+            id="profesores"
+            class="panel {% if panel_activo == 'profesores' %}active{% endif %}"
+          >
+            <h2 class="section-title">‍🏫 Gestión de Profesores</h2>
+
+            <!-- Estadísticas -->
+            <div class="stat-grid">
+              <div class="stat-card">
+                <div class="stat-label">Total de Profesores</div>
+                <div class="stat-value">{{ profesores.count }}</div>
+                <div class="stat-sub">Registrados en el sistema</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Materias Dictadas</div>
+                <div class="stat-value" style="color: #e61c92">
+                  {{ materias_count|default:"0" }}
+                </div>
+                <div class="stat-sub">Activas este ciclo</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Profesores Activos</div>
+                <div class="stat-value" style="color: #76c640">
+                  {{ profesores|length }}
+                </div>
+                <div class="stat-sub">Con carga horaria</div>
+              </div>
+            </div>
+
+            {% if profesor_detalle %}
+            <!-- VISTA DE DETALLE DEL PROFESOR -->
+            <div
+              style="
+                background: white;
+                border-radius: 16px;
+                padding: 24px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+                margin-bottom: 24px;
+              "
+            >
+              <div
+                style="
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: center;
+                  margin-bottom: 20px;
+                "
+              >
+                <h3 style="margin: 0; color: #0f172a; font-size: 20px">
+                  Ficha del Profesor: {{ profesor_detalle.id_persona.apellido
+                  }}, {{ profesor_detalle.id_persona.nombre }}
+                </h3>
+                <a
+                  href="{% url 'lista-profesores-admin' %}"
+                  class="btn-small"
+                  style="background: #1d66c4"
+                >
+                  ← Volver a la lista
+                </a>
+              </div>
+
+              <div
+                style="
+                  display: grid;
+                  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+                  gap: 24px;
+                "
+              >
+                <!-- Datos Personales -->
+                <div
+                  style="
+                    background: #f8fafc;
+                    border-radius: 12px;
+                    padding: 20px;
+                  "
+                >
+                  <h4
+                    style="color: #1d66c4; margin-bottom: 16px; font-size: 16px"
+                  >
+                    👤 Datos Personales
+                  </h4>
+                  <div style="display: flex; flex-direction: column; gap: 12px">
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        padding: 8px 0;
+                        border-bottom: 1px solid #e2e8f0;
+                      "
+                    >
+                      <span style="color: #64748b; font-weight: 600"
+                        >Legajo:</span
+                      >
+                      <span style="color: #0f172a; font-weight: bold"
+                        >{{ profesor_detalle.legajo }}</span
+                      >
+                    </div>
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        padding: 8px 0;
+                        border-bottom: 1px solid #e2e8f0;
+                      "
+                    >
+                      <span style="color: #64748b; font-weight: 600">DNI:</span>
+                      <span style="color: #0f172a"
+                        >{{ profesor_detalle.id_persona.dni }}</span
+                      >
+                    </div>
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        padding: 8px 0;
+                        border-bottom: 1px solid #e2e8f0;
+                      "
+                    >
+                      <span style="color: #64748b; font-weight: 600"
+                        >Nombre:</span
+                      >
+                      <span style="color: #0f172a"
+                        >{{ profesor_detalle.id_persona.nombre }}</span
+                      >
+                    </div>
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        padding: 8px 0;
+                        border-bottom: 1px solid #e2e8f0;
+                      "
+                    >
+                      <span style="color: #64748b; font-weight: 600"
+                        >Apellido:</span
+                      >
+                      <span style="color: #0f172a"
+                        >{{ profesor_detalle.id_persona.apellido }}</span
+                      >
+                    </div>
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        padding: 8px 0;
+                        border-bottom: 1px solid #e2e8f0;
+                      "
+                    >
+                      <span style="color: #64748b; font-weight: 600"
+                        >Correo Electrónico:</span
+                      >
+                      <span style="color: #0f172a"
+                        >{{ profesor_detalle.id_persona.email|default:"No
+                        registrado" }}</span
+                      >
+                    </div>
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        padding: 8px 0;
+                      "
+                    >
+                      <span style="color: #64748b; font-weight: 600"
+                        >Teléfono:</span
+                      >
+                      <span style="color: #0f172a"
+                        >{{ profesor_detalle.id_persona.telefono|default:"No
+                        registrado" }}</span
+                      >
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Datos Laborales -->
+                <div
+                  style="
+                    background: #f8fafc;
+                    border-radius: 12px;
+                    padding: 20px;
+                  "
+                >
+                  <h4
+                    style="color: #1d66c4; margin-bottom: 16px; font-size: 16px"
+                  >
+                    📚 Datos Laborales
+                  </h4>
+                  <div style="display: flex; flex-direction: column; gap: 12px">
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        padding: 8px 0;
+                        border-bottom: 1px solid #e2e8f0;
+                      "
+                    >
+                      <span style="color: #64748b; font-weight: 600"
+                        >Especialidad:</span
+                      >
+                      <span style="color: #0f172a; font-weight: bold"
+                        >{{ profesor_detalle.especialidad|default:"No
+                        especificada" }}</span
+                      >
+                    </div>
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        padding: 8px 0;
+                        border-bottom: 1px solid #e2e8f0;
+                      "
+                    >
+                      <span style="color: #64748b; font-weight: 600"
+                        >Estado:</span
+                      >
+                      <span class="badge badge-green">Activo</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {% else %}
+            <!-- LISTA DE PROFESORES -->
+            <div
+              style="
+                background: white;
+                border-radius: 16px;
+                padding: 24px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+              "
+            >
+              <h3 style="margin: 0 0 20px 0; color: #0f172a; font-size: 20px">
+                Listado de Profesores
+              </h3>
+
+              {% if profesores %}
+              <table class="tabla">
+                <thead>
+                  <tr>
+                    <th>Legajo</th>
+                    <th>Apellido y Nombre</th>
+                    <th>DNI</th>
+                    <th>Especialidad</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for profesor in profesores %}
+                  <tr>
+                    <td><strong>{{ profesor.legajo }}</strong></td>
+                    <td>
+                      {{ profesor.id_persona.apellido }}, {{
+                      profesor.id_persona.nombre }}
+                    </td>
+                    <td>{{ profesor.id_persona.dni }}</td>
+                    <td>
+                      <span class="badge badge-blue"
+                        >{{ profesor.especialidad|default:"-" }}</span
+                      >
+                    </td>
+                    <td>
+                      <span class="badge badge-green">Activo</span>
+                    </td>
+                    <td>
+                      <a
+                        href="{% url 'detalle-profesor-admin' profesor.legajo %}"
+                        class="btn-small"
+                      >
+                        Más info →
+                      </a>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+              {% else %}
+              <div
+                style="
+                  text-align: center;
+                  padding: 60px 20px;
+                  background: #f8fafc;
+                  border-radius: 12px;
+                "
+              >
+                <div style="font-size: 48px; margin-bottom: 16px">👨‍</div>
+                <h3 style="color: #0f172a; margin-bottom: 8px">
+                  No hay profesores registrados
+                </h3>
+                <p style="color: #64748b">
+                  Los profesores aparecerán aquí una vez que sean dados de alta
+                  en el sistema.
+                </p>
+              </div>
+              {% endif %}
+            </div>
+            {% endif %}
+          </div>
 
           <!-- Panel de Noticias -->
           <div id="panel-noticias" class="panel">
@@ -796,18 +1320,33 @@
 
                 <div class="form-group">
                   <label>Título</label>
-                  <input type="text" name="titulo" required placeholder="Título de la noticia" />
+                  <input
+                    type="text"
+                    name="titulo"
+                    required
+                    placeholder="Título de la noticia"
+                  />
                 </div>
 
                 <div class="form-group">
                   <label>Contenido</label>
-                  <textarea name="contenido" rows="8" maxlength="350" required placeholder="Escriba la noticia... (máximo 350 caracteres)"></textarea>
+                  <textarea
+                    name="contenido"
+                    rows="8"
+                    maxlength="350"
+                    required
+                    placeholder="Escriba la noticia... (máximo 350 caracteres)"
+                  ></textarea>
                   <small id="contador-caracteres"> 0 / 350 caracteres </small>
                 </div>
 
                 <div class="form-group">
                   <label>Imagen</label>
-                  <input type="file" name="imagen" accept=".jpg,.jpeg,.png,.webp" />
+                  <input
+                    type="file"
+                    name="imagen"
+                    accept=".jpg,.jpeg,.png,.webp"
+                  />
                   <small> Formatos permitidos: JPG, PNG y WEBP </small>
                 </div>
 
@@ -834,11 +1373,15 @@
                   <td>{{ administrativo.sector }}</td>
                 </tr>
                 <tr>
-                  <td style="font-weight: 600; color: #64748b">Fecha de ingreso</td>
+                  <td style="font-weight: 600; color: #64748b">
+                    Fecha de ingreso
+                  </td>
                   <td>{{ administrativo.fecha_ingreso }}</td>
                 </tr>
                 <tr>
-                  <td style="font-weight: 600; color: #64748b">Correo electrónico</td>
+                  <td style="font-weight: 600; color: #64748b">
+                    Correo electrónico
+                  </td>
                   <td>{{ persona.email }}</td>
                 </tr>
                 <tr>
@@ -858,52 +1401,53 @@
 
     <!-- SCRIPTS MEJORADOS PARA QUE LOS PANELES FUNCIONEN SIEMPRE -->
     <script>
-      function showPanel(id, el) {
-        document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
-        document.querySelectorAll(".sidebar-nav a").forEach((a) => a.classList.remove("active"));
-        
-        const targetPanel = document.getElementById("panel-" + id);
-        if (targetPanel) {
-            targetPanel.classList.add("active");
-        }
-        if (el) {
-            el.classList.add("active");
-        }
-      }
-
       document.addEventListener("DOMContentLoaded", function () {
-          const panel = "{{ panel_activo }}";
-          if (!panel || panel === "inicio") return;
+        const panel = "{{ panel_activo }}";
+        if (!panel || panel === "inicio") return;
 
-          // Caso especial para el panel de Alumnos
-          if (panel === "alumnos") {
-              document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
-              document.querySelectorAll(".sidebar-nav a").forEach((a) => a.classList.remove("active"));
-              
-              const panelAlumnos = document.getElementById("alumnos");
-              if (panelAlumnos) panelAlumnos.classList.add("active");
+        // Caso especial para el panel de Alumnos
+        if (panel === "alumnos") {
+          document
+            .querySelectorAll(".panel")
+            .forEach((p) => p.classList.remove("active"));
+          document
+            .querySelectorAll(".sidebar-nav a")
+            .forEach((a) => a.classList.remove("active"));
 
-              // 🔥 CAMBIO AQUÍ: Buscamos por ID en lugar de por href 🔥
-              const enlaceAlumnos = document.getElementById("enlace-alumnos");
-              if (enlaceAlumnos) enlaceAlumnos.classList.add("active");
-              return;
-          }
+          const panelAlumnos = document.getElementById("alumnos");
+          if (panelAlumnos) panelAlumnos.classList.add("active");
 
-          // Para los demás paneles que usan onclick
-          const enlace = document.querySelector(`.sidebar-nav a[onclick*="showPanel('${panel}'"]`);
-          if (enlace) {
-              showPanel(panel, enlace);
-          }
+          const enlaceAlumnos = document.getElementById("enlace-alumnos");
+          if (enlaceAlumnos) enlaceAlumnos.classList.add("active");
+          return;
+        }
+
+        // 👉 AGREGA ESTE BLOQUE 👇
+        // Caso especial para el panel de Profesores
+        if (panel === "profesores") {
+          document
+            .querySelectorAll(".panel")
+            .forEach((p) => p.classList.remove("active"));
+          document
+            .querySelectorAll(".sidebar-nav a")
+            .forEach((a) => a.classList.remove("active"));
+
+          const panelProfesores = document.getElementById("profesores");
+          if (panelProfesores) panelProfesores.classList.add("active");
+
+          const enlaceProfesores = document.getElementById("enlace-profesores");
+          if (enlaceProfesores) enlaceProfesores.classList.add("active");
+          return;
+        }
+
+        // Para los demás paneles que usan onclick
+        const enlace = document.querySelector(
+          `.sidebar-nav a[onclick*="showPanel('${panel}'"]`,
+        );
+        if (enlace) {
+          showPanel(panel, enlace);
+        }
       });
-
-      function mostrarRechazo(id) {
-          const form = document.getElementById('rechazo-' + id);
-          if (form.style.display === 'none' || form.style.display === '') {
-              form.style.display = 'block';
-          } else {
-              form.style.display = 'none';
-          }
-      }
     </script>
   </body>
- </html> 
+</html>

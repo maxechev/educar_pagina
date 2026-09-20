@@ -1301,6 +1301,67 @@ def dashboard_administrativo(request):
     })
 
 @never_cache
+def lista_profesores_admin(request):
+    """Vista para mostrar el panel de profesores dentro del dashboard administrativo."""
+    persona, dashboard_url = obtener_datos_sesion(request)
+    if not persona or dashboard_url != 'dashboard-administrativo':
+        return redirect('login')
+    
+    request.session['panel_activo'] = 'profesores'
+    
+    # Datos básicos del dashboard (para que no rompa la plantilla)
+    administrativo = PersonalAdministrativo.objects.filter(id_persona=persona).first()
+    instalaciones = Instalacion.objects.all()
+    reservas = Reserva.objects.select_related('id_instalacion', 'id_persona_solicitante').all()
+    
+    if os.path.exists(OPINIONES_FILE):
+        with open(OPINIONES_FILE, 'r', encoding='utf-8') as f:
+            opiniones = json.load(f)
+    else:
+        opiniones = []
+    
+    cuotas_pendientes = PagoPendiente.objects.exclude(estado='Pagada').count()
+    solicitudes = SolicitudInscripcion.objects.all().order_by('-fecha_solicitud')
+    inscripciones_pendientes = SolicitudInscripcion.objects.filter(estado="Pendiente").count()
+    pagos_pendientes = PagoPendiente.objects.all()
+    documentacion_pendiente = DocumentacionAlumno.objects.filter(estado='Pendiente').count()
+    documentaciones = DocumentacionAlumno.objects.filter(estado='Pendiente').order_by('-fecha_envio')
+    
+    # DATOS DE PROFESORES
+    profesores = Docente.objects.select_related('id_persona').all().order_by('id_persona__apellido', 'id_persona__nombre')
+    
+    # Si viene un legajo por GET, mostrar detalle
+    legajo_detalle = request.GET.get('legajo')
+    profesor_detalle = None
+    if legajo_detalle:
+        profesor_detalle = get_object_or_404(
+            Docente.objects.select_related('id_persona'), 
+            legajo=legajo_detalle
+        )
+    
+    return render(request, 'core/dashboard-administrativo.html', {
+        'persona': persona,
+        'administrativo': administrativo,
+        'instalaciones': instalaciones,
+        'reservas': reservas,
+        'opiniones': opiniones,
+        'cuotas_pendientes': cuotas_pendientes,
+        'solicitudes': solicitudes,
+        'inscripciones_pendientes': inscripciones_pendientes,
+        'pagos_pendientes': pagos_pendientes,
+        'documentaciones': documentaciones,
+        'documentacion_pendiente': documentacion_pendiente,
+        'panel_activo': 'profesores',
+        'profesores': profesores,
+        'profesor_detalle': profesor_detalle,
+    })
+
+@never_cache
+def detalle_profesor_admin(request, legajo):
+    """Redirige a la lista de profesores pasando el legajo por GET para mostrar el detalle."""
+    return redirect(f"{reverse('lista-profesores-admin')}?legajo={legajo}")
+
+@never_cache
 def aprobar_inscripcion(request, id_solicitud):
 
     solicitud = SolicitudInscripcion.objects.get(
