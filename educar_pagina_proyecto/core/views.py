@@ -935,13 +935,8 @@ def horario_docente(request):
         "horario": horario
     })
 
-
-
-
-
 @never_cache
 def dashboard_directivo(request):
-
     persona, dashboard_url = obtener_datos_sesion(request)
     if not persona:
         return redirect('login')
@@ -960,71 +955,65 @@ def dashboard_directivo(request):
         )['promedio'] or 0
     )
 
-    ultimas_noticias = Noticia.objects.order_by(
-        '-fecha_publicacion'
-    )[:5]
-    docentes = []
-
+    ultimas_noticias = Noticia.objects.order_by('-fecha_publicacion')[:5]
+    
+    # 🔥 NUEVA LÓGICA: Agrupar materias por docente
+    docentes_dict = {}
+    
     relaciones = (
         DocenteDictaMateria.objects
-        .select_related(
-            'id_docente__id_persona',
-            'id_materia'
-        )
+        .select_related('id_docente__id_persona', 'id_materia')
     )
 
-    for relacion in relaciones[:10]:
+    for relacion in relaciones:
         docente = relacion.id_docente
         materia = relacion.id_materia
-
-        curso_materia = (
-            CursoCursaMaterias.objects
-            .filter(id_materia=materia)
-            .select_related('id_curso')
-            .first()
-        )
-
-        nivel = (
-            curso_materia.id_curso.nivel
-            if curso_materia
-            else '-'
-        )
+        docente_key = docente.id  # Usamos el ID como clave única
+        
+        if docente_key not in docentes_dict:
+            docentes_dict[docente_key] = {
+                'nombre': f'{docente.id_persona.nombre} {docente.id_persona.apellido}',
+                'materias': [],
+                'cursos': set()
+            }
+        
+        # Agregar materia
+        docentes_dict[docente_key]['materias'].append(materia.nombre)
+        
+        # Buscar cursos donde se dicta esta materia
+        cursos_materia = CursoCursaMaterias.objects.filter(
+            id_materia=materia
+        ).select_related('id_curso')
+        
+        for curso_materia in cursos_materia:
+            curso = curso_materia.id_curso
+            curso_texto = f"{curso.anio}° {curso.comision} ({curso.nivel})"
+            docentes_dict[docente_key]['cursos'].add(curso_texto)
+    
+    # Convertir el diccionario a lista
+    docentes = []
+    for docente_data in docentes_dict.values():
         docentes.append({
-        'nombre': f'{docente.id_persona.nombre} {docente.id_persona.apellido}',
-        'materia': materia.nombre,
-        'nivel': nivel,
+            'nombre': docente_data['nombre'],
+            'materias': ', '.join(docente_data['materias']),
+            'cursos': ', '.join(sorted(docente_data['cursos']))
         })
+    
+    # Ordenar por nombre
+    docentes.sort(key=lambda x: x['nombre'])
+
     hoy = date.today()
-
-    presentes = Asistencia.objects.filter(
-        fecha=hoy,
-        tipo_asistencia='Presente'
-    ).count()
-
-    ausentes = Asistencia.objects.filter(
-        fecha=hoy,
-        tipo_asistencia='Ausente'
-    ).count()
-
-    tardanzas = Asistencia.objects.filter(
-        fecha=hoy,
-        tipo_asistencia='Tardanza'
-    ).count()
-    alumnos_inicial = Alumno.objects.filter(
-        id_curso__nivel='Inicial'
-    ).count()
-
-    alumnos_primario = Alumno.objects.filter(
-        id_curso__nivel='Primario'
-    ).count()
-
-    alumnos_secundario = Alumno.objects.filter(
-        id_curso__nivel='Secundario'
-    ).count()
-    solicitudes_pendientes = SolicitudInscripcion.objects.filter(
-        estado='Pendiente'
-    ).count()
+    presentes = Asistencia.objects.filter(fecha=hoy, tipo_asistencia='Presente').count()
+    ausentes = Asistencia.objects.filter(fecha=hoy, tipo_asistencia='Ausente').count()
+    tardanzas = Asistencia.objects.filter(fecha=hoy, tipo_asistencia='Tardanza').count()
+    
+    alumnos_inicial = Alumno.objects.filter(id_curso__nivel='Inicial').count()
+    alumnos_primario = Alumno.objects.filter(id_curso__nivel='Primaria').count()
+    alumnos_secundario = Alumno.objects.filter(id_curso__nivel='Secundaria').count()
+    
+    solicitudes_pendientes = SolicitudInscripcion.objects.filter(estado='Pendiente').count()
     postulaciones = PostulacionLaboral.objects.count()
+    
     return render(
         request,
         'core/dashboard-directivo.html',
@@ -1040,11 +1029,9 @@ def dashboard_directivo(request):
             'presentes': presentes,
             'ausentes': ausentes,
             'tardanzas': tardanzas,
-
             'alumnos_inicial': alumnos_inicial,
             'alumnos_primario': alumnos_primario,
             'alumnos_secundario': alumnos_secundario,
-
             'solicitudes_pendientes': solicitudes_pendientes,
             'postulaciones': postulaciones
         }
