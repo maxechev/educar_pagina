@@ -1014,6 +1014,8 @@ def dashboard_directivo(request):
     solicitudes_pendientes = SolicitudInscripcion.objects.filter(estado='Pendiente').count()
     postulaciones = PostulacionLaboral.objects.count()
     
+    iniciales = f"{persona.nombre[0].upper()}{persona.apellido[0].upper()}"
+    
     return render(
         request,
         'core/dashboard-directivo.html',
@@ -1033,6 +1035,7 @@ def dashboard_directivo(request):
             'alumnos_primario': alumnos_primario,
             'alumnos_secundario': alumnos_secundario,
             'solicitudes_pendientes': solicitudes_pendientes,
+            'iniciales': iniciales,
             'postulaciones': postulaciones
         }
     )
