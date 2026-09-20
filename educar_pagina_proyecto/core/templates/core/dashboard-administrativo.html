@@ -665,8 +665,7 @@
                 "
               >
                 <h3 style="margin: 0; color: #0f172a; font-size: 20px">
-                  📋 Ficha del Alumno: {{ alumno_detalle.id_persona.apellido }},
-                  {{ alumno_detalle.id_persona.nombre }}
+                  📋 Ficha del Alumno: {{ alumno_detalle.id_persona.apellido }},{{ alumno_detalle.id_persona.nombre }}
                 </h3>
                 <a
                   href="{% url 'lista-alumnos-admin' %}"
@@ -947,8 +946,7 @@
                   <tr>
                     <td><strong>{{ alumno.legajo }}</strong></td>
                     <td>
-                      {{ alumno.id_persona.apellido }}, {{
-                      alumno.id_persona.nombre }}
+                      {{ alumno.id_persona.apellido }}, {{alumno.id_persona.nombre }}
                     </td>
                     <td>{{ alumno.id_persona.dni }}</td>
                     <td>
@@ -1047,8 +1045,7 @@
                 "
               >
                 <h3 style="margin: 0; color: #0f172a; font-size: 20px">
-                  Ficha del Profesor: {{ profesor_detalle.id_persona.apellido
-                  }}, {{ profesor_detalle.id_persona.nombre }}
+                  Ficha del Profesor: {{ profesor_detalle.id_persona.apellido}}, {{ profesor_detalle.id_persona.nombre }}
                 </h3>
                 <a
                   href="{% url 'lista-profesores-admin' %}"
@@ -1251,8 +1248,7 @@
                   <tr>
                     <td><strong>{{ profesor.legajo }}</strong></td>
                     <td>
-                      {{ profesor.id_persona.apellido }}, {{
-                      profesor.id_persona.nombre }}
+                      {{ profesor.id_persona.apellido }}, {{profesor.id_persona.nombre }}
                     </td>
                     <td>{{ profesor.id_persona.dni }}</td>
                     <td>
