@@ -942,7 +942,7 @@
                                   <select name="id_curso" required>
                                       <option value="">Seleccione un curso</option>
                                       {% for curso in cursos_disponibles %}
-                                          <option value="{{ curso.id }}">{{ curso.nivel }} - {{ curso.anio }}° {{ curso.comision }} ({{ curso.turno }})</option>
+                                          <option value="{{ curso.id_curso }}">{{ curso.nivel }} - {{ curso.anio }}° {{ curso.comision }} ({{ curso.turno }})</option>
                                       {% endfor %}
                                   </select>
                               </div>
@@ -1006,7 +1006,7 @@
                                               <label>Curso</label>
                                               <select name="id_curso" required>
                                                   {% for curso in cursos_disponibles %}
-                                                      <option value="{{ curso.id }}" {% if curso.id == alumno.id_curso.id %}selected{% endif %}>{{ curso.nivel }} - {{ curso.anio }}° {{ curso.comision }} ({{ curso.turno }})</option>
+                                                      <option value="{{ curso.id_curso }}" {% if curso.id_curso == alumno.id_curso.id_curso %}selected{% endif %}>{{ curso.nivel }} - {{ curso.anio }}° {{ curso.comision }} ({{ curso.turno }})</option>
                                                   {% endfor %}
                                               </select>
                                           </div>

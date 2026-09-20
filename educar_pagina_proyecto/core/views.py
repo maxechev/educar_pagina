@@ -2948,10 +2948,17 @@ def alta_alumno_admin(request):
         direccion = request.POST.get('direccion')
         telefono = request.POST.get('telefono')
         email = request.POST.get('email')
-        id_curso = request.POST.get('id_curso')
+        id_curso = request.POST.get('id_curso')  # <-- ¡Este valor probablemente es None o inválido!
         estado = request.POST.get('estado', 'Activo')
 
+        # DEBUG: Imprimir el id_curso recibido
+        print(f"DEBUG: id_curso recibido = {id_curso}")
+
         errores = []
+        
+        if not id_curso:
+            errores.append("No se seleccionó un curso válido.")
+        
         if Alumno.objects.filter(legajo=legajo).exists():
             errores.append("El legajo ya existe.")
         if Persona.objects.filter(dni=dni).exists():
@@ -2967,23 +2974,32 @@ def alta_alumno_admin(request):
                 messages.error(request, err)
             return redirect('lista-alumnos-admin')
 
-        persona = Persona.objects.create(
-            dni=dni, nombre=nombre, apellido=apellido,
-            fecha_nacimiento=fecha_nac_obj, direccion=direccion,
-            telefono=telefono, email=email
-        )
+        try:
+            # Crear Persona
+            persona = Persona.objects.create(
+                dni=dni, nombre=nombre, apellido=apellido,
+                fecha_nacimiento=fecha_nac_obj, direccion=direccion,
+                telefono=telefono, email=email
+            )
 
-        curso = get_object_or_404(Curso, id_curso=id_curso)
-        
-        # Intentamos guardar el estado. Si tu modelo Alumno no tiene el campo 'estado', 
-        # puedes quitar la línea 'estado=estado' de abajo.
-        Alumno.objects.create(
-            legajo=legajo, id_persona=persona, id_curso=curso,
-            fecha_ingreso=date.today(), estado=estado
-        )
+            # Buscar el curso - USAR id_curso en lugar de id
+            curso = get_object_or_404(Curso, id_curso=id_curso)
+            
+            # Crear Alumno
+            Alumno.objects.create(
+                legajo=legajo, 
+                id_persona=persona, 
+                id_curso=curso,
+                fecha_ingreso=date.today(), 
+                estado=estado
+            )
 
-        messages.success(request, "Alumno registrado exitosamente.")
-        return redirect('lista-alumnos-admin')
+            messages.success(request, "Alumno registrado exitosamente.")
+            return redirect('lista-alumnos-admin')
+            
+        except Exception as e:
+            messages.error(request, f"Error al crear el alumno: {str(e)}")
+            return redirect('lista-alumnos-admin')
     
     return redirect('lista-alumnos-admin')
 
