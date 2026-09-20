@@ -968,7 +968,7 @@ def dashboard_directivo(request):
     for relacion in relaciones:
         docente = relacion.id_docente
         materia = relacion.id_materia
-        docente_key = docente.id  # Usamos el ID como clave única
+        docente_key = docente.pk 
         
         if docente_key not in docentes_dict:
             docentes_dict[docente_key] = {
