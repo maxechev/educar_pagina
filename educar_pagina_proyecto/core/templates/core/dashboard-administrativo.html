@@ -73,8 +73,7 @@
         <aside class="sidebar">
           <div class="sidebar-user">
             <div class="avatar">
-              {{ persona.nombre|slice:":1"|upper
-              }}{{persona.apellido|slice:":1"|upper }}
+              {{ persona.nombre|slice:":1"|upper }}{{ persona.apellido|slice:":1"|upper }}
             </div>
             <strong>{{ persona.nombre }} {{ persona.apellido }}</strong>
             <span>Área administrativa</span>
@@ -1393,6 +1392,19 @@
     </div>
 
     <!-- SCRIPTS MEJORADOS PARA QUE LOS PANELES FUNCIONEN SIEMPRE -->
+    
+    function showPanel(id, el) {
+      document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
+      document.querySelectorAll(".sidebar-nav a").forEach((a) => a.classList.remove("active"));
+      
+      const targetPanel = document.getElementById("panel-" + id);
+      if (targetPanel) {
+          targetPanel.classList.add("active");
+      }
+      if (el) {
+          el.classList.add("active");
+      }
+    }
     <script>
       document.addEventListener("DOMContentLoaded", function () {
         const panel = "{{ panel_activo }}";
