@@ -571,6 +571,17 @@
             <div class="mensaje {{ message.level_tag }}">{{ message }}</div>
             {% endif %} {% endfor %} {% endif %}
 
+          <div id="panel-usuarios" class="panel">
+            <p class="section-title">Gestión de usuarios del sistema</p>
+            
+            {% if messages %}
+              {% for message in messages %}
+                {% if 'usuarios' in message.tags %}
+                  <div class="mensaje {{ message.level_tag }}">{{ message }}</div>
+                {% endif %}
+              {% endfor %}
+            {% endif %}
+
             <div class="form-section">
               <form
                 method="POST"
@@ -610,6 +621,9 @@
                 <button type="submit" class="btn-form">Crear usuario</button>
               </form>
             </div>
+
+            <div style="margin-top: 40px"></div>
+          </div>
 
             <div style="margin-top: 40px"></div>
           </div>
