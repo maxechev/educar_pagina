@@ -2899,10 +2899,8 @@ def lista_alumnos_admin(request):
     if not persona or dashboard_url != 'dashboard-administrativo':
         return redirect('login')
     
-    # Forzar que el panel activo sea 'alumnos'
     request.session['panel_activo'] = 'alumnos'
     
-    # Reutilizar la lógica del dashboard administrativo
     administrativo = PersonalAdministrativo.objects.filter(id_persona=persona).first()
     instalaciones = Instalacion.objects.all()
     reservas = Reserva.objects.select_related('id_instalacion', 'id_persona_solicitante').all()
@@ -2921,35 +2919,136 @@ def lista_alumnos_admin(request):
     documentacion_pendiente = DocumentacionAlumno.objects.filter(estado='Pendiente').count()
     documentaciones = DocumentacionAlumno.objects.filter(estado='Pendiente').order_by('-fecha_envio')
     
-    # Datos de alumnos
     alumnos = Alumno.objects.select_related('id_persona', 'id_curso').all().order_by('id_persona__apellido', 'id_persona__nombre')
+    cursos_disponibles = Curso.objects.all().order_by('nivel', 'anio', 'comision') # 👈 NUEVO: Para el formulario
     
-    # Si viene un legajo, mostrar detalle
     legajo_detalle = request.GET.get('legajo')
     alumno_detalle = None
     if legajo_detalle:
-        alumno_detalle = get_object_or_404(
-            Alumno.objects.select_related('id_persona', 'id_curso'), 
-            legajo=legajo_detalle
-        )
+        alumno_detalle = get_object_or_404(Alumno.objects.select_related('id_persona', 'id_curso'), legajo=legajo_detalle)
     
     return render(request, 'core/dashboard-administrativo.html', {
-        'persona': persona,
-        'administrativo': administrativo,
-        'instalaciones': instalaciones,
-        'reservas': reservas,
-        'opiniones': opiniones,
-        'cuotas': cuotas,
-        'cuotas_pendientes': cuotas_pendientes,
-        'solicitudes': solicitudes,
-        'inscripciones_pendientes': inscripciones_pendientes,
-        'pagos_pendientes': pagos_pendientes,
-        'documentaciones': documentaciones,
-        'documentacion_pendiente': documentacion_pendiente,
-        'panel_activo': 'alumnos',
-        'alumnos': alumnos,
-        'alumno_detalle': alumno_detalle,
+        'persona': persona, 'administrativo': administrativo, 'instalaciones': instalaciones,
+        'reservas': reservas, 'opiniones': opiniones, 'cuotas': cuotas,
+        'cuotas_pendientes': cuotas_pendientes, 'solicitudes': solicitudes,
+        'inscripciones_pendientes': inscripciones_pendientes, 'pagos_pendientes': pagos_pendientes,
+        'documentaciones': documentaciones, 'documentacion_pendiente': documentacion_pendiente,
+        'panel_activo': 'alumnos', 'alumnos': alumnos, 'alumno_detalle': alumno_detalle,
+        'cursos_disponibles': cursos_disponibles, # 👈 NUEVO
     })
+
+@never_cache
+def alta_alumno_admin(request):
+    if request.method == 'POST':
+        legajo = request.POST.get('legajo')
+        dni = request.POST.get('dni')
+        nombre = request.POST.get('nombre')
+        apellido = request.POST.get('apellido')
+        fecha_nacimiento = request.POST.get('fecha_nacimiento')
+        direccion = request.POST.get('direccion')
+        telefono = request.POST.get('telefono')
+        email = request.POST.get('email')
+        id_curso = request.POST.get('id_curso')
+        estado = request.POST.get('estado', 'Activo')
+
+        errores = []
+        if Alumno.objects.filter(legajo=legajo).exists():
+            errores.append("El legajo ya existe.")
+        if Persona.objects.filter(dni=dni).exists():
+            errores.append("El DNI ya está registrado.")
+        
+        try:
+            fecha_nac_obj = datetime.strptime(fecha_nacimiento, '%Y-%m-%d').date()
+        except ValueError:
+            errores.append("Fecha de nacimiento inválida.")
+
+        if errores:
+            for err in errores:
+                messages.error(request, err)
+            return redirect('lista-alumnos-admin')
+
+        persona = Persona.objects.create(
+            dni=dni, nombre=nombre, apellido=apellido,
+            fecha_nacimiento=fecha_nac_obj, direccion=direccion,
+            telefono=telefono, email=email
+        )
+
+        curso = get_object_or_404(Curso, id=id_curso)
+        
+        # Intentamos guardar el estado. Si tu modelo Alumno no tiene el campo 'estado', 
+        # puedes quitar la línea 'estado=estado' de abajo.
+        Alumno.objects.create(
+            legajo=legajo, id_persona=persona, id_curso=curso,
+            fecha_ingreso=date.today(), estado=estado
+        )
+
+        messages.success(request, "Alumno registrado exitosamente.")
+        return redirect('lista-alumnos-admin')
+    
+    return redirect('lista-alumnos-admin')
+
+@never_cache
+def modificar_alumno_admin(request, legajo):
+    alumno = get_object_or_404(Alumno, legajo=legajo)
+    persona = alumno.id_persona
+
+    if request.method == 'POST':
+        nuevo_dni = request.POST.get('dni')
+        nombre = request.POST.get('nombre')
+        apellido = request.POST.get('apellido')
+        fecha_nacimiento = request.POST.get('fecha_nacimiento')
+        direccion = request.POST.get('direccion')
+        telefono = request.POST.get('telefono')
+        email = request.POST.get('email')
+        id_curso = request.POST.get('id_curso')
+        estado = request.POST.get('estado', 'Activo')
+
+        errores = []
+        if Persona.objects.filter(dni=nuevo_dni).exclude(id=persona.id).exists():
+            errores.append("El DNI ya está registrado en otra persona.")
+        
+        try:
+            fecha_nac_obj = datetime.strptime(fecha_nacimiento, '%Y-%m-%d').date()
+        except ValueError:
+            errores.append("Fecha de nacimiento inválida.")
+
+        if errores:
+            for err in errores:
+                messages.error(request, err)
+            return redirect('lista-alumnos-admin')
+
+        persona.dni = nuevo_dni
+        persona.nombre = nombre
+        persona.apellido = apellido
+        persona.fecha_nacimiento = fecha_nac_obj
+        persona.direccion = direccion
+        persona.telefono = telefono
+        persona.email = email
+        persona.save()
+
+        alumno.id_curso_id = id_curso
+        # alumno.estado = estado # Descomenta si tu modelo tiene el campo 'estado'
+        alumno.save()
+
+        messages.success(request, "Datos del alumno actualizados correctamente.")
+        return redirect('lista-alumnos-admin')
+
+@never_cache
+def baja_alumno_admin(request, legajo):
+    if request.method == 'POST':
+        alumno = get_object_or_404(Alumno, legajo=legajo)
+        persona = alumno.id_persona
+        
+        # Opción A: Eliminación completa (recomendada para ABM simple)
+        alumno.delete()
+        persona.delete() # Elimina también la persona asociada
+        
+        # Opción B: Si prefieres solo desactivar, comenta las 2 líneas de arriba y usa:
+        # alumno.estado = 'Inactivo'
+        # alumno.save()
+
+        messages.success(request, "Alumno dado de baja correctamente.")
+    return redirect('lista-alumnos-admin')
     
 @never_cache
 def detalle_alumno_admin(request, legajo):

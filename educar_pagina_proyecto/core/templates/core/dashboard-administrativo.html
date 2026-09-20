@@ -913,86 +913,130 @@
               </div>
             </div>
 
-            {% else %}
-            <!-- LISTA DE ALUMNOS -->
-            <div
-              style="
-                background: white;
-                border-radius: 16px;
-                padding: 24px;
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-              "
-            >
-              <h3 style="margin: 0 0 20px 0; color: #0f172a; font-size: 20px">
-                Listado de Alumnos
-              </h3>
-
-              {% if alumnos %}
-              <table class="tabla">
-                <thead>
-                  <tr>
-                    <th>Legajo</th>
-                    <th>Apellido y Nombre</th>
-                    <th>DNI</th>
-                    <th>Curso</th>
-                    <th>Nivel</th>
-                    <th>Estado</th>
-                    <th>Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {% for alumno in alumnos %}
-                  <tr>
-                    <td><strong>{{ alumno.legajo }}</strong></td>
-                    <td>
-                      {{ alumno.id_persona.apellido }}, {{alumno.id_persona.nombre }}
-                    </td>
-                    <td>{{ alumno.id_persona.dni }}</td>
-                    <td>
-                      {{ alumno.id_curso.anio }}° {{ alumno.id_curso.comision }}
-                    </td>
-                    <td>
-                      <span class="badge badge-blue"
-                        >{{ alumno.id_curso.nivel }}</span
-                      >
-                    </td>
-                    <td>
-                      <span class="badge badge-green">Activo</span>
-                    </td>
-                    <td>
-                      <a
-                        href="{% url 'detalle-alumno-admin' alumno.legajo %}"
-                        class="btn-small"
-                      >
-                        Más info →
-                      </a>
-                    </td>
-                  </tr>
-                  {% endfor %}
-                </tbody>
-              </table>
               {% else %}
-              <div
-                style="
-                  text-align: center;
-                  padding: 60px 20px;
-                  background: #f8fafc;
-                  border-radius: 12px;
-                "
-              >
-                <div style="font-size: 48px; margin-bottom: 16px">📋</div>
-                <h3 style="color: #0f172a; margin-bottom: 8px">
-                  No hay alumnos registrados
-                </h3>
-                <p style="color: #64748b">
-                  Los alumnos aparecerán aquí una vez que se aprueben las
-                  inscripciones.
-                </p>
+              <!-- LISTA DE ALUMNOS CON ABM -->
+              <div style="background: white; border-radius: 16px; padding: 24px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                      <h3 style="margin: 0; color: #0f172a; font-size: 20px;">Listado de Alumnos</h3>
+                      <button type="button" class="btn-small" style="background: #1D66C4; margin-top: 0;" onclick="toggleDisplay('form-nuevo-alumno')">
+                          + Nuevo Alumno
+                      </button>
+                  </div>
+
+                  <!-- Formulario de Alta (Oculto por defecto) -->
+                  <div id="form-nuevo-alumno" style="display: none; margin-bottom: 24px; background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0;">
+                      <h4 style="margin-bottom: 16px; color: #0f172a;">Registrar Nuevo Alumno</h4>
+                      <form method="POST" action="{% url 'alta-alumno-admin' %}">
+                          {% csrf_token %}
+                          <div class="form-grid">
+                              <div class="form-group"><label>Legajo</label><input type="text" name="legajo" required /></div>
+                              <div class="form-group"><label>DNI</label><input type="text" name="dni" required /></div>
+                              <div class="form-group"><label>Nombre</label><input type="text" name="nombre" required /></div>
+                              <div class="form-group"><label>Apellido</label><input type="text" name="apellido" required /></div>
+                              <div class="form-group"><label>Fecha de Nacimiento</label><input type="date" name="fecha_nacimiento" required /></div>
+                              <div class="form-group"><label>Teléfono</label><input type="text" name="telefono" /></div>
+                              <div class="form-group"><label>Correo Electrónico</label><input type="email" name="email" /></div>
+                              <div class="form-group"><label>Domicilio</label><input type="text" name="direccion" /></div>
+                              <div class="form-group">
+                                  <label>Curso</label>
+                                  <select name="id_curso" required>
+                                      <option value="">Seleccione un curso</option>
+                                      {% for curso in cursos_disponibles %}
+                                          <option value="{{ curso.id }}">{{ curso.nivel }} - {{ curso.anio }}° {{ curso.comision }} ({{ curso.turno }})</option>
+                                      {% endfor %}
+                                  </select>
+                              </div>
+                              <div class="form-group">
+                                  <label>Estado</label>
+                                  <select name="estado">
+                                      <option value="Activo">Activo</option>
+                                      <option value="Inactivo">Inactivo</option>
+                                  </select>
+                              </div>
+                          </div>
+                          <button type="submit" class="btn-form" style="margin-top: 16px;">Guardar Alumno</button>
+                      </form>
+                  </div>
+
+                  {% if alumnos %}
+                  <table class="tabla">
+                      <thead>
+                          <tr>
+                              <th>Legajo</th>
+                              <th>Apellido y Nombre</th>
+                              <th>DNI</th>
+                              <th>Curso</th>
+                              <th>Estado</th>
+                              <th>Acciones</th>
+                          </tr>
+                      </thead>
+                      <tbody>
+                          {% for alumno in alumnos %}
+                          <tr>
+                              <td><strong>{{ alumno.legajo }}</strong></td>
+                              <td>{{ alumno.id_persona.apellido }}, {{ alumno.id_persona.nombre }}</td>
+                              <td>{{ alumno.id_persona.dni }}</td>
+                              <td>{{ alumno.id_curso.anio }}° {{ alumno.id_curso.comision }}</td>
+                              <td><span class="badge badge-green">{{ alumno.estado|default:"Activo" }}</span></td>
+                              <td style="display: flex; gap: 8px;">
+                                  <a href="{% url 'detalle-alumno-admin' alumno.legajo %}" class="btn-small" style="background: #1D66C4; margin-top: 0; padding: 6px 12px; font-size: 12px;">Ver</a>
+                                  <button type="button" class="btn-small" style="background: #d97706; margin-top: 0; padding: 6px 12px; font-size: 12px;" onclick="toggleDisplay('editar-{{ alumno.legajo }}')">Editar</button>
+                                  <form method="POST" action="{% url 'baja-alumno-admin' alumno.legajo %}" style="display: inline;" onsubmit="return confirm('¿Está seguro de dar de baja a este alumno? Esta acción no se puede deshacer.');">
+                                      {% csrf_token %}
+                                      <button type="submit" class="btn-small" style="background: #dc2626; margin-top: 0; padding: 6px 12px; font-size: 12px;">Baja</button>
+                                  </form>
+                              </td>
+                          </tr>
+                          
+                          <!-- Fila de Edición Inline (Oculta por defecto) -->
+                          <tr id="editar-{{ alumno.legajo }}" style="display: none; background: #f8fafc;">
+                              <td colspan="6">
+                                  <form method="POST" action="{% url 'modificar-alumno-admin' alumno.legajo %}" style="padding: 16px;">
+                                      {% csrf_token %}
+                                      <div class="form-grid">
+                                          <div class="form-group"><label>Legajo</label><input type="text" value="{{ alumno.legajo }}" readonly style="background: #e2e8f0;" /></div>
+                                          <div class="form-group"><label>DNI</label><input type="text" name="dni" value="{{ alumno.id_persona.dni }}" required /></div>
+                                          <div class="form-group"><label>Nombre</label><input type="text" name="nombre" value="{{ alumno.id_persona.nombre }}" required /></div>
+                                          <div class="form-group"><label>Apellido</label><input type="text" name="apellido" value="{{ alumno.id_persona.apellido }}" required /></div>
+                                          <div class="form-group"><label>Fecha de Nacimiento</label><input type="date" name="fecha_nacimiento" value="{{ alumno.id_persona.fecha_nacimiento|date:'Y-m-d' }}" required /></div>
+                                          <div class="form-group"><label>Teléfono</label><input type="text" name="telefono" value="{{ alumno.id_persona.telefono|default:'' }}" /></div>
+                                          <div class="form-group"><label>Correo Electrónico</label><input type="email" name="email" value="{{ alumno.id_persona.email|default:'' }}" /></div>
+                                          <div class="form-group"><label>Domicilio</label><input type="text" name="direccion" value="{{ alumno.id_persona.direccion|default:'' }}" /></div>
+                                          <div class="form-group">
+                                              <label>Curso</label>
+                                              <select name="id_curso" required>
+                                                  {% for curso in cursos_disponibles %}
+                                                      <option value="{{ curso.id }}" {% if curso.id == alumno.id_curso.id %}selected{% endif %}>{{ curso.nivel }} - {{ curso.anio }}° {{ curso.comision }} ({{ curso.turno }})</option>
+                                                  {% endfor %}
+                                              </select>
+                                          </div>
+                                          <div class="form-group">
+                                              <label>Estado</label>
+                                              <select name="estado">
+                                                  <option value="Activo" {% if alumno.estado == 'Activo' %}selected{% endif %}>Activo</option>
+                                                  <option value="Inactivo" {% if alumno.estado == 'Inactivo' %}selected{% endif %}>Inactivo</option>
+                                              </select>
+                                          </div>
+                                      </div>
+                                      <div style="margin-top: 16px; display: flex; gap: 8px;">
+                                          <button type="submit" class="btn-small" style="background: #16a34a; margin-top: 0;">Guardar Cambios</button>
+                                          <button type="button" class="btn-small" style="background: #64748b; margin-top: 0;" onclick="toggleDisplay('editar-{{ alumno.legajo }}')">Cancelar</button>
+                                      </div>
+                                  </form>
+                              </td>
+                          </tr>
+                          {% endfor %}
+                      </tbody>
+                  </table>
+                  {% else %}
+                  <div style="text-align: center; padding: 60px 20px; background: #f8fafc; border-radius: 12px;">
+                      <div style="font-size: 48px; margin-bottom: 16px;">📋</div>
+                      <h3 style="color: #0f172a; margin-bottom: 8px;">No hay alumnos registrados</h3>
+                      <p style="color: #64748b;">Utiliza el botón "Nuevo Alumno" para comenzar a cargar la institución.</p>
+                  </div>
+                  {% endif %}
               </div>
               {% endif %}
-            </div>
-            {% endif %}
-          </div>
 
           <!-- Panel de Profesores -->
           <div
@@ -1455,6 +1499,15 @@
             form.style.display = 'block';
         } else {
             form.style.display = 'none';
+        }
+      }
+
+      function toggleDisplay(id) {
+        const el = document.getElementById(id);
+        if (el.style.display === 'none') {
+            el.style.display = 'block';
+        } else {
+            el.style.display = 'none';
         }
       }
     </script>

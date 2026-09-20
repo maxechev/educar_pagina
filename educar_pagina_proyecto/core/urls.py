@@ -48,6 +48,9 @@ urlpatterns = [
     path('administrativo/alumnos/<int:legajo>/', views.detalle_alumno_admin, name='detalle-alumno-admin'),
     path('administrativo/profesores/', views.lista_profesores_admin, name='lista-profesores-admin'),
     path('administrativo/profesores/<int:legajo>/', views.detalle_profesor_admin, name='detalle-profesor-admin'),
+    path('administrativo/alumnos/alta/', views.alta_alumno_admin, name='alta-alumno-admin'),
+    path('administrativo/alumnos/<int:legajo>/modificar/', views.modificar_alumno_admin, name='modificar-alumno-admin'),
+    path('administrativo/alumnos/<int:legajo>/baja/', views.baja_alumno_admin, name='baja-alumno-admin'),
     # Comunicaciones - noticias y comunicados
     path('contacto/opinion/', views.guardar_opinion, name='guardar-opinion'),
     path('crear-comunicado/',views.crear_comunicado,name='crear-comunicado'),
