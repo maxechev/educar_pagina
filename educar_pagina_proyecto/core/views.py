@@ -2973,7 +2973,7 @@ def alta_alumno_admin(request):
             telefono=telefono, email=email
         )
 
-        curso = get_object_or_404(Curso, id=id_curso)
+        curso = get_object_or_404(Curso, id_curso=id_curso)
         
         # Intentamos guardar el estado. Si tu modelo Alumno no tiene el campo 'estado', 
         # puedes quitar la línea 'estado=estado' de abajo.
