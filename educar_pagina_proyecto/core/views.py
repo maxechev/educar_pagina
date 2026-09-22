@@ -3090,7 +3090,7 @@ def modificar_alumno_admin(request, legajo):
         persona.save()
 
         alumno.id_curso_id = id_curso
-        # alumno.estado = estado # Descomenta si tu modelo tiene el campo 'estado'
+        alumno.estado = estado 
         alumno.save()
 
         messages.success(request, "Datos del alumno actualizados correctamente.")
