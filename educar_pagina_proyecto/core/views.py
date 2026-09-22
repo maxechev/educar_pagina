@@ -2950,11 +2950,9 @@ def lista_alumnos_admin(request):
 @never_cache
 def alta_alumno_admin(request):
     if request.method == 'POST':
-        # Datos del usuario
         nombre_usuario = request.POST.get('nombre_usuario')
         contrasenia = request.POST.get('contrasenia')
 
-        # Datos de la persona
         dni = request.POST.get('dni')
         nombre = request.POST.get('nombre')
         apellido = request.POST.get('apellido')
@@ -2963,13 +2961,11 @@ def alta_alumno_admin(request):
         telefono = request.POST.get('telefono')
         email = request.POST.get('email')
 
-        # Datos del alumno
         legajo = request.POST.get('legajo')
         id_curso = request.POST.get('id_curso')
 
         errores = []
 
-        # Validar usuario
         if not nombre_usuario:
             errores.append("El nombre de usuario es obligatorio.")
 
@@ -2981,27 +2977,21 @@ def alta_alumno_admin(request):
         ).exists():
             errores.append("El nombre de usuario ya existe.")
 
-        # Validar legajo
         if legajo and Alumno.objects.filter(legajo=legajo).exists():
             errores.append("El legajo ya existe.")
 
-        # Validar DNI
         if dni and Persona.objects.filter(dni=dni).exists():
             errores.append("El DNI ya está registrado.")
 
-        # Validar fecha
+        fecha_nac_obj = None
         try:
             fecha_nac_obj = datetime.strptime(
-                fecha_nacimiento,
-                '%Y-%m-%d'
+                fecha_nacimiento, '%Y-%m-%d'
             ).date()
         except (ValueError, TypeError):
             errores.append("Fecha de nacimiento inválida.")
-            fecha_nac_obj = None
 
-        # Validar curso
         curso = None
-
         if not id_curso:
             errores.append("No se seleccionó un curso.")
         else:
@@ -3010,22 +3000,41 @@ def alta_alumno_admin(request):
             except Curso.DoesNotExist:
                 errores.append("El curso seleccionado no existe.")
 
-        # Si hubo errores, no crear nada
+        if fecha_nac_obj and curso:
+            hoy = date.today()
+            edad = hoy.year - fecha_nac_obj.year
+            if (hoy.month, hoy.day) < (fecha_nac_obj.month, fecha_nac_obj.day):
+                edad -= 1
+
+            nivel = curso.nivel.lower()
+            edad_min, edad_max = None, None
+
+            if 'inicial' in nivel:
+                edad_min, edad_max = 3, 5
+            elif 'primaria' in nivel or 'primario' in nivel:
+                edad_min, edad_max = 6, 12
+            elif 'secundaria' in nivel or 'secundario' in nivel:
+                edad_min, edad_max = 13, 18
+
+            if edad_min and edad_max:
+                if edad < edad_min or edad > edad_max:
+                    errores.append(
+                        f"La edad del alumno ({edad} años) no corresponde al nivel "
+                        f"{curso.nivel} (edades esperadas: {edad_min} a {edad_max} años)."
+                    )
+                    
         if errores:
             for error in errores:
                 messages.error(request, error)
-
             return redirect('lista-alumnos-admin')
 
         try:
-            # 1. Crear Usuario
             usuario = Usuario.objects.create(
                 nombre_usuario=nombre_usuario,
                 contrasenia=contrasenia,
                 correo=email if email else None
             )
 
-            # 2. Crear Persona vinculada al Usuario
             persona = Persona.objects.create(
                 id_usuario=usuario,
                 dni=dni,
@@ -3037,7 +3046,6 @@ def alta_alumno_admin(request):
                 email=email
             )
 
-            # 3. Crear Alumno vinculado a Persona y Curso
             Alumno.objects.create(
                 legajo=legajo,
                 id_persona=persona,
@@ -3077,17 +3085,51 @@ def modificar_alumno_admin(request, legajo):
         estado = request.POST.get('estado', 'Activo')
 
         errores = []
-        if Persona.objects.filter(dni=nuevo_dni).exclude(id=persona.id).exists():
+
+        if nuevo_dni and Persona.objects.filter(dni=nuevo_dni).exclude(id=persona.id).exists():
             errores.append("El DNI ya está registrado en otra persona.")
-        
+
+        fecha_nac_obj = None
         try:
             fecha_nac_obj = datetime.strptime(fecha_nacimiento, '%Y-%m-%d').date()
-        except ValueError:
+        except (ValueError, TypeError):
             errores.append("Fecha de nacimiento inválida.")
 
+        curso = None
+        if not id_curso:
+            errores.append("No se seleccionó un curso.")
+        else:
+            try:
+                curso = Curso.objects.get(id_curso=id_curso)
+            except Curso.DoesNotExist:
+                errores.append("El curso seleccionado no existe.")
+
+        if fecha_nac_obj and curso:
+            hoy = date.today()
+            edad = hoy.year - fecha_nac_obj.year
+            if (hoy.month, hoy.day) < (fecha_nac_obj.month, fecha_nac_obj.day):
+                edad -= 1
+
+            nivel = curso.nivel.lower()
+            edad_min, edad_max = None, None
+
+            if 'inicial' in nivel:
+                edad_min, edad_max = 3, 5
+            elif 'primaria' in nivel or 'primario' in nivel:
+                edad_min, edad_max = 6, 12
+            elif 'secundaria' in nivel or 'secundario' in nivel:
+                edad_min, edad_max = 13, 18
+
+            if edad_min and edad_max:
+                if edad < edad_min or edad > edad_max:
+                    errores.append(
+                        f"La edad del alumno ({edad} años) no corresponde al nivel "
+                        f"{curso.nivel} (edades esperadas: {edad_min} a {edad_max} años)."
+                    )
+
         if errores:
-            for err in errores:
-                messages.error(request, err)
+            for error in errores:
+                messages.error(request, error)
             return redirect('lista-alumnos-admin')
 
         persona.dni = nuevo_dni
@@ -3100,11 +3142,13 @@ def modificar_alumno_admin(request, legajo):
         persona.save()
 
         alumno.id_curso_id = id_curso
-        alumno.estado = estado 
+        alumno.estado = estado
         alumno.save()
 
         messages.success(request, "Datos del alumno actualizados correctamente.")
         return redirect('lista-alumnos-admin')
+
+    return redirect('lista-alumnos-admin')
 
 @never_cache
 def baja_alumno_admin(request, legajo):

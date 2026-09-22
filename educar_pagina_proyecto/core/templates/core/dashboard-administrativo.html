@@ -1071,6 +1071,7 @@
                               <th>Apellido y Nombre</th>
                               <th>DNI</th>
                               <th>Curso</th>
+                              <th>Nivel</th>
                               <th>Estado</th>
                               <th>Acciones</th>
                           </tr>
@@ -1078,30 +1079,31 @@
                       <tbody>
                           {% for alumno in alumnos %}
                           <tr>
-                              <td><strong>{{ alumno.legajo }}</strong></td>
-                              <td>{{ alumno.id_persona.apellido }}, {{ alumno.id_persona.nombre }}</td>
-                              <td>{{ alumno.id_persona.dni }}</td>
-                              <td>{{ alumno.id_curso.anio }}° {{ alumno.id_curso.comision }}</td>
-                              <td>
+                            <td><strong>{{ alumno.legajo }}</strong></td>
+                            <td>{{ alumno.id_persona.apellido }}, {{ alumno.id_persona.nombre }}</td>
+                            <td>{{ alumno.id_persona.dni }}</td>
+                            <td>{{ alumno.id_curso.anio }}° {{ alumno.id_curso.comision }}</td>
+                            <td><span class="badge badge-blue">{{ alumno.id_curso.nivel }}</span></td>
+                            <td>
                                 {% if alumno.estado == 'Inactivo' %}
-                                  <span class="badge badge-red">{{ alumno.estado }}</span>
+                                    <span class="badge badge-red">{{ alumno.estado }}</span>
                                 {% else %}
                                     <span class="badge badge-green">{{ alumno.estado|default:"Activo" }}</span>
                                 {% endif %}
-                              </td>
-                              <td style="display: flex; gap: 8px;">
-                                  <a href="{% url 'detalle-alumno-admin' alumno.legajo %}" class="btn-small" style="background: #1D66C4; margin-top: 0; padding: 6px 12px; font-size: 12px;">Ver</a>
-                                  <button type="button" class="btn-small" style="background: #d97706; margin-top: 0; padding: 6px 12px; font-size: 12px;" onclick="toggleDisplay('editar-{{ alumno.legajo }}')">Editar</button>
-                                  <form method="POST" action="{% url 'baja-alumno-admin' alumno.legajo %}" style="display: inline;" onsubmit="return confirm('¿Está seguro de dar de baja a este alumno? Esta acción no se puede deshacer.');">
-                                      {% csrf_token %}
-                                      <button type="submit" class="btn-small" style="background: #dc2626; margin-top: 0; padding: 6px 12px; font-size: 12px;">Baja</button>
-                                  </form>
-                              </td>
+                            </td>
+                            <td style="display: flex; gap: 8px;">
+                                <a href="{% url 'detalle-alumno-admin' alumno.legajo %}" class="btn-small" style="background: #1D66C4; margin-top: 0; padding: 6px 12px; font-size: 12px;">Ver</a>
+                                 <button type="button" class="btn-small" style="background: #d97706; margin-top: 0; padding: 6px 12px; font-size: 12px;" onclick="toggleDisplay('editar-{{ alumno.legajo }}')">Editar</button>
+                                <form method="POST" action="{% url 'baja-alumno-admin' alumno.legajo %}" style="display: inline;" onsubmit="return confirm('¿Está seguro de dar de baja a este alumno? Esta acción no se puede deshacer.');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn-small" style="background: #dc2626; margin-top: 0; padding: 6px 12px; font-size: 12px;">Baja</button>
+                                </form>
+                            </td>
                           </tr>
                           
                           <!-- Fila de Edición Inline (Oculta por defecto) -->
                           <tr id="editar-{{ alumno.legajo }}" style="display: none; background: #f8fafc;">
-                              <td colspan="6">
+                              <td colspan="7">
                                   <form method="POST" action="{% url 'modificar-alumno-admin' alumno.legajo %}" style="padding: 16px;">
                                       {% csrf_token %}
                                       <div class="form-grid">
