@@ -3120,3 +3120,8 @@ def baja_alumno_admin(request, legajo):
         )
 
     return redirect('lista-alumnos-admin')
+
+@never_cache
+def detalle_alumno_admin(request, legajo):
+    """Redirige a la lista de alumnos pasando el legajo por GET para mostrar el detalle."""
+    return redirect(f"{reverse('lista-alumnos-admin')}?legajo={legajo}")
