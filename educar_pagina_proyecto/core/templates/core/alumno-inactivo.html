@@ -1,0 +1,67 @@
+{% load static %}
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cuenta Inactiva - Educar para Transformar</title>
+    <link rel="stylesheet" href="{% static 'core/css/styles.css' %}" />
+    <style>
+        .inactivo-container {
+            max-width: 600px;
+            margin: 100px auto;
+            padding: 40px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .inactivo-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+        }
+        .inactivo-container h1 {
+            color: #dc2626;
+            font-size: 28px;
+            margin-bottom: 16px;
+        }
+        .inactivo-container p {
+            color: #475569;
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+        .inactivo-container .btn-volver {
+            display: inline-block;
+            background: #1d66c2;
+            color: white;
+            padding: 12px 28px;
+            border-radius: 999px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: 0.3s;
+        }
+        .inactivo-container .btn-volver:hover {
+            background: #17539d;
+        }
+    </style>
+</head>
+<body>
+    <div class="inactivo-container">
+        <div class="inactivo-icon">🚫</div>
+        <h1>Cuenta Inactiva</h1>
+        <p>
+            Tu cuenta de alumno se encuentra <strong>inactiva</strong> en este momento.
+            <br><br>
+            Para reactivar tu acceso o conocer el motivo, por favor comunicate con el 
+            <strong>área administrativa</strong> del colegio.
+        </p>
+        <p style="font-size: 14px; color: #64748b;">
+            📧 Email: educarparatransformarcolegio@gmail.com
+            <br>
+            📞 Teléfono: (0362) 4XX-XXXX
+        </p>
+        <a href="{% url 'index' %}" class="btn-volver">Volver al inicio</a>
+    </div>
+</body>
+</html>

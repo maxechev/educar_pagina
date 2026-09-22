@@ -350,6 +350,16 @@ def dashboard_alumno(request):
         'id_disciplina',
         'id_disciplina__id_instalacion',
     ).first()
+    
+    if alumno and alumno.estado == 'Inactivo':
+        # Cerrar sesión para que no pueda volver a entrar
+        if 'usuario_id' in request.session:
+            del request.session['usuario_id']
+        
+        return render(request, 'core/alumno-inactivo.html')
+
+    if not alumno:
+        return redirect('login')
 
     if request.method == 'POST' and request.POST.get('accion') == 'inscribir_deporte':
         request.session['panel_activo'] = 'deportes'
