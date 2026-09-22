@@ -12,6 +12,7 @@ class Alumno(models.Model):
     legajo = models.AutoField(primary_key=True)
     id_persona = models.ForeignKey('Persona', models.DO_NOTHING, db_column='id_persona')
     fecha_ingreso = models.DateField(blank=True, null=True)
+    estado = models.CharField(max_length=20, default='Activo') 
     id_disciplina = models.ForeignKey(
         'DisciplinaDeportiva',
         models.DO_NOTHING,
