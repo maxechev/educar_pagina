@@ -927,34 +927,126 @@
                   <div id="form-nuevo-alumno" style="display: none; margin-bottom: 24px; background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0;">
                       <h4 style="margin-bottom: 16px; color: #0f172a;">Registrar Nuevo Alumno</h4>
                       <form method="POST" action="{% url 'alta-alumno-admin' %}">
-                          {% csrf_token %}
-                          <div class="form-grid">
-                              <div class="form-group"><label>Legajo</label><input type="text" name="legajo" required /></div>
-                              <div class="form-group"><label>DNI</label><input type="text" name="dni" required /></div>
-                              <div class="form-group"><label>Nombre</label><input type="text" name="nombre" required /></div>
-                              <div class="form-group"><label>Apellido</label><input type="text" name="apellido" required /></div>
-                              <div class="form-group"><label>Fecha de Nacimiento</label><input type="date" name="fecha_nacimiento" required /></div>
-                              <div class="form-group"><label>Teléfono</label><input type="text" name="telefono" /></div>
-                              <div class="form-group"><label>Correo Electrónico</label><input type="email" name="email" /></div>
-                              <div class="form-group"><label>Domicilio</label><input type="text" name="direccion" /></div>
-                              <div class="form-group">
-                                  <label>Curso</label>
-                                  <select name="id_curso" required>
-                                      <option value="">Seleccione un curso</option>
-                                      {% for curso in cursos_disponibles %}
-                                          <option value="{{ curso.id_curso }}">{{ curso.nivel }} - {{ curso.anio }}° {{ curso.comision }} ({{ curso.turno }})</option>
-                                      {% endfor %}
-                                  </select>
-                              </div>
-                              <div class="form-group">
-                                  <label>Estado</label>
-                                  <select name="estado">
-                                      <option value="Activo">Activo</option>
-                                      <option value="Inactivo">Inactivo</option>
-                                  </select>
-                              </div>
-                          </div>
-                          <button type="submit" class="btn-form" style="margin-top: 16px;">Guardar Alumno</button>
+                        {% csrf_token %}
+
+                        <div class="form-grid">
+
+                            <!-- DATOS DE ACCESO -->
+                            <div class="form-group">
+                                <label>Nombre de Usuario</label>
+                                <input
+                                    type="text"
+                                    name="nombre_usuario"
+                                    maxlength="60"
+                                    required
+                                />
+                            </div>
+
+                            <div class="form-group">
+                                <label>Contraseña Provisoria</label>
+                                <input
+                                    type="password"
+                                    name="contrasenia"
+                                    maxlength="20"
+                                    required
+                                />
+                            </div>
+
+                            <!-- DATOS DEL ALUMNO -->
+                            <div class="form-group">
+                                <label>Legajo</label>
+                                <input
+                                    type="text"
+                                    name="legajo"
+                                    required
+                                />
+                            </div>
+
+                            <div class="form-group">
+                                <label>DNI</label>
+                                <input
+                                    type="text"
+                                    name="dni"
+                                    maxlength="8"
+                                    required
+                                />
+                            </div>
+
+                            <div class="form-group">
+                                <label>Nombre</label>
+                                <input
+                                    type="text"
+                                    name="nombre"
+                                    required
+                                />
+                            </div>
+
+                            <div class="form-group">
+                                <label>Apellido</label>
+                                <input
+                                    type="text"
+                                    name="apellido"
+                                    required
+                                />
+                            </div>
+
+                            <div class="form-group">
+                                <label>Fecha de Nacimiento</label>
+                                <input
+                                    type="date"
+                                    name="fecha_nacimiento"
+                                    required
+                                />
+                            </div>
+
+                            <div class="form-group">
+                                <label>Teléfono</label>
+                                <input
+                                    type="text"
+                                    name="telefono"
+                                />
+                            </div>
+
+                            <div class="form-group">
+                                <label>Correo Electrónico</label>
+                                <input
+                                    type="email"
+                                    name="email"
+                                />
+                            </div>
+
+                            <div class="form-group">
+                                <label>Domicilio</label>
+                                <input
+                                    type="text"
+                                    name="direccion"
+                                />
+                            </div>
+
+                            <!-- CURSO -->
+                            <div class="form-group">
+                                <label>Curso</label>
+
+                                <select name="id_curso" required>
+                                    <option value="">Seleccione un curso</option>
+
+                                    {% for curso in cursos_disponibles %}
+                                        <option value="{{ curso.id_curso }}">
+                                            {{ curso.nivel }} - {{ curso.anio }}° {{ curso.comision }} ({{ curso.turno }})
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                        </div>
+
+                        <button
+                            type="submit"
+                            class="btn-form"
+                            style="margin-top: 16px;"
+                        >
+                            Guardar Alumno
+                        </button>
                       </form>
                   </div>
 

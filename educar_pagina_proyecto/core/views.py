@@ -2940,7 +2940,11 @@ def lista_alumnos_admin(request):
 @never_cache
 def alta_alumno_admin(request):
     if request.method == 'POST':
-        legajo = request.POST.get('legajo')
+        # Datos del usuario
+        nombre_usuario = request.POST.get('nombre_usuario')
+        contrasenia = request.POST.get('contrasenia')
+
+        # Datos de la persona
         dni = request.POST.get('dni')
         nombre = request.POST.get('nombre')
         apellido = request.POST.get('apellido')
@@ -2948,59 +2952,102 @@ def alta_alumno_admin(request):
         direccion = request.POST.get('direccion')
         telefono = request.POST.get('telefono')
         email = request.POST.get('email')
-        id_curso = request.POST.get('id_curso')  # <-- ¡Este valor probablemente es None o inválido!
-        estado = request.POST.get('estado', 'Activo')
 
-        # DEBUG: Imprimir el id_curso recibido
-        print(f"DEBUG: id_curso recibido = {id_curso}")
+        # Datos del alumno
+        legajo = request.POST.get('legajo')
+        id_curso = request.POST.get('id_curso')
 
         errores = []
-        
-        if not id_curso:
-            errores.append("No se seleccionó un curso válido.")
-        
-        if Alumno.objects.filter(legajo=legajo).exists():
+
+        # Validar usuario
+        if not nombre_usuario:
+            errores.append("El nombre de usuario es obligatorio.")
+
+        if not contrasenia:
+            errores.append("La contraseña provisoria es obligatoria.")
+
+        if nombre_usuario and Usuario.objects.filter(
+            nombre_usuario=nombre_usuario
+        ).exists():
+            errores.append("El nombre de usuario ya existe.")
+
+        # Validar legajo
+        if legajo and Alumno.objects.filter(legajo=legajo).exists():
             errores.append("El legajo ya existe.")
-        if Persona.objects.filter(dni=dni).exists():
+
+        # Validar DNI
+        if dni and Persona.objects.filter(dni=dni).exists():
             errores.append("El DNI ya está registrado.")
-        
+
+        # Validar fecha
         try:
-            fecha_nac_obj = datetime.strptime(fecha_nacimiento, '%Y-%m-%d').date()
-        except ValueError:
+            fecha_nac_obj = datetime.strptime(
+                fecha_nacimiento,
+                '%Y-%m-%d'
+            ).date()
+        except (ValueError, TypeError):
             errores.append("Fecha de nacimiento inválida.")
+            fecha_nac_obj = None
 
+        # Validar curso
+        curso = None
+
+        if not id_curso:
+            errores.append("No se seleccionó un curso.")
+        else:
+            try:
+                curso = Curso.objects.get(id_curso=id_curso)
+            except Curso.DoesNotExist:
+                errores.append("El curso seleccionado no existe.")
+
+        # Si hubo errores, no crear nada
         if errores:
-            for err in errores:
-                messages.error(request, err)
+            for error in errores:
+                messages.error(request, error)
+
             return redirect('lista-alumnos-admin')
 
         try:
-            # Crear Persona
+            # 1. Crear Usuario
+            usuario = Usuario.objects.create(
+                nombre_usuario=nombre_usuario,
+                contrasenia=contrasenia,
+                correo=email if email else None
+            )
+
+            # 2. Crear Persona vinculada al Usuario
             persona = Persona.objects.create(
-                dni=dni, nombre=nombre, apellido=apellido,
-                fecha_nacimiento=fecha_nac_obj, direccion=direccion,
-                telefono=telefono, email=email
+                id_usuario=usuario,
+                dni=dni,
+                nombre=nombre,
+                apellido=apellido,
+                fecha_nacimiento=fecha_nac_obj,
+                direccion=direccion,
+                telefono=telefono,
+                email=email
             )
 
-            # Buscar el curso - USAR id_curso en lugar de id
-            curso = get_object_or_404(Curso, id_curso=id_curso)
-            
-            # Crear Alumno
+            # 3. Crear Alumno vinculado a Persona y Curso
             Alumno.objects.create(
-                legajo=legajo, 
-                id_persona=persona, 
+                legajo=legajo,
+                id_persona=persona,
                 id_curso=curso,
-                fecha_ingreso=date.today(), 
-                estado=estado
+                fecha_ingreso=date.today()
             )
 
-            messages.success(request, "Alumno registrado exitosamente.")
-            return redirect('lista-alumnos-admin')
-            
+            messages.success(
+                request,
+                "Alumno y cuenta de usuario registrados exitosamente."
+            )
+
         except Exception as e:
-            messages.error(request, f"Error al crear el alumno: {str(e)}")
-            return redirect('lista-alumnos-admin')
-    
+            messages.error(
+                request,
+                f"Error al crear el alumno: {str(e)}"
+            )
+
+        return redirect('lista-alumnos-admin')
+
     return redirect('lista-alumnos-admin')
 
 @never_cache
