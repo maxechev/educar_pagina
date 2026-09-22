@@ -3100,25 +3100,23 @@ def modificar_alumno_admin(request, legajo):
 def baja_alumno_admin(request, legajo):
     if request.method == 'POST':
         alumno = get_object_or_404(Alumno, legajo=legajo)
-        persona = alumno.id_persona
-        
-        # Opción A: Eliminación completa (recomendada para ABM simple)
-        alumno.delete()
-        persona.delete() # Elimina también la persona asociada
-        
-        # Opción B: Si prefieres solo desactivar, comenta las 2 líneas de arriba y usa:
-        # alumno.estado = 'Inactivo'
-        # alumno.save()
 
-        messages.success(request, "Alumno dado de baja correctamente.")
+        persona = alumno.id_persona
+        usuario = persona.id_usuario
+
+        # Primero eliminamos el alumno
+        alumno.delete()
+
+        # Después eliminamos la persona
+        persona.delete()
+
+        # Finalmente eliminamos el usuario
+        if usuario:
+            usuario.delete()
+
+        messages.success(
+            request,
+            "Alumno, persona y usuario dados de baja correctamente."
+        )
+
     return redirect('lista-alumnos-admin')
-    
-@never_cache
-def detalle_alumno_admin(request, legajo):
-    """Vista para mostrar el detalle de un alumno dentro del dashboard."""
-    persona, dashboard_url = obtener_datos_sesion(request)
-    if not persona or dashboard_url != 'dashboard-administrativo':
-        return redirect('login')
-    
-    # Redirigir a la lista con el parámetro legajo
-    return redirect(f"{reverse('lista-alumnos-admin')}?legajo={legajo}")
