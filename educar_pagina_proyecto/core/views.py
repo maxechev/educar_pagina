@@ -1369,6 +1369,15 @@ def lista_profesores_admin(request):
     ).order_by('id_curso__nivel', 'id_curso__anio', 'id_curso__comision', 'id_materia__nombre')
     for opcion in curso_materia_options:
         opcion.clave = f'{opcion.id_curso_id}:{opcion.id_materia_id}'
+    materia_curso_options = []
+    for materia in Materia.objects.all().order_by('nombre'):
+        materia.cursos_disponibles = Curso.objects.filter(
+            cursocursamaterias__id_materia=materia
+        ).distinct().order_by('nivel', 'anio', 'comision')
+        for curso in materia.cursos_disponibles:
+            curso.asignacion_clave = f'{curso.id_curso}:{materia.id_materia}'
+        if materia.cursos_disponibles.exists():
+            materia_curso_options.append(materia)
     for profesor in profesores:
         relaciones = DocenteDictaMateria.objects.filter(
             id_docente=profesor
@@ -1416,6 +1425,7 @@ def lista_profesores_admin(request):
         'panel_activo': 'profesores',
         'profesores': profesores,
         'curso_materia_options': curso_materia_options,
+        'materia_curso_options': materia_curso_options,
         'profesor_detalle': profesor_detalle,
     })
 
