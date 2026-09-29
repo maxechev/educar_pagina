@@ -13,6 +13,7 @@ import resend
 import os
 from django.shortcuts import render, redirect
 from django.db.models import Avg
+from django.db import transaction
 import json
 from django.core.mail import EmailMessage
 from django.contrib import messages
@@ -50,6 +51,7 @@ from .models import (
     Arancel,
     DocumentacionAlumno,
     Tarea,
+    DocenteDisciplina,
 )
 COMUNICADOS_FILE = os.path.join(
     os.path.dirname(__file__),
@@ -1370,6 +1372,159 @@ def lista_profesores_admin(request):
 def detalle_profesor_admin(request, legajo):
     """Redirige a la lista de profesores pasando el legajo por GET para mostrar el detalle."""
     return redirect(f"{reverse('lista-profesores-admin')}?legajo={legajo}")
+
+
+@never_cache
+def alta_profesor_admin(request):
+    """Registra la cuenta, los datos personales y el legajo de un docente."""
+    persona_sesion, dashboard_url = obtener_datos_sesion(request)
+    if not persona_sesion or dashboard_url != 'dashboard-administrativo':
+        return redirect('login')
+
+    if request.method == 'POST':
+        nombre_usuario = (request.POST.get('nombre_usuario') or '').strip()
+        contrasenia = request.POST.get('contrasenia') or ''
+        dni = (request.POST.get('dni') or '').strip()
+        nombre = (request.POST.get('nombre') or '').strip()
+        apellido = (request.POST.get('apellido') or '').strip()
+        fecha_nacimiento = request.POST.get('fecha_nacimiento') or ''
+        direccion = (request.POST.get('direccion') or '').strip()
+        telefono = (request.POST.get('telefono') or '').strip()
+        email = (request.POST.get('email') or '').strip() or None
+        titulo = (request.POST.get('titulo') or '').strip()
+        especialidad = (request.POST.get('especialidad') or '').strip() or None
+        fecha_ingreso = request.POST.get('fecha_ingreso') or ''
+        errores = []
+
+        if not nombre_usuario or not contrasenia:
+            errores.append('El usuario y la contraseña provisoria son obligatorios.')
+        if not dni or not nombre or not apellido:
+            errores.append('DNI, nombre y apellido son obligatorios.')
+        if Usuario.objects.filter(nombre_usuario=nombre_usuario).exists():
+            errores.append('El nombre de usuario ya existe.')
+        if dni and Persona.objects.filter(dni=dni).exists():
+            errores.append('El DNI ya está registrado.')
+        if email and Usuario.objects.filter(correo=email).exists():
+            errores.append('El correo ya está asociado a otra cuenta.')
+        if not titulo:
+            errores.append('El título docente es obligatorio.')
+
+        try:
+            fecha_nac_obj = datetime.strptime(fecha_nacimiento, '%Y-%m-%d').date()
+        except (ValueError, TypeError):
+            fecha_nac_obj = None
+            errores.append('La fecha de nacimiento no es válida.')
+        try:
+            fecha_ingreso_obj = datetime.strptime(fecha_ingreso, '%Y-%m-%d').date() if fecha_ingreso else date.today()
+        except (ValueError, TypeError):
+            fecha_ingreso_obj = None
+            errores.append('La fecha de ingreso no es válida.')
+
+        if errores:
+            for error in errores:
+                messages.error(request, error)
+            return redirect('lista-profesores-admin')
+
+        with transaction.atomic():
+            usuario = Usuario.objects.create(
+                nombre_usuario=nombre_usuario,
+                contrasenia=contrasenia,
+                correo=email,
+            )
+            persona = Persona.objects.create(
+                id_usuario=usuario,
+                dni=dni,
+                nombre=nombre,
+                apellido=apellido,
+                fecha_nacimiento=fecha_nac_obj,
+                direccion=direccion or None,
+                telefono=telefono or None,
+                email=email,
+            )
+            Docente.objects.create(
+                id_persona=persona,
+                titulo=titulo,
+                especialidad=especialidad,
+                fecha_ingreso=fecha_ingreso_obj,
+            )
+        messages.success(request, 'Profesor registrado correctamente.')
+
+    return redirect('lista-profesores-admin')
+
+
+@never_cache
+def modificar_profesor_admin(request, legajo):
+    persona_sesion, dashboard_url = obtener_datos_sesion(request)
+    if not persona_sesion or dashboard_url != 'dashboard-administrativo':
+        return redirect('login')
+
+    profesor = get_object_or_404(Docente.objects.select_related('id_persona', 'id_persona__id_usuario'), legajo=legajo)
+    persona = profesor.id_persona
+    if request.method == 'POST':
+        dni = (request.POST.get('dni') or '').strip()
+        email = (request.POST.get('email') or '').strip() or None
+        try:
+            fecha_nac_obj = datetime.strptime(request.POST.get('fecha_nacimiento') or '', '%Y-%m-%d').date()
+            fecha_ingreso_obj = datetime.strptime(request.POST.get('fecha_ingreso') or '', '%Y-%m-%d').date()
+        except (ValueError, TypeError):
+            messages.error(request, 'Las fechas ingresadas no son válidas.')
+            return redirect('lista-profesores-admin')
+
+        errores = []
+        if not dni or not (request.POST.get('nombre') or '').strip() or not (request.POST.get('apellido') or '').strip():
+            errores.append('DNI, nombre y apellido son obligatorios.')
+        if Persona.objects.filter(dni=dni).exclude(id=persona.id).exists():
+            errores.append('El DNI ya está registrado en otra persona.')
+        if email and Usuario.objects.filter(correo=email).exclude(id=persona.id_usuario_id).exists():
+            errores.append('El correo ya está asociado a otra cuenta.')
+        if not (request.POST.get('titulo') or '').strip():
+            errores.append('El título docente es obligatorio.')
+        if errores:
+            for error in errores:
+                messages.error(request, error)
+            return redirect('lista-profesores-admin')
+
+        with transaction.atomic():
+            persona.dni = dni
+            persona.nombre = (request.POST.get('nombre') or '').strip()
+            persona.apellido = (request.POST.get('apellido') or '').strip()
+            persona.fecha_nacimiento = fecha_nac_obj
+            persona.direccion = (request.POST.get('direccion') or '').strip() or None
+            persona.telefono = (request.POST.get('telefono') or '').strip() or None
+            persona.email = email
+            persona.save()
+            if persona.id_usuario:
+                persona.id_usuario.correo = email
+                persona.id_usuario.save(update_fields=['correo'])
+            profesor.titulo = (request.POST.get('titulo') or '').strip()
+            profesor.especialidad = (request.POST.get('especialidad') or '').strip() or None
+            profesor.fecha_ingreso = fecha_ingreso_obj
+            profesor.save()
+        messages.success(request, 'Datos del profesor actualizados correctamente.')
+
+    return redirect('lista-profesores-admin')
+
+
+@never_cache
+def baja_profesor_admin(request, legajo):
+    persona_sesion, dashboard_url = obtener_datos_sesion(request)
+    if not persona_sesion or dashboard_url != 'dashboard-administrativo':
+        return redirect('login')
+
+    if request.method == 'POST':
+        profesor = get_object_or_404(Docente.objects.select_related('id_persona'), legajo=legajo)
+        persona = profesor.id_persona
+        usuario = persona.id_usuario
+        with transaction.atomic():
+            DocenteDictaMateria.objects.filter(id_docente=profesor).delete()
+            DocenteDisciplina.objects.filter(legajo_docente=profesor).delete()
+            profesor.delete()
+            persona.delete()
+            if usuario:
+                usuario.delete()
+        messages.success(request, 'Profesor dado de baja correctamente.')
+
+    return redirect('lista-profesores-admin')
 
 @never_cache
 def aprobar_inscripcion(request, id_solicitud):
