@@ -805,13 +805,22 @@ def dashboard_docente(request):
     
     docente = Docente.objects.filter(id_persona=persona).first()
 
-    materias = Materia.objects.filter(
-        docentedictamateria__id_docente=docente
-    ).distinct()
-
-    cursos = Curso.objects.filter(
-        cursocursamaterias__id_materia__in=materias
-    ).distinct()
+    asignaciones = DocenteDictaMateria.objects.filter(id_docente=docente)
+    asignaciones_directas = asignaciones.exclude(id_curso__isnull=True)
+    if asignaciones_directas.exists():
+        materias = Materia.objects.filter(
+            id_materia__in=asignaciones_directas.values('id_materia_id')
+        ).distinct()
+        cursos = Curso.objects.filter(
+            id_curso__in=asignaciones_directas.values('id_curso_id')
+        ).distinct()
+    else:
+        materias = Materia.objects.filter(
+            docentedictamateria__id_docente=docente
+        ).distinct()
+        cursos = Curso.objects.filter(
+            cursocursamaterias__id_materia__in=materias
+        ).distinct()
 
     alumnos = Alumno.objects.filter(
         id_curso__in=cursos
@@ -862,7 +871,8 @@ def dashboard_docente(request):
 
     # horarios
     horarios = CursoCursaMaterias.objects.filter(
-        id_materia__in=materias
+        id_materia__in=materias,
+        id_curso__in=cursos,
     ).select_related('id_curso', 'id_materia')
 
     horario_dict = {}
@@ -910,13 +920,23 @@ def horario_docente(request):
     if not docente:
         return redirect('login')
 
-    materias = Materia.objects.filter(
-        docentedictamateria__id_docente=docente
-    ).distinct()
-
-    cursos = CursoCursaMaterias.objects.filter(
-        id_materia__in=materias
-    )
+    asignaciones = DocenteDictaMateria.objects.filter(id_docente=docente)
+    asignaciones_directas = asignaciones.exclude(id_curso__isnull=True)
+    if asignaciones_directas.exists():
+        materias = Materia.objects.filter(
+            id_materia__in=asignaciones_directas.values('id_materia_id')
+        ).distinct()
+        cursos = CursoCursaMaterias.objects.filter(
+            id_curso__in=asignaciones_directas.values('id_curso_id'),
+            id_materia__in=asignaciones_directas.values('id_materia_id'),
+        )
+    else:
+        materias = Materia.objects.filter(
+            docentedictamateria__id_docente=docente
+        ).distinct()
+        cursos = CursoCursaMaterias.objects.filter(
+            id_materia__in=materias
+        )
 
     horario = {}
 
@@ -992,13 +1012,16 @@ def dashboard_directivo(request):
         # Agregar materia
         docentes_dict[docente_key]['materias'].append(materia.nombre)
         
-        # Buscar cursos donde se dicta esta materia
-        cursos_materia = CursoCursaMaterias.objects.filter(
-            id_materia=materia
-        ).select_related('id_curso')
-        
-        for curso_materia in cursos_materia:
-            curso = curso_materia.id_curso
+        # Las asignaciones nuevas indican el curso exacto; las antiguas
+        # sin curso mantienen el comportamiento anterior por materia.
+        if relacion.id_curso_id:
+            cursos = [relacion.id_curso]
+        else:
+            cursos = [cm.id_curso for cm in CursoCursaMaterias.objects.filter(
+                id_materia=materia
+            ).select_related('id_curso')]
+
+        for curso in cursos:
             curso_texto = f"{curso.anio}° {curso.comision} ({curso.nivel})"
             docentes_dict[docente_key]['cursos'].add(curso_texto)
     
@@ -1341,16 +1364,27 @@ def lista_profesores_admin(request):
     
     # DATOS DE PROFESORES
     profesores = Docente.objects.select_related('id_persona').all().order_by('id_persona__apellido', 'id_persona__nombre')
-    materias_disponibles = Materia.objects.all().order_by('nombre')
+    curso_materia_options = CursoCursaMaterias.objects.select_related(
+        'id_curso', 'id_materia'
+    ).order_by('id_curso__nivel', 'id_curso__anio', 'id_curso__comision', 'id_materia__nombre')
+    for opcion in curso_materia_options:
+        opcion.clave = f'{opcion.id_curso_id}:{opcion.id_materia_id}'
     for profesor in profesores:
         relaciones = DocenteDictaMateria.objects.filter(
             id_docente=profesor
         ).select_related('id_materia')
         profesor.materia_ids = [relacion.id_materia_id for relacion in relaciones]
-        profesor.materias_asignadas = [relacion.id_materia.nombre for relacion in relaciones]
-        profesor.cursos_asignados = Curso.objects.filter(
-            cursocursamaterias__id_materia__in=profesor.materia_ids
-        ).distinct().order_by('nivel', 'anio', 'comision')
+        relaciones_directas = [relacion for relacion in relaciones if relacion.id_curso_id]
+        if relaciones_directas:
+            profesor.asignacion_keys = [
+                f'{relacion.id_curso_id}:{relacion.id_materia_id}'
+                for relacion in relaciones_directas
+            ]
+        else:
+            profesor.asignacion_keys = [
+                opcion.clave for opcion in curso_materia_options
+                if opcion.id_materia_id in profesor.materia_ids
+            ]
     
     # Si viene un legajo por GET, mostrar detalle
     legajo_detalle = request.GET.get('legajo')
@@ -1359,6 +1393,12 @@ def lista_profesores_admin(request):
         profesor_detalle = get_object_or_404(
             Docente.objects.select_related('id_persona'), 
             legajo=legajo_detalle
+        )
+        profesor_detalle.asignaciones = DocenteDictaMateria.objects.filter(
+            id_docente=profesor_detalle,
+            id_curso__isnull=False,
+        ).select_related('id_curso', 'id_materia').order_by(
+            'id_curso__nivel', 'id_curso__anio', 'id_curso__comision', 'id_materia__nombre'
         )
     
     return render(request, 'core/dashboard-administrativo.html', {
@@ -1375,7 +1415,7 @@ def lista_profesores_admin(request):
         'documentacion_pendiente': documentacion_pendiente,
         'panel_activo': 'profesores',
         'profesores': profesores,
-        'materias_disponibles': materias_disponibles,
+        'curso_materia_options': curso_materia_options,
         'profesor_detalle': profesor_detalle,
     })
 
@@ -1383,6 +1423,24 @@ def lista_profesores_admin(request):
 def detalle_profesor_admin(request, legajo):
     """Redirige a la lista de profesores pasando el legajo por GET para mostrar el detalle."""
     return redirect(f"{reverse('lista-profesores-admin')}?legajo={legajo}")
+
+
+def _asignaciones_profesor(post):
+    """Devuelve pares (curso, materia) que existen en el plan del curso."""
+    pares = []
+    for valor in post.getlist('asignaciones'):
+        try:
+            curso_id, materia_id = valor.split(':', 1)
+            curso_id = int(curso_id)
+            materia_id = int(materia_id)
+        except (TypeError, ValueError):
+            continue
+        if CursoCursaMaterias.objects.filter(
+            id_curso_id=curso_id,
+            id_materia_id=materia_id,
+        ).exists():
+            pares.append((curso_id, materia_id))
+    return list(dict.fromkeys(pares))
 
 
 @never_cache
@@ -1405,7 +1463,7 @@ def alta_profesor_admin(request):
         titulo = (request.POST.get('titulo') or '').strip()
         especialidad = (request.POST.get('especialidad') or '').strip() or None
         fecha_ingreso = request.POST.get('fecha_ingreso') or ''
-        materias_ids = request.POST.getlist('materias')
+        asignaciones = _asignaciones_profesor(request.POST)
         errores = []
 
         if not nombre_usuario or not contrasenia:
@@ -1459,10 +1517,13 @@ def alta_profesor_admin(request):
                 especialidad=especialidad,
                 fecha_ingreso=fecha_ingreso_obj,
             )
-            materias_validas = Materia.objects.filter(id_materia__in=materias_ids)
             DocenteDictaMateria.objects.bulk_create([
-                DocenteDictaMateria(id_docente=docente, id_materia=materia)
-                for materia in materias_validas
+                DocenteDictaMateria(
+                    id_docente=docente,
+                    id_curso_id=curso_id,
+                    id_materia_id=materia_id,
+                )
+                for curso_id, materia_id in asignaciones
             ])
         messages.success(request, 'Profesor registrado correctamente.')
 
@@ -1518,12 +1579,14 @@ def modificar_profesor_admin(request, legajo):
             profesor.fecha_ingreso = fecha_ingreso_obj
             profesor.save()
             DocenteDictaMateria.objects.filter(id_docente=profesor).delete()
-            materias_validas = Materia.objects.filter(
-                id_materia__in=request.POST.getlist('materias')
-            )
+            asignaciones = _asignaciones_profesor(request.POST)
             DocenteDictaMateria.objects.bulk_create([
-                DocenteDictaMateria(id_docente=profesor, id_materia=materia)
-                for materia in materias_validas
+                DocenteDictaMateria(
+                    id_docente=profesor,
+                    id_curso_id=curso_id,
+                    id_materia_id=materia_id,
+                )
+                for curso_id, materia_id in asignaciones
             ])
         messages.success(request, 'Datos del profesor actualizados correctamente.')
 
@@ -2830,10 +2893,18 @@ def crear_tarea(request):
         elif estado == 'Publicado':
             fecha_pub = timezone.now()
             
-        materia = Materia.objects.filter(
-            docentedictamateria__id_docente=docente,
-            cursocursamaterias__id_curso=curso
-        ).first()
+        asignacion_directa = DocenteDictaMateria.objects.filter(
+            id_docente=docente,
+            id_curso=curso,
+        ).select_related('id_materia').first()
+        if asignacion_directa:
+            materia = asignacion_directa.id_materia
+        else:
+            materia = Materia.objects.filter(
+                docentedictamateria__id_docente=docente,
+                docentedictamateria__id_curso__isnull=True,
+                cursocursamaterias__id_curso=curso,
+            ).first()
         
         Tarea.objects.create(
             docente=docente,
@@ -2996,10 +3067,21 @@ def guardar_nota(request):
             })
 
         # Verificar que esa materia la dicte este docente
-        materia = Materia.objects.filter(
-            id_materia=materia_id,
-            docentedictamateria__id_docente=docente
-        ).first()
+        asignaciones_directas = DocenteDictaMateria.objects.filter(
+            id_docente=docente,
+            id_curso__isnull=False,
+        )
+        if asignaciones_directas.exists():
+            materia = Materia.objects.filter(
+                id_materia=materia_id,
+                docentedictamateria__id_docente=docente,
+                docentedictamateria__id_curso=curso,
+            ).first()
+        else:
+            materia = Materia.objects.filter(
+                id_materia=materia_id,
+                docentedictamateria__id_docente=docente,
+            ).first()
 
         if not materia:
             return JsonResponse({

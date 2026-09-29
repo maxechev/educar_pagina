@@ -208,6 +208,13 @@ class Docente(models.Model):
 class DocenteDictaMateria(models.Model):
     id_docente = models.ForeignKey(Docente, models.DO_NOTHING, db_column='id_docente')
     id_materia = models.ForeignKey('Materia', models.DO_NOTHING, db_column='id_materia')
+    id_curso = models.ForeignKey(
+        'Curso',
+        models.DO_NOTHING,
+        db_column='id_curso',
+        blank=True,
+        null=True,
+    )
 
     class Meta:
         managed = True

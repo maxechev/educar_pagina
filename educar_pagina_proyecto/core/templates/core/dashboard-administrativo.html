@@ -1371,6 +1371,18 @@
                   </div>
                 </div>
               </div>
+              <div style="background: #f8fafc; border-radius: 12px; padding: 20px; margin-top: 20px;">
+                <h4 style="color: #1d66c4; margin-bottom: 16px; font-size: 16px">Asignaciones de cursos y materias</h4>
+                {% if profesor_detalle.asignaciones %}
+                <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                  {% for asignacion in profesor_detalle.asignaciones %}
+                  <span class="badge badge-blue">{{ asignacion.id_curso.nivel }} {{ asignacion.id_curso.anio }}° {{ asignacion.id_curso.comision }} — {{ asignacion.id_materia.nombre }}</span>
+                  {% endfor %}
+                </div>
+                {% else %}
+                <span style="color: #64748b">No tiene asignaciones específicas de curso y materia.</span>
+                {% endif %}
+              </div>
             </div>
 
             {% else %}
@@ -1413,7 +1425,7 @@
                     <div class="form-group"><label>Título Docente</label><input type="text" name="titulo" maxlength="100" required></div>
                     <div class="form-group"><label>Especialidad</label><input type="text" name="especialidad" maxlength="100"></div>
                     <div class="form-group"><label>Fecha de Ingreso</label><input type="date" name="fecha_ingreso"></div>
-                    <div class="form-group" style="grid-column: 1 / -1;"><label>Materias a cargo</label><div style="display: flex; flex-wrap: wrap; gap: 10px 18px;">{% for materia in materias_disponibles %}<label style="font-weight: normal; display: flex; align-items: center; gap: 5px;"><input type="checkbox" name="materias" value="{{ materia.id_materia }}">{{ materia.nombre }}</label>{% empty %}<span>No hay materias cargadas.</span>{% endfor %}</div><small style="color: #64748b;">Los cursos a cargo se calculan según los cursos que tienen esas materias.</small></div>
+                    <div class="form-group" style="grid-column: 1 / -1;"><label>Curso y materia a cargo</label><div style="display: flex; flex-direction: column; gap: 6px; max-height: 220px; overflow-y: auto;">{% for opcion in curso_materia_options %}<label style="font-weight: normal; display: flex; align-items: center; gap: 7px;"><input type="checkbox" name="asignaciones" value="{{ opcion.id_curso_id }}:{{ opcion.id_materia_id }}">{{ opcion.id_curso.nivel }} {{ opcion.id_curso.anio }}° {{ opcion.id_curso.comision }} — {{ opcion.id_materia.nombre }}</label>{% empty %}<span>No hay combinaciones de cursos y materias cargadas.</span>{% endfor %}</div><small style="color: #64748b;">La asignación se guarda por cada combinación curso–materia. El horario se podrá definir después.</small></div>
                   </div>
                   <button type="submit" class="btn-form" style="margin-top: 16px;">Guardar Profesor</button>
                 </form>
@@ -1427,8 +1439,6 @@
                     <th>Apellido y Nombre</th>
                     <th>DNI</th>
                     <th>Especialidad</th>
-                    <th>Materias a cargo</th>
-                    <th>Cursos a cargo</th>
                     <th>Estado</th>
                     <th>Acciones</th>
                   </tr>
@@ -1446,8 +1456,6 @@
                         >{{ profesor.especialidad|default:"-" }}</span
                       >
                     </td>
-                    <td>{% for materia in profesor.materias_asignadas %}{{ materia }}{% if not forloop.last %}, {% endif %}{% empty %}-{% endfor %}</td>
-                    <td>{% for curso in profesor.cursos_asignados %}{{ curso.anio }}° {{ curso.nivel }} {{ curso.comision }}{% if not forloop.last %}, {% endif %}{% empty %}-{% endfor %}</td>
                     <td>
                       <span class="badge badge-green">Activo</span>
                     </td>
@@ -1459,17 +1467,10 @@
                           {% csrf_token %}<button type="submit" class="btn-small" style="background: #dc2626; margin-top: 0; padding: 6px 12px; font-size: 12px;">Baja</button>
                         </form>
                       </div>
-                      <!--
-                        href="{% url 'detalle-profesor-admin' profesor.legajo %}"
-                        class="btn-small"
-                      >
-                        Más info →
-                      </a> -->
-                      </div>
                     </td>
                   </tr>
                   <tr id="editar-profesor-{{ profesor.legajo }}" style="display: none; background: #f8fafc;">
-                    <td colspan="8">
+                    <td colspan="6">
                       <form method="POST" action="{% url 'modificar-profesor-admin' profesor.legajo %}" style="padding: 16px;">
                         {% csrf_token %}
                         <div class="form-grid">
@@ -1484,7 +1485,7 @@
                           <div class="form-group"><label>Título Docente</label><input type="text" name="titulo" value="{{ profesor.titulo }}" required></div>
                           <div class="form-group"><label>Especialidad</label><input type="text" name="especialidad" value="{{ profesor.especialidad|default:'' }}"></div>
                           <div class="form-group"><label>Fecha de Ingreso</label><input type="date" name="fecha_ingreso" value="{{ profesor.fecha_ingreso|date:'Y-m-d' }}" required></div>
-                          <div class="form-group" style="grid-column: 1 / -1;"><label>Materias a cargo</label><div style="display: flex; flex-wrap: wrap; gap: 10px 18px;">{% for materia in materias_disponibles %}<label style="font-weight: normal; display: flex; align-items: center; gap: 5px;"><input type="checkbox" name="materias" value="{{ materia.id_materia }}" {% if materia.id_materia in profesor.materia_ids %}checked{% endif %}>{{ materia.nombre }}</label>{% empty %}<span>No hay materias cargadas.</span>{% endfor %}</div><small style="color: #64748b;">Los cursos a cargo se calculan según los cursos que tienen esas materias.</small></div>
+                          <div class="form-group" style="grid-column: 1 / -1;"><label>Curso y materia a cargo</label><div style="display: flex; flex-direction: column; gap: 6px; max-height: 220px; overflow-y: auto;">{% for opcion in curso_materia_options %}<label style="font-weight: normal; display: flex; align-items: center; gap: 7px;"><input type="checkbox" name="asignaciones" value="{{ opcion.clave }}" {% if opcion.clave in profesor.asignacion_keys %}checked{% endif %}>{{ opcion.id_curso.nivel }} {{ opcion.id_curso.anio }}° {{ opcion.id_curso.comision }} — {{ opcion.id_materia.nombre }}</label>{% empty %}<span>No hay combinaciones de cursos y materias cargadas.</span>{% endfor %}</div><small style="color: #64748b;">La asignación se guarda por cada combinación curso–materia. El horario se podrá definir después.</small></div>
                         </div>
                         <div style="margin-top: 16px; display: flex; gap: 8px;"><button type="submit" class="btn-small" style="background: #16a34a; margin-top: 0;">Guardar Cambios</button><button type="button" class="btn-small" style="background: #64748b; margin-top: 0;" onclick="toggleDisplay('editar-profesor-{{ profesor.legajo }}')">Cancelar</button></div>
                       </form>
