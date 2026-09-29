@@ -1341,6 +1341,16 @@ def lista_profesores_admin(request):
     
     # DATOS DE PROFESORES
     profesores = Docente.objects.select_related('id_persona').all().order_by('id_persona__apellido', 'id_persona__nombre')
+    materias_disponibles = Materia.objects.all().order_by('nombre')
+    for profesor in profesores:
+        relaciones = DocenteDictaMateria.objects.filter(
+            id_docente=profesor
+        ).select_related('id_materia')
+        profesor.materia_ids = [relacion.id_materia_id for relacion in relaciones]
+        profesor.materias_asignadas = [relacion.id_materia.nombre for relacion in relaciones]
+        profesor.cursos_asignados = Curso.objects.filter(
+            cursocursamaterias__id_materia__in=profesor.materia_ids
+        ).distinct().order_by('nivel', 'anio', 'comision')
     
     # Si viene un legajo por GET, mostrar detalle
     legajo_detalle = request.GET.get('legajo')
@@ -1365,6 +1375,7 @@ def lista_profesores_admin(request):
         'documentacion_pendiente': documentacion_pendiente,
         'panel_activo': 'profesores',
         'profesores': profesores,
+        'materias_disponibles': materias_disponibles,
         'profesor_detalle': profesor_detalle,
     })
 
@@ -1394,6 +1405,7 @@ def alta_profesor_admin(request):
         titulo = (request.POST.get('titulo') or '').strip()
         especialidad = (request.POST.get('especialidad') or '').strip() or None
         fecha_ingreso = request.POST.get('fecha_ingreso') or ''
+        materias_ids = request.POST.getlist('materias')
         errores = []
 
         if not nombre_usuario or not contrasenia:
@@ -1441,12 +1453,17 @@ def alta_profesor_admin(request):
                 telefono=telefono or None,
                 email=email,
             )
-            Docente.objects.create(
+            docente = Docente.objects.create(
                 id_persona=persona,
                 titulo=titulo,
                 especialidad=especialidad,
                 fecha_ingreso=fecha_ingreso_obj,
             )
+            materias_validas = Materia.objects.filter(id_materia__in=materias_ids)
+            DocenteDictaMateria.objects.bulk_create([
+                DocenteDictaMateria(id_docente=docente, id_materia=materia)
+                for materia in materias_validas
+            ])
         messages.success(request, 'Profesor registrado correctamente.')
 
     return redirect('lista-profesores-admin')
@@ -1500,6 +1517,14 @@ def modificar_profesor_admin(request, legajo):
             profesor.especialidad = (request.POST.get('especialidad') or '').strip() or None
             profesor.fecha_ingreso = fecha_ingreso_obj
             profesor.save()
+            DocenteDictaMateria.objects.filter(id_docente=profesor).delete()
+            materias_validas = Materia.objects.filter(
+                id_materia__in=request.POST.getlist('materias')
+            )
+            DocenteDictaMateria.objects.bulk_create([
+                DocenteDictaMateria(id_docente=profesor, id_materia=materia)
+                for materia in materias_validas
+            ])
         messages.success(request, 'Datos del profesor actualizados correctamente.')
 
     return redirect('lista-profesores-admin')
