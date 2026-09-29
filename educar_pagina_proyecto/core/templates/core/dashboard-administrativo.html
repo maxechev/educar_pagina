@@ -1103,10 +1103,10 @@
                           
                           <!-- Fila de Edición Inline (Oculta por defecto) -->
                           <tr id="editar-{{ alumno.legajo }}" style="display: none; background: #f8fafc;">
-                              <td colspan="7">
-                                  <form method="POST" action="{% url 'modificar-alumno-admin' alumno.legajo %}" style="padding: 16px;">
+                              <td colspan="7" style="width: 100%; padding: 0;">
+                                  <form method="POST" action="{% url 'modificar-alumno-admin' alumno.legajo %}" style="width: 100%; box-sizing: border-box; padding: 16px;">
                                       {% csrf_token %}
-                                      <div class="form-grid">
+                                      <div class="form-grid" style="width: 100%;">
                                           <div class="form-group"><label>Legajo</label><input type="text" value="{{ alumno.legajo }}" readonly style="background: #e2e8f0;" /></div>
                                           <div class="form-group"><label>DNI</label><input type="text" name="dni" value="{{ alumno.id_persona.dni }}" required /></div>
                                           <div class="form-group"><label>Nombre</label><input type="text" name="nombre" value="{{ alumno.id_persona.nombre }}" required /></div>
@@ -1470,10 +1470,10 @@
                     </td>
                   </tr>
                   <tr id="editar-profesor-{{ profesor.legajo }}" style="display: none; background: #f8fafc;">
-                    <td colspan="6">
-                      <form method="POST" action="{% url 'modificar-profesor-admin' profesor.legajo %}" style="padding: 16px;">
+                    <td colspan="6" style="width: 100%; padding: 0;">
+                      <form method="POST" action="{% url 'modificar-profesor-admin' profesor.legajo %}" style="width: 100%; box-sizing: border-box; padding: 16px;">
                         {% csrf_token %}
-                        <div class="form-grid">
+                        <div class="form-grid" style="width: 100%;">
                           <div class="form-group"><label>Legajo</label><input type="text" value="{{ profesor.legajo }}" readonly style="background: #e2e8f0;"></div>
                           <div class="form-group"><label>DNI</label><input type="text" name="dni" value="{{ profesor.id_persona.dni }}" maxlength="8" required></div>
                           <div class="form-group"><label>Nombre</label><input type="text" name="nombre" value="{{ profesor.id_persona.nombre }}" required></div>
