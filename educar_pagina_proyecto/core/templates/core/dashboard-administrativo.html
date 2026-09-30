@@ -1102,40 +1102,42 @@
                           </tr>
                           
                           <!-- Fila de Edición Inline (Oculta por defecto) -->
-                          <tr id="editar-{{ alumno.legajo }}" class="fila-edicion-abm" style="display: none; background: #f8fafc;">
-                              <td colspan="7" style="width: 100%; padding: 0;">
-                                  <form method="POST" action="{% url 'modificar-alumno-admin' alumno.legajo %}" style="width: 100%; box-sizing: border-box; padding: 16px;">
-                                      {% csrf_token %}
-                                      <div class="form-grid" style="width: 100%;">
-                                          <div class="form-group"><label>Legajo</label><input type="text" value="{{ alumno.legajo }}" readonly style="background: #e2e8f0;" /></div>
-                                          <div class="form-group"><label>DNI</label><input type="text" name="dni" value="{{ alumno.id_persona.dni }}" required /></div>
-                                          <div class="form-group"><label>Nombre</label><input type="text" name="nombre" value="{{ alumno.id_persona.nombre }}" required /></div>
-                                          <div class="form-group"><label>Apellido</label><input type="text" name="apellido" value="{{ alumno.id_persona.apellido }}" required /></div>
-                                          <div class="form-group"><label>Fecha de Nacimiento</label><input type="date" name="fecha_nacimiento" value="{{ alumno.id_persona.fecha_nacimiento|date:'Y-m-d' }}" required /></div>
-                                          <div class="form-group"><label>Teléfono</label><input type="text" name="telefono" value="{{ alumno.id_persona.telefono|default:'' }}" /></div>
-                                          <div class="form-group"><label>Correo Electrónico</label><input type="email" name="email" value="{{ alumno.id_persona.email|default:'' }}" /></div>
-                                          <div class="form-group"><label>Domicilio</label><input type="text" name="direccion" value="{{ alumno.id_persona.direccion|default:'' }}" /></div>
-                                          <div class="form-group">
-                                              <label>Curso</label>
-                                              <select name="id_curso" required>
-                                                  {% for curso in cursos_disponibles %}
-                                                      <option value="{{ curso.id_curso }}" {% if curso.id_curso == alumno.id_curso.id_curso %}selected{% endif %}>{{ curso.nivel }} - {{ curso.anio }}° {{ curso.comision }} ({{ curso.turno }})</option>
-                                                  {% endfor %}
-                                              </select>
+                          <tr id="editar-{{ alumno.legajo }}" class="fila-edicion-abm" style="display: none;">
+                              <td colspan="7" style="padding: 0 !important; width: 100% !important;">
+                                  <div style="background: #f8fafc; padding: 24px; width: 100%; box-sizing: border-box;">
+                                      <form method="POST" action="{% url 'modificar-alumno-admin' alumno.legajo %}" style="width: 100%;">
+                                          {% csrf_token %}
+                                          <div class="form-grid" style="grid-template-columns: repeat(2, 1fr) !important; width: 100% !important;">
+                                              <div class="form-group"><label>Legajo</label><input type="text" value="{{ alumno.legajo }}" readonly style="background: #e2e8f0; width: 100%;" /></div>
+                                              <div class="form-group"><label>DNI</label><input type="text" name="dni" value="{{ alumno.id_persona.dni }}" required style="width: 100%;" /></div>
+                                              <div class="form-group"><label>Nombre</label><input type="text" name="nombre" value="{{ alumno.id_persona.nombre }}" required style="width: 100%;" /></div>
+                                              <div class="form-group"><label>Apellido</label><input type="text" name="apellido" value="{{ alumno.id_persona.apellido }}" required style="width: 100%;" /></div>
+                                              <div class="form-group"><label>Fecha de Nacimiento</label><input type="date" name="fecha_nacimiento" value="{{ alumno.id_persona.fecha_nacimiento|date:'Y-m-d' }}" required style="width: 100%;" /></div>
+                                              <div class="form-group"><label>Teléfono</label><input type="text" name="telefono" value="{{ alumno.id_persona.telefono|default:'' }}" style="width: 100%;" /></div>
+                                              <div class="form-group"><label>Correo Electrónico</label><input type="email" name="email" value="{{ alumno.id_persona.email|default:'' }}" style="width: 100%;" /></div>
+                                              <div class="form-group"><label>Domicilio</label><input type="text" name="direccion" value="{{ alumno.id_persona.direccion|default:'' }}" style="width: 100%;" /></div>
+                                              <div class="form-group">
+                                                  <label>Curso</label>
+                                                  <select name="id_curso" required style="width: 100%;">
+                                                      {% for curso in cursos_disponibles %}
+                                                          <option value="{{ curso.id_curso }}" {% if curso.id_curso == alumno.id_curso.id_curso %}selected{% endif %}>{{ curso.nivel }} - {{ curso.anio }}° {{ curso.comision }} ({{ curso.turno }})</option>
+                                                      {% endfor %}
+                                                  </select>
+                                              </div>
+                                              <div class="form-group">
+                                                  <label>Estado</label>
+                                                  <select name="estado" style="width: 100%;">
+                                                      <option value="Activo" {% if alumno.estado == 'Activo' %}selected{% endif %}>Activo</option>
+                                                      <option value="Inactivo" {% if alumno.estado == 'Inactivo' %}selected{% endif %}>Inactivo</option>
+                                                  </select>
+                                              </div>
                                           </div>
-                                          <div class="form-group">
-                                              <label>Estado</label>
-                                              <select name="estado">
-                                                  <option value="Activo" {% if alumno.estado == 'Activo' %}selected{% endif %}>Activo</option>
-                                                  <option value="Inactivo" {% if alumno.estado == 'Inactivo' %}selected{% endif %}>Inactivo</option>
-                                              </select>
+                                          <div style="margin-top: 16px; display: flex; gap: 8px;">
+                                              <button type="submit" class="btn-small" style="background: #16a34a; margin-top: 0;">Guardar Cambios</button>
+                                              <button type="button" class="btn-small" style="background: #64748b; margin-top: 0;" onclick="toggleDisplay('editar-{{ alumno.legajo }}')">Cancelar</button>
                                           </div>
-                                      </div>
-                                      <div style="margin-top: 16px; display: flex; gap: 8px;">
-                                          <button type="submit" class="btn-small" style="background: #16a34a; margin-top: 0;">Guardar Cambios</button>
-                                          <button type="button" class="btn-small" style="background: #64748b; margin-top: 0;" onclick="toggleDisplay('editar-{{ alumno.legajo }}')">Cancelar</button>
-                                      </div>
-                                  </form>
+                                      </form>
+                                  </div>
                               </td>
                           </tr>
                           {% endfor %}
@@ -1469,28 +1471,39 @@
                       </div>
                     </td>
                   </tr>
-                  <tr id="editar-{{ profesor.legajo }}" class="fila-edicion-abm" style="display: none; background: #f8fafc;">
-                    <td colspan="6" style="width: 100%; padding: 0;">
-                      <form method="POST" action="{% url 'modificar-profesor-admin' profesor.legajo %}" style="width: 100%; box-sizing: border-box; padding: 16px;">
-                        {% csrf_token %}
-                        <div class="form-grid" style="width: 100%;">
-                          <div class="form-group"><label>Legajo</label><input type="text" value="{{ profesor.legajo }}" readonly style="background: #e2e8f0;"></div>
-                          <div class="form-group"><label>DNI</label><input type="text" name="dni" value="{{ profesor.id_persona.dni }}" maxlength="8" required></div>
-                          <div class="form-group"><label>Nombre</label><input type="text" name="nombre" value="{{ profesor.id_persona.nombre }}" required></div>
-                          <div class="form-group"><label>Apellido</label><input type="text" name="apellido" value="{{ profesor.id_persona.apellido }}" required></div>
-                          <div class="form-group"><label>Fecha de Nacimiento</label><input type="date" name="fecha_nacimiento" value="{{ profesor.id_persona.fecha_nacimiento|date:'Y-m-d' }}" required></div>
-                          <div class="form-group"><label>Teléfono</label><input type="text" name="telefono" value="{{ profesor.id_persona.telefono|default:'' }}"></div>
-                          <div class="form-group"><label>Correo Electrónico</label><input type="email" name="email" value="{{ profesor.id_persona.email|default:'' }}"></div>
-                          <div class="form-group"><label>Domicilio</label><input type="text" name="direccion" value="{{ profesor.id_persona.direccion|default:'' }}"></div>
-                          <div class="form-group"><label>Título Docente</label><input type="text" name="titulo" value="{{ profesor.titulo }}" required></div>
-                          <div class="form-group"><label>Especialidad</label><input type="text" name="especialidad" value="{{ profesor.especialidad|default:'' }}"></div>
-                          <div class="form-group"><label>Fecha de Ingreso</label><input type="date" name="fecha_ingreso" value="{{ profesor.fecha_ingreso|date:'Y-m-d' }}" required></div>
-                          <div class="form-group" style="grid-column: 1 / -1;"><label>Materia y cursos a cargo</label><div style="display: flex; flex-direction: column; gap: 8px; max-height: 260px; overflow-y: auto;">{% for materia in materia_curso_options %}<details style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 12px;"><summary style="cursor: pointer; font-weight: 600; color: #1e3a8a;">{{ materia.nombre }} <span style="color: #64748b; font-weight: normal;">({{ materia.cursos_disponibles|length }} cursos)</span></summary><div style="display: flex; flex-wrap: wrap; gap: 8px 16px; padding: 10px 0 2px 4px;">{% for curso in materia.cursos_disponibles %}<label style="font-weight: normal; display: flex; align-items: center; gap: 6px;"><input type="checkbox" name="asignaciones" value="{{ curso.asignacion_clave }}" {% if curso.asignacion_clave in profesor.asignacion_keys %}checked{% endif %}>{{ curso.nivel }} {{ curso.anio }}° {{ curso.comision }}</label>{% endfor %}</div></details>{% empty %}<span>No hay materias con cursos cargados.</span>{% endfor %}</div><small style="color: #64748b;">Elegí una materia para ver únicamente los cursos que la tienen. El horario se podrá definir después.</small></div>
-                        </div>
-                        <div style="margin-top: 16px; display: flex; gap: 8px;"><button type="submit" class="btn-small" style="background: #16a34a; margin-top: 0;">Guardar Cambios</button><button type="button" class="btn-small" style="background: #64748b; margin-top: 0;" onclick="toggleDisplay('editar-profesor-{{ profesor.legajo }}')">Cancelar</button></div>
-                      </form>
-                    </td>
+
+
+
+                  <tr id="editar-{{ profesor.legajo }}" class="fila-edicion-abm" style="display: none;">
+                      <td colspan="6" style="padding: 0 !important; width: 100% !important;">
+                          <div style="background: #f8fafc; padding: 24px; width: 100%; box-sizing: border-box;">
+                              <form method="POST" action="{% url 'modificar-profesor-admin' profesor.legajo %}" style="width: 100%;">
+                                  {% csrf_token %}
+                                  <div class="form-grid" style="grid-template-columns: repeat(2, 1fr) !important; width: 100% !important;">
+                                      <div class="form-group"><label>Legajo</label><input type="text" value="{{ profesor.legajo }}" readonly style="background: #e2e8f0; width: 100%;" /></div>
+                                      <div class="form-group"><label>DNI</label><input type="text" name="dni" value="{{ profesor.id_persona.dni }}" required style="width: 100%;" /></div>
+                                      <div class="form-group"><label>Nombre</label><input type="text" name="nombre" value="{{ profesor.id_persona.nombre }}" required style="width: 100%;" /></div>
+                                      <div class="form-group"><label>Apellido</label><input type="text" name="apellido" value="{{ profesor.id_persona.apellido }}" required style="width: 100%;" /></div>
+                                      <div class="form-group"><label>Fecha de Nacimiento</label><input type="date" name="fecha_nacimiento" value="{{ profesor.id_persona.fecha_nacimiento|date:'Y-m-d' }}" required style="width: 100%;" /></div>
+                                      <div class="form-group"><label>Teléfono</label><input type="text" name="telefono" value="{{ profesor.id_persona.telefono|default:'' }}" style="width: 100%;" /></div>
+                                      <div class="form-group"><label>Correo Electrónico</label><input type="email" name="email" value="{{ profesor.id_persona.email|default:'' }}" style="width: 100%;" /></div>
+                                      <div class="form-group"><label>Domicilio</label><input type="text" name="direccion" value="{{ profesor.id_persona.direccion|default:'' }}" style="width: 100%;" /></div>
+                                      <div class="form-group"><label>Título Docente</label><input type="text" name="titulo" value="{{ profesor.titulo }}" required style="width: 100%;" /></div>
+                                      <div class="form-group"><label>Especialidad</label><input type="text" name="especialidad" value="{{ profesor.especialidad|default:'' }}" style="width: 100%;" /></div>
+                                      <div class="form-group"><label>Fecha de Ingreso</label><input type="date" name="fecha_ingreso" value="{{ profesor.fecha_ingreso|date:'Y-m-d' }}" required style="width: 100%;" /></div>
+                                  </div>
+                                  <div style="margin-top: 16px; display: flex; gap: 8px;">
+                                      <button type="submit" class="btn-small" style="background: #16a34a; margin-top: 0;">Guardar Cambios</button>
+                                      <button type="button" class="btn-small" style="background: #64748b; margin-top: 0;" onclick="toggleDisplay('editar-{{ profesor.legajo }}')">Cancelar</button>
+                                  </div>
+                              </form>
+                          </div>
+                      </td>
                   </tr>
+
+
+
+
                   {% endfor %}
                 </tbody>
               </table>
