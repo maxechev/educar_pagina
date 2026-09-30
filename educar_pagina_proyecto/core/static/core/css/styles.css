@@ -1345,42 +1345,43 @@
   flex-direction:column;
   gap:8px;
 }
-/* Forzar que las filas de edición ocupen todo el ancho */
-tr.fila-edicion-abm {
-    display: none !important;
-}
-
-tr.fila-edicion-abm[style*="display: block"] {
+/* Forzar que las filas de edición ocupen TODO el ancho de la tabla */
+.tabla tr.fila-edicion-abm {
     display: table-row !important;
 }
 
-tr.fila-edicion-abm > td {
+.tabla tr.fila-edicion-abm > td {
     padding: 0 !important;
     width: 100% !important;
     max-width: 100% !important;
+    display: table-cell !important;
 }
 
-tr.fila-edicion-abm form {
+.tabla tr.fila-edicion-abm form {
     width: 100% !important;
-    padding: 24px !important;
+    max-width: none !important;
+    padding: 24px 32px !important;
     box-sizing: border-box;
     margin: 0 !important;
 }
 
-tr.fila-edicion-abm .form-grid {
+.tabla tr.fila-edicion-abm .form-grid {
     width: 100% !important;
-    max-width: 100% !important;
+    max-width: none !important;
     grid-template-columns: repeat(2, 1fr) !important;
-    gap: 16px !important;
+    gap: 20px !important;
+    display: grid !important;
 }
 
-tr.fila-edicion-abm .form-group {
+.tabla tr.fila-edicion-abm .form-group {
     width: 100% !important;
+    min-width: 0 !important;
 }
 
-tr.fila-edicion-abm .form-group input,
-tr.fila-edicion-abm .form-group select,
-tr.fila-edicion-abm .form-group textarea {
+.tabla tr.fila-edicion-abm .form-group input,
+.tabla tr.fila-edicion-abm .form-group select,
+.tabla tr.fila-edicion-abm .form-group textarea {
     width: 100% !important;
+    max-width: none !important;
     box-sizing: border-box;
 }
