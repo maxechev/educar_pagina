@@ -1462,7 +1462,7 @@
                     <td>
                       <div style="display: flex; gap: 8px;">
                         <a href="{% url 'detalle-profesor-admin' profesor.legajo %}" class="btn-small" style="background: #1D66C4; margin-top: 0; padding: 6px 12px; font-size: 12px;">Ver</a>
-                        <button type="button" class="btn-small" style="background: #d97706; margin-top: 0; padding: 6px 12px; font-size: 12px;" onclick="toggleDisplay('editar-profesor-{{ profesor.legajo }}')">Editar</button>
+                        <button type="button" class="btn-small" style="background: #d97706; margin-top: 0; padding: 6px 12px; font-size: 12px;" onclick="toggleDisplay('editar-{{ profesor.legajo }}')">Editar</button>
                         <form method="POST" action="{% url 'baja-profesor-admin' profesor.legajo %}" style="display: inline;" onsubmit="return confirm('¿Está seguro de dar de baja a este profesor?');">
                           {% csrf_token %}<button type="submit" class="btn-small" style="background: #dc2626; margin-top: 0; padding: 6px 12px; font-size: 12px;">Baja</button>
                         </form>
