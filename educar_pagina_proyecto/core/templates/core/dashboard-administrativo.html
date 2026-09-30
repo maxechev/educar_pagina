@@ -358,7 +358,7 @@
 
                 {% empty %}
                 <tr>
-                  <td colspan="7">No hay pagos pendientes.</td>
+                  <td colspan="6">No hay pagos pendientes.</td>
                 </tr>
                 {% endfor %}
               </tbody>
@@ -1469,7 +1469,7 @@
                       </div>
                     </td>
                   </tr>
-                  <tr id="editar-profesor-{{ profesor.legajo }}" class="fila-edicion-abm" style="display: none; background: #f8fafc;">
+                  <tr id="editar-{{ profesor.legajo }}" class="fila-edicion-abm" style="display: none; background: #f8fafc;">
                     <td colspan="6" style="width: 100%; padding: 0;">
                       <form method="POST" action="{% url 'modificar-profesor-admin' profesor.legajo %}" style="width: 100%; box-sizing: border-box; padding: 16px;">
                         {% csrf_token %}
