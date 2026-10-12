@@ -319,7 +319,7 @@ document.querySelectorAll('.nota-input').forEach(input => {
               <!-- FILA DEL CURSO -->
               <tr onclick="toggleCurso('{{ curso.id_curso }}')" style="cursor:pointer;">
                 <td>{{ curso.anio }}° {{ curso.comision }}</td>
-                <td>{{ curso.nivel }}</td>
+                <td>{{ curso.nivel_educativo.nombre }}</td>
                 <td>{{ curso.turno }}</td>
                 <td>{{ curso.cantidad_alumnos }}</td>
                 <td>
@@ -643,7 +643,7 @@ document.querySelectorAll('.nota-input').forEach(input => {
 
                     {% for curso in cursos %}
                       <option value="{{ curso.id_curso }}">
-                        {{ curso.nivel }} {{ curso.anio }}° {{ curso.comision }} - {{ curso.turno }}
+                        {{ curso.nivel_educativo.nombre }} {{ curso.anio }}° {{ curso.comision }} - {{ curso.turno }}
                       </option>
                     {% empty %}
                       <option disabled>No tenés cursos asignados</option>

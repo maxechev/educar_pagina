@@ -13,7 +13,7 @@ import resend
 import os
 from django.shortcuts import render, redirect
 from django.db.models import Avg
-from django.db import transaction
+from django.db import transaction, IntegrityError
 import json
 from django.core.mail import EmailMessage
 from django.contrib import messages
@@ -52,6 +52,7 @@ from .models import (
     DocumentacionAlumno,
     Tarea,
     DocenteDisciplina,
+    NivelEducativo,
 )
 COMUNICADOS_FILE = os.path.join(
     os.path.dirname(__file__),
@@ -506,7 +507,7 @@ def dashboard_alumno(request):
             return redirect('dashboard-alumno')
 
 
-    curso_alumno = f"{alumno.id_curso.nivel} {alumno.id_curso.anio}° {alumno.id_curso.comision}"
+    curso_alumno = f"{alumno.id_curso.nivel_educativo.nombre} {alumno.id_curso.anio}° {alumno.id_curso.comision}"
     
     materias = CursoCursaMaterias.objects.filter(
         id_curso=alumno.id_curso
@@ -863,7 +864,7 @@ def dashboard_docente(request):
         ).aggregate(prom=Avg('nota'))['prom']
         cursos_data.append({
             'curso': f"{getattr(curso, 'anio', '')}° {getattr(curso, 'comision', '')}",
-            'nivel': getattr(curso, 'nivel', ''),
+            'nivel': getattr(curso.nivel_educativo, 'nombre', ''),
             'turno': getattr(curso, 'turno', ''),
             'alumnos': alumnos_count,
             'promedio': round(promedio, 1) if promedio else 0,
@@ -892,7 +893,7 @@ def dashboard_docente(request):
             dia_cap = dia.capitalize()
             if dia_cap == 'Miercoles':
                 dia_cap = 'Miércoles'
-            horario_dict[rango][dia_cap] = f"{h.id_curso.anio}° {h.id_curso.nivel} ({h.id_curso.comision}) - {h.id_curso.turno}"
+            horario_dict[rango][dia_cap] = f"{h.id_curso.anio}° {h.id_curso.nivel_educativo.nombre} ({h.id_curso.comision}) - {h.id_curso.turno}"
     cantidad_tareas = tareas.count()
     return render(request, 'core/dashboard-docente.html', {
         'persona': persona,
@@ -1022,7 +1023,7 @@ def dashboard_directivo(request):
             ).select_related('id_curso')]
 
         for curso in cursos:
-            curso_texto = f"{curso.anio}° {curso.comision} ({curso.nivel})"
+            curso_texto = f"{curso.anio}° {curso.comision} ({curso.nivel_educativo.nombre})"
             docentes_dict[docente_key]['cursos'].add(curso_texto)
     
     # Convertir el diccionario a lista
@@ -1042,9 +1043,9 @@ def dashboard_directivo(request):
     ausentes = Asistencia.objects.filter(fecha=hoy, tipo_asistencia='Ausente').count()
     tardanzas = Asistencia.objects.filter(fecha=hoy, tipo_asistencia='Tardanza').count()
     
-    alumnos_inicial = Alumno.objects.filter(id_curso__nivel='Inicial').count()
-    alumnos_primario = Alumno.objects.filter(id_curso__nivel='Primaria').count()
-    alumnos_secundario = Alumno.objects.filter(id_curso__nivel='Secundaria').count()
+    alumnos_inicial = Alumno.objects.filter(id_curso__nivel_educativo__nombre='Inicial').count()
+    alumnos_primario = Alumno.objects.filter(id_curso__nivel_educativo__nombre='Primario').count()
+    alumnos_secundario = Alumno.objects.filter(id_curso__nivel_educativo__nombre='Secundario').count()
     
     solicitudes_pendientes = SolicitudInscripcion.objects.filter(estado='Pendiente').count()
     postulaciones = PostulacionLaboral.objects.count()
@@ -1316,6 +1317,11 @@ def dashboard_administrativo(request):
     documentaciones = DocumentacionAlumno.objects.filter(
         estado='Pendiente'
     ).order_by('-fecha_envio')
+
+    niveles_educativos = NivelEducativo.objects.all().prefetch_related('cursos')
+    cursos_academicos = Curso.objects.select_related('nivel_educativo').all().order_by(
+        'nivel_educativo__nombre', 'anio', 'comision', 'turno'
+    )
     
     panel_activo = request.session.pop("panel_activo", "inicio")
     
@@ -1332,8 +1338,167 @@ def dashboard_administrativo(request):
         'pagos_pendientes': pagos_pendientes,
         'documentaciones': documentaciones,
         'documentacion_pendiente': documentacion_pendiente,
+        'niveles_educativos': niveles_educativos,
+        'cursos_academicos': cursos_academicos,
         'panel_activo': panel_activo,
     })
+
+
+@never_cache
+def lista_niveles_cursos_admin(request):
+    persona, dashboard_url = obtener_datos_sesion(request)
+    if not persona or dashboard_url != 'dashboard-administrativo':
+        return redirect('login')
+    request.session['panel_activo'] = 'niveles-cursos'
+    return redirect('dashboard-administrativo')
+
+
+def _validar_acceso_niveles(request):
+    persona, dashboard_url = obtener_datos_sesion(request)
+    return persona if persona and dashboard_url == 'dashboard-administrativo' else None
+
+
+@never_cache
+def alta_nivel_admin(request):
+    if not _validar_acceso_niveles(request):
+        return redirect('login')
+    if request.method == 'POST':
+        nombre = (request.POST.get('nombre') or '').strip()
+        descripcion = (request.POST.get('descripcion') or '').strip()
+        estado = request.POST.get('estado', 'Activo')
+        if not nombre:
+            messages.error(request, 'El nombre del nivel es obligatorio.')
+        elif NivelEducativo.objects.filter(nombre__iexact=nombre).exists():
+            messages.error(request, 'Ya existe un nivel educativo con ese nombre.')
+        else:
+            NivelEducativo.objects.create(
+                nombre=nombre.title(),
+                descripcion=descripcion or None,
+                estado=estado,
+            )
+            messages.success(request, 'Nivel educativo creado correctamente.')
+    return redirect('lista-niveles-cursos-admin')
+
+
+@never_cache
+def modificar_nivel_admin(request, id_nivel):
+    if not _validar_acceso_niveles(request):
+        return redirect('login')
+    nivel = get_object_or_404(NivelEducativo, id_nivel=id_nivel)
+    if request.method == 'POST':
+        nombre = (request.POST.get('nombre') or '').strip()
+        if not nombre:
+            messages.error(request, 'El nombre del nivel es obligatorio.')
+        elif NivelEducativo.objects.filter(nombre__iexact=nombre).exclude(id_nivel=id_nivel).exists():
+            messages.error(request, 'Ya existe otro nivel educativo con ese nombre.')
+        else:
+            nivel.nombre = nombre.title()
+            nivel.descripcion = (request.POST.get('descripcion') or '').strip() or None
+            nivel.estado = request.POST.get('estado', 'Activo')
+            nivel.save()
+            messages.success(request, 'Nivel educativo actualizado correctamente.')
+    return redirect('lista-niveles-cursos-admin')
+
+
+@never_cache
+def baja_nivel_admin(request, id_nivel):
+    if not _validar_acceso_niveles(request):
+        return redirect('login')
+    if request.method == 'POST':
+        nivel = get_object_or_404(NivelEducativo, id_nivel=id_nivel)
+        if nivel.cursos.exists():
+            nivel.estado = 'Inactivo'
+            nivel.save(update_fields=['estado'])
+            messages.warning(request, 'El nivel tiene cursos asociados y fue marcado como inactivo.')
+        else:
+            nivel.delete()
+            messages.success(request, 'Nivel educativo eliminado correctamente.')
+    return redirect('lista-niveles-cursos-admin')
+
+
+def _datos_curso(request):
+    nivel_id = request.POST.get('nivel_educativo')
+    anio = request.POST.get('anio')
+    comision = (request.POST.get('comision') or '').strip()
+    turno = (request.POST.get('turno') or '').strip()
+    cupo = request.POST.get('cupo_maximo') or None
+    if not nivel_id or not anio or not comision or not turno:
+        raise ValueError('Nivel, año, comisión y turno son obligatorios.')
+    try:
+        nivel = NivelEducativo.objects.get(id_nivel=nivel_id, estado='Activo')
+        anio = int(anio)
+        if cupo:
+            cupo = int(cupo)
+    except (NivelEducativo.DoesNotExist, ValueError, TypeError):
+        raise ValueError('Los datos del curso no son válidos.')
+    if anio <= 0 or (cupo is not None and cupo <= 0):
+        raise ValueError('El año y el cupo deben ser valores positivos.')
+    return nivel, anio, comision, turno, cupo
+
+
+@never_cache
+def alta_curso_admin(request):
+    if not _validar_acceso_niveles(request):
+        return redirect('login')
+    if request.method == 'POST':
+        try:
+            nivel, anio, comision, turno, cupo = _datos_curso(request)
+            if Curso.objects.filter(
+                nivel_educativo=nivel, anio=anio, comision__iexact=comision, turno__iexact=turno
+            ).exists():
+                raise ValueError('Ya existe un curso con ese nivel, año, comisión y turno.')
+            Curso.objects.create(
+                nivel_educativo=nivel,
+                anio=anio,
+                comision=comision,
+                turno=turno,
+                cupo_maximo=cupo,
+            )
+            messages.success(request, 'Curso creado correctamente.')
+        except (ValueError, IntegrityError) as error:
+            messages.error(request, str(error))
+    return redirect('lista-niveles-cursos-admin')
+
+
+@never_cache
+def modificar_curso_admin(request, id_curso):
+    if not _validar_acceso_niveles(request):
+        return redirect('login')
+    curso = get_object_or_404(Curso, id_curso=id_curso)
+    if request.method == 'POST':
+        try:
+            nivel, anio, comision, turno, cupo = _datos_curso(request)
+            if Curso.objects.filter(
+                nivel_educativo=nivel, anio=anio, comision__iexact=comision, turno__iexact=turno
+            ).exclude(id_curso=id_curso).exists():
+                raise ValueError('Ya existe otro curso con ese nivel, año, comisión y turno.')
+            curso.nivel_educativo = nivel
+            curso.anio = anio
+            curso.comision = comision
+            curso.turno = turno
+            curso.cupo_maximo = cupo
+            curso.save()
+            messages.success(request, 'Curso actualizado correctamente.')
+        except (ValueError, IntegrityError) as error:
+            messages.error(request, str(error))
+    return redirect('lista-niveles-cursos-admin')
+
+
+@never_cache
+def baja_curso_admin(request, id_curso):
+    if not _validar_acceso_niveles(request):
+        return redirect('login')
+    if request.method == 'POST':
+        curso = get_object_or_404(Curso, id_curso=id_curso)
+        tiene_alumnos = Alumno.objects.filter(id_curso=curso).exists()
+        tiene_materias = CursoCursaMaterias.objects.filter(id_curso=curso).exists()
+        tiene_docentes = DocenteDictaMateria.objects.filter(id_curso=curso).exists()
+        if tiene_alumnos or tiene_materias or tiene_docentes:
+            messages.error(request, 'No se puede eliminar el curso porque tiene alumnos, materias o profesores asociados.')
+        else:
+            curso.delete()
+            messages.success(request, 'Curso eliminado correctamente.')
+    return redirect('lista-niveles-cursos-admin')
 
 @never_cache
 def lista_profesores_admin(request):
@@ -1366,7 +1531,7 @@ def lista_profesores_admin(request):
     profesores = Docente.objects.select_related('id_persona').all().order_by('id_persona__apellido', 'id_persona__nombre')
     curso_materia_options = CursoCursaMaterias.objects.select_related(
         'id_curso', 'id_materia'
-    ).order_by('id_curso__nivel', 'id_curso__anio', 'id_curso__comision', 'id_materia__nombre')
+    ).order_by('id_curso__nivel_educativo__nombre', 'id_curso__anio', 'id_curso__comision', 'id_materia__nombre')
     for opcion in curso_materia_options:
         opcion.clave = f'{opcion.id_curso_id}:{opcion.id_materia_id}'
     materia_curso_options = []
@@ -1407,7 +1572,7 @@ def lista_profesores_admin(request):
             id_docente=profesor_detalle,
             id_curso__isnull=False,
         ).select_related('id_curso', 'id_materia').order_by(
-            'id_curso__nivel', 'id_curso__anio', 'id_curso__comision', 'id_materia__nombre'
+            'id_curso__nivel_educativo__nombre', 'id_curso__anio', 'id_curso__comision', 'id_materia__nombre'
         )
     
     return render(request, 'core/dashboard-administrativo.html', {
@@ -1672,15 +1837,22 @@ def aprobar_inscripcion(request, id_solicitud):
         )
     )
 
-    nivel = solicitud.nivel.strip().lower()
+    nivel_solicitud = solicitud.nivel.strip().lower()
+    nivel_nombre = {
+        'inicial': 'Inicial',
+        'primaria': 'Primario',
+        'primario': 'Primario',
+        'secundaria': 'Secundario',
+        'secundario': 'Secundario',
+    }.get(nivel_solicitud, solicitud.nivel.strip())
 
-    if nivel == "primario":
+    if nivel_solicitud in ('primaria', 'primario'):
         anio = max(1, min(7, edad - 5))
     else:
         anio = max(1, min(5, edad - 12))
 
     curso = Curso.objects.filter(
-        nivel__iexact=solicitud.nivel,
+        nivel_educativo__nombre__iexact=nivel_nombre,
         turno__iexact=solicitud.turno,
         anio=anio
     ).order_by('comision').first()
@@ -2007,7 +2179,7 @@ def dashboard_padres(request):
             if tutor: # Solo procesar si hay tutor
                 for relacion in relaciones:
                     alumno = relacion.id_alumno
-                    curso_alumno = f"{alumno.id_curso.nivel} {alumno.id_curso.anio}° {alumno.id_curso.comision}"
+                    curso_alumno = f"{alumno.id_curso.nivel_educativo.nombre} {alumno.id_curso.anio}° {alumno.id_curso.comision}"
 
                     for c in comunicados:
                         clave = (c.get('titulo'), c.get('fecha'), c.get('rol'))
@@ -2480,7 +2652,7 @@ def crear_comunicado(request):
         # 👇 SOLO SI ES PRECEPTOR
         if rol == "Preceptor" and curso_obj:
             nuevo_comunicado['curso_id'] = curso_obj.id_curso
-            nuevo_comunicado['curso'] = f"{curso_obj.nivel} {curso_obj.anio}° {curso_obj.comision}"
+            nuevo_comunicado['curso'] = f"{curso_obj.nivel_educativo.nombre} {curso_obj.anio}° {curso_obj.comision}"
 
         comunicados.append(nuevo_comunicado)
 
@@ -2524,7 +2696,7 @@ def registrar_pago(request):
             curso = alumno.id_curso
 
             arancel = Arancel.objects.get(
-                nivel=curso.nivel
+                nivel=curso.nivel_educativo.nombre
             )
 
             importe = arancel.monto
@@ -3278,7 +3450,7 @@ def alta_alumno_admin(request):
             if (hoy.month, hoy.day) < (fecha_nac_obj.month, fecha_nac_obj.day):
                 edad -= 1
 
-            nivel = curso.nivel.lower()
+            nivel = curso.nivel_educativo.nombre.lower()
             edad_min, edad_max = None, None
 
             if 'inicial' in nivel:
@@ -3292,7 +3464,7 @@ def alta_alumno_admin(request):
                 if edad < edad_min or edad > edad_max:
                     errores.append(
                         f"La edad del alumno ({edad} años) no corresponde al nivel "
-                        f"{curso.nivel} (edades esperadas: {edad_min} a {edad_max} años)."
+                        f"{curso.nivel_educativo.nombre} (edades esperadas: {edad_min} a {edad_max} años)."
                     )
                     
         if errores:
@@ -3382,7 +3554,7 @@ def modificar_alumno_admin(request, legajo):
             if (hoy.month, hoy.day) < (fecha_nac_obj.month, fecha_nac_obj.day):
                 edad -= 1
 
-            nivel = curso.nivel.lower()
+            nivel = curso.nivel_educativo.nombre.lower()
             edad_min, edad_max = None, None
 
             if 'inicial' in nivel:
@@ -3396,7 +3568,7 @@ def modificar_alumno_admin(request, legajo):
                 if edad < edad_min or edad > edad_max:
                     errores.append(
                         f"La edad del alumno ({edad} años) no corresponde al nivel "
-                        f"{curso.nivel} (edades esperadas: {edad_min} a {edad_max} años)."
+                        f"{curso.nivel_educativo.nombre} (edades esperadas: {edad_min} a {edad_max} años)."
                     )
 
         if errores:

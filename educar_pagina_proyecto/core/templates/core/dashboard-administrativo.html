@@ -141,6 +141,13 @@
               <span class="nav-icon">👨‍🏫</span> Profesores
             </a>
             <a
+              href="{% url 'lista-niveles-cursos-admin' %}"
+              id="enlace-niveles-cursos"
+              class="{% if panel_activo == 'niveles-cursos' %}active{% endif %}"
+            >
+              <span class="nav-icon">🏫</span> Niveles y cursos
+            </a>
+            <a
               href="#"
               onclick="
                 showPanel('opiniones', this);
@@ -617,6 +624,49 @@
             <div style="margin-top: 40px"></div>
           </div>
 
+          <!-- Panel de Niveles y Cursos -->
+          <div id="niveles-cursos" class="panel {% if panel_activo == 'niveles-cursos' %}active{% endif %}">
+            <h2 class="section-title">🏫 Gestión de Niveles Educativos y Cursos</h2>
+
+            {% if messages %}
+            <div style="margin-bottom: 16px;">
+              {% for message in messages %}
+              <div style="padding: 12px 16px; border-radius: 8px; margin-bottom: 8px; {% if message.tags == 'error' %}background: #fee2e2; color: #991b1b;{% elif message.tags == 'success' %}background: #dcfce7; color: #166534;{% else %}background: #fef3c7; color: #92400e;{% endif %}">{{ message }}</div>
+              {% endfor %}
+            </div>
+            {% endif %}
+
+            <div style="display: grid; grid-template-columns: minmax(280px, 1fr) minmax(420px, 2fr); gap: 24px; align-items: start;">
+              <section style="background: white; border-radius: 16px; padding: 24px; box-shadow: 0 4px 12px rgba(0,0,0,.05);">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
+                  <h3 style="margin:0; color:#0f172a;">Niveles educativos</h3>
+                  <button type="button" class="btn-small" style="background:#1d66c4; margin-top:0;" onclick="toggleDisplay('form-nuevo-nivel')">+ Nuevo</button>
+                </div>
+                <div id="form-nuevo-nivel" style="display:none; background:#f8fafc; border-radius:10px; padding:16px; margin-bottom:18px;">
+                  <form method="POST" action="{% url 'alta-nivel-admin' %}">{% csrf_token %}
+                    <div class="form-group"><label>Nombre</label><input type="text" name="nombre" maxlength="50" required></div>
+                    <div class="form-group" style="margin-top:10px;"><label>Descripción</label><textarea name="descripcion" rows="2"></textarea></div>
+                    <button type="submit" class="btn-form" style="margin-top:12px; padding:10px 18px;">Guardar nivel</button>
+                  </form>
+                </div>
+                {% for nivel in niveles_educativos %}
+                <div style="border:1px solid #e2e8f0; border-radius:10px; padding:14px; margin-bottom:10px;">
+                  <div style="display:flex; justify-content:space-between; gap:8px; align-items:center;"><strong>{{ nivel.nombre }}</strong><span class="badge {% if nivel.estado == 'Activo' %}badge-green{% else %}badge-red{% endif %}">{{ nivel.estado }}</span></div>
+                  <small style="color:#64748b;">{{ nivel.cursos.all|length }} cursos{% if nivel.descripcion %} · {{ nivel.descripcion }}{% endif %}</small>
+                  <div style="display:flex; gap:8px; margin-top:10px;"><button type="button" class="btn-small" style="background:#d97706; margin-top:0;" onclick="toggleDisplay('editar-nivel-{{ nivel.id_nivel }}')">Editar</button><form method="POST" action="{% url 'baja-nivel-admin' nivel.id_nivel %}" style="display:inline;" onsubmit="return confirm('¿Dar de baja este nivel?');">{% csrf_token %}<button type="submit" class="btn-small" style="background:#dc2626; margin-top:0;">Baja</button></form></div>
+                  <div id="editar-nivel-{{ nivel.id_nivel }}" style="display:none; margin-top:12px; background:#f8fafc; padding:12px; border-radius:8px;"><form method="POST" action="{% url 'modificar-nivel-admin' nivel.id_nivel %}">{% csrf_token %}<div class="form-group"><label>Nombre</label><input type="text" name="nombre" value="{{ nivel.nombre }}" required></div><div class="form-group" style="margin-top:8px;"><label>Descripción</label><textarea name="descripcion" rows="2">{{ nivel.descripcion|default:'' }}</textarea></div><div class="form-group" style="margin-top:8px;"><label>Estado</label><select name="estado"><option value="Activo" {% if nivel.estado == 'Activo' %}selected{% endif %}>Activo</option><option value="Inactivo" {% if nivel.estado == 'Inactivo' %}selected{% endif %}>Inactivo</option></select></div><button type="submit" class="btn-small" style="background:#16a34a; margin-top:10px;">Guardar</button></form></div>
+                </div>
+                {% empty %}<p style="color:#64748b;">No hay niveles registrados.</p>{% endfor %}
+              </section>
+
+              <section style="background: white; border-radius: 16px; padding: 24px; box-shadow: 0 4px 12px rgba(0,0,0,.05);">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;"><h3 style="margin:0; color:#0f172a;">Cursos</h3><button type="button" class="btn-small" style="background:#1d66c4; margin-top:0;" onclick="toggleDisplay('form-nuevo-curso')">+ Nuevo</button></div>
+                <div id="form-nuevo-curso" style="display:none; background:#f8fafc; border-radius:10px; padding:16px; margin-bottom:18px;"><form method="POST" action="{% url 'alta-curso-admin' %}">{% csrf_token %}<div class="form-grid"><div class="form-group"><label>Nivel</label><select name="nivel_educativo" required><option value="">Seleccione</option>{% for nivel in niveles_educativos %}{% if nivel.estado == 'Activo' %}<option value="{{ nivel.id_nivel }}">{{ nivel.nombre }}</option>{% endif %}{% endfor %}</select></div><div class="form-group"><label>Año</label><input type="number" name="anio" min="1" required></div><div class="form-group"><label>Comisión</label><input type="text" name="comision" maxlength="20" required></div><div class="form-group"><label>Turno</label><select name="turno" required><option value="">Seleccione</option><option>Mañana</option><option>Tarde</option><option>Noche</option></select></div><div class="form-group"><label>Cupo máximo</label><input type="number" name="cupo_maximo" min="1"></div></div><button type="submit" class="btn-form" style="margin-top:12px; padding:10px 18px;">Guardar curso</button></form></div>
+                <div style="overflow-x:auto;"><table class="tabla"><thead><tr><th>Nivel</th><th>Año</th><th>Comisión</th><th>Turno</th><th>Cupo</th><th>Acciones</th></tr></thead><tbody>{% for curso in cursos_academicos %}<tr><td><span class="badge badge-blue">{{ curso.nivel_educativo.nombre }}</span></td><td>{{ curso.anio }}°</td><td>{{ curso.comision }}</td><td>{{ curso.turno }}</td><td>{{ curso.cupo_maximo|default:'-' }}</td><td><button type="button" class="btn-small" style="background:#d97706; margin-top:0;" onclick="toggleDisplay('editar-curso-{{ curso.id_curso }}')">Editar</button><form method="POST" action="{% url 'baja-curso-admin' curso.id_curso %}" style="display:inline;" onsubmit="return confirm('¿Eliminar este curso?');">{% csrf_token %}<button type="submit" class="btn-small" style="background:#dc2626; margin-top:0;">Baja</button></form></td></tr><tr id="editar-curso-{{ curso.id_curso }}" class="fila-edicion-abm" style="display:none; background:#f8fafc;"><td colspan="6" style="width:100%; padding:0;"><form method="POST" action="{% url 'modificar-curso-admin' curso.id_curso %}" style="width:100%; box-sizing:border-box; padding:16px;">{% csrf_token %}<div class="form-grid" style="width:100%;"><div class="form-group"><label>Nivel</label><select name="nivel_educativo" required>{% for nivel in niveles_educativos %}<option value="{{ nivel.id_nivel }}" {% if nivel.id_nivel == curso.nivel_educativo_id %}selected{% endif %}>{{ nivel.nombre }}</option>{% endfor %}</select></div><div class="form-group"><label>Año</label><input type="number" name="anio" value="{{ curso.anio }}" min="1" required></div><div class="form-group"><label>Comisión</label><input type="text" name="comision" value="{{ curso.comision }}" required></div><div class="form-group"><label>Turno</label><input type="text" name="turno" value="{{ curso.turno }}" required></div><div class="form-group"><label>Cupo máximo</label><input type="number" name="cupo_maximo" value="{{ curso.cupo_maximo|default:'' }}" min="1"></div></div><button type="submit" class="btn-small" style="background:#16a34a; margin-top:10px;">Guardar cambios</button></form></td></tr>{% empty %}<tr><td colspan="6" style="text-align:center;">No hay cursos registrados.</td></tr>{% endfor %}</tbody></table></div>
+              </section>
+            </div>
+          </div>
+
           <!-- Panel de Alumnos -->
           <div
             id="alumnos"
@@ -847,7 +897,7 @@
                         >Nivel Educativo:</span
                       >
                       <span class="badge badge-blue"
-                        >{{ alumno_detalle.id_curso.nivel }}</span
+                        >{{ alumno_detalle.id_curso.nivel_educativo.nombre }}</span
                       >
                     </div>
                     <div
@@ -1045,7 +1095,7 @@
 
                                     {% for curso in cursos_disponibles %}
                                         <option value="{{ curso.id_curso }}">
-                                            {{ curso.nivel }} - {{ curso.anio }}° {{ curso.comision }} ({{ curso.turno }})
+                                            {{ curso.nivel_educativo.nombre }} - {{ curso.anio }}° {{ curso.comision }} ({{ curso.turno }})
                                         </option>
                                     {% endfor %}
                                 </select>
@@ -1083,7 +1133,7 @@
                             <td>{{ alumno.id_persona.apellido }}, {{ alumno.id_persona.nombre }}</td>
                             <td>{{ alumno.id_persona.dni }}</td>
                             <td>{{ alumno.id_curso.anio }}° {{ alumno.id_curso.comision }}</td>
-                            <td><span class="badge badge-blue">{{ alumno.id_curso.nivel }}</span></td>
+                            <td><span class="badge badge-blue">{{ alumno.id_curso.nivel_educativo.nombre }}</span></td>
                             <td>
                                 {% if alumno.estado == 'Inactivo' %}
                                     <span class="badge badge-red">{{ alumno.estado }}</span>
@@ -1120,7 +1170,7 @@
                                                   <label>Curso</label>
                                                   <select name="id_curso" required style="width: 100%;">
                                                       {% for curso in cursos_disponibles %}
-                                                          <option value="{{ curso.id_curso }}" {% if curso.id_curso == alumno.id_curso.id_curso %}selected{% endif %}>{{ curso.nivel }} - {{ curso.anio }}° {{ curso.comision }} ({{ curso.turno }})</option>
+                                                      <option value="{{ curso.id_curso }}" {% if curso.id_curso == alumno.id_curso.id_curso %}selected{% endif %}>{{ curso.nivel_educativo.nombre }} - {{ curso.anio }}° {{ curso.comision }} ({{ curso.turno }})</option>
                                                       {% endfor %}
                                                   </select>
                                               </div>
@@ -1378,7 +1428,7 @@
                 {% if profesor_detalle.asignaciones %}
                 <div style="display: flex; flex-wrap: wrap; gap: 8px;">
                   {% for asignacion in profesor_detalle.asignaciones %}
-                  <span class="badge badge-blue">{{ asignacion.id_curso.nivel }} {{ asignacion.id_curso.anio }}° {{ asignacion.id_curso.comision }} — {{ asignacion.id_materia.nombre }}</span>
+                  <span class="badge badge-blue">{{ asignacion.id_curso.nivel_educativo.nombre }} {{ asignacion.id_curso.anio }}° {{ asignacion.id_curso.comision }} — {{ asignacion.id_materia.nombre }}</span>
                   {% endfor %}
                 </div>
                 {% else %}
@@ -1427,7 +1477,7 @@
                     <div class="form-group"><label>Título Docente</label><input type="text" name="titulo" maxlength="100" required></div>
                     <div class="form-group"><label>Especialidad</label><input type="text" name="especialidad" maxlength="100"></div>
                     <div class="form-group"><label>Fecha de Ingreso</label><input type="date" name="fecha_ingreso"></div>
-                    <div class="form-group" style="grid-column: 1 / -1;"><label>Materia y cursos a cargo</label><div style="display: flex; flex-direction: column; gap: 8px; max-height: 260px; overflow-y: auto;">{% for materia in materia_curso_options %}<details style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 12px;"><summary style="cursor: pointer; font-weight: 600; color: #1e3a8a;">{{ materia.nombre }} <span style="color: #64748b; font-weight: normal;">({{ materia.cursos_disponibles|length }} cursos)</span></summary><div style="display: flex; flex-wrap: wrap; gap: 8px 16px; padding: 10px 0 2px 4px;">{% for curso in materia.cursos_disponibles %}<label style="font-weight: normal; display: flex; align-items: center; gap: 6px;"><input type="checkbox" name="asignaciones" value="{{ curso.id_curso }}:{{ materia.id_materia }}">{{ curso.nivel }} {{ curso.anio }}° {{ curso.comision }}</label>{% endfor %}</div></details>{% empty %}<span>No hay materias con cursos cargados.</span>{% endfor %}</div><small style="color: #64748b;">Elegí una materia para ver únicamente los cursos que la tienen. El horario se podrá definir después.</small></div>
+                    <div class="form-group" style="grid-column: 1 / -1;"><label>Materia y cursos a cargo</label><div style="display: flex; flex-direction: column; gap: 8px; max-height: 260px; overflow-y: auto;">{% for materia in materia_curso_options %}<details style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 12px;"><summary style="cursor: pointer; font-weight: 600; color: #1e3a8a;">{{ materia.nombre }} <span style="color: #64748b; font-weight: normal;">({{ materia.cursos_disponibles|length }} cursos)</span></summary><div style="display: flex; flex-wrap: wrap; gap: 8px 16px; padding: 10px 0 2px 4px;">{% for curso in materia.cursos_disponibles %}<label style="font-weight: normal; display: flex; align-items: center; gap: 6px;"><input type="checkbox" name="asignaciones" value="{{ curso.id_curso }}:{{ materia.id_materia }}">{{ curso.nivel_educativo.nombre }} {{ curso.anio }}° {{ curso.comision }}</label>{% endfor %}</div></details>{% empty %}<span>No hay materias con cursos cargados.</span>{% endfor %}</div><small style="color: #64748b;">Elegí una materia para ver únicamente los cursos que la tienen. El horario se podrá definir después.</small></div>
                   </div>
                   <button type="submit" class="btn-form" style="margin-top: 16px;">Guardar Profesor</button>
                 </form>
@@ -1667,6 +1717,22 @@
 
           const enlaceProfesores = document.getElementById("enlace-profesores");
           if (enlaceProfesores) enlaceProfesores.classList.add("active");
+          return;
+        }
+
+        if (panel === "niveles-cursos") {
+          document
+            .querySelectorAll(".panel")
+            .forEach((p) => p.classList.remove("active"));
+          document
+            .querySelectorAll(".sidebar-nav a")
+            .forEach((a) => a.classList.remove("active"));
+
+          const panelNiveles = document.getElementById("niveles-cursos");
+          if (panelNiveles) panelNiveles.classList.add("active");
+
+          const enlaceNiveles = document.getElementById("enlace-niveles-cursos");
+          if (enlaceNiveles) enlaceNiveles.classList.add("active");
           return;
         }
 

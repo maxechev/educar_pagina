@@ -132,12 +132,39 @@ class Cuota(models.Model):
         managed = True
         db_table = 'cuota'
 
+class NivelEducativo(models.Model):
+    id_nivel = models.AutoField(primary_key=True)
+    nombre = models.CharField(max_length=50, unique=True)
+    descripcion = models.TextField(blank=True, null=True)
+    estado = models.CharField(
+        max_length=20,
+        choices=[
+            ('Activo', 'Activo'),
+            ('Inactivo', 'Inactivo'),
+        ],
+        default='Activo',
+    )
+
+    class Meta:
+        managed = True
+        db_table = 'nivel_educativo'
+        ordering = ['nombre']
+
+    def __str__(self):
+        return self.nombre
+
+
 class Curso(models.Model):
     id_curso = models.AutoField(primary_key=True, db_column='id')
     comision = models.CharField(max_length=20)
     anio = models.IntegerField()  # 👈 ESTE FALTA
     turno = models.CharField(max_length=30)
-    nivel = models.CharField(max_length=30)
+    nivel_educativo = models.ForeignKey(
+        'NivelEducativo',
+        models.PROTECT,
+        db_column='id_nivel',
+        related_name='cursos',
+    )
     cupo_maximo = models.IntegerField(blank=True, null=True)
     legajo_preceptor = models.ForeignKey('Preceptor', models.DO_NOTHING, db_column='legajo_preceptor', blank=True, null=True)
     id_aula = models.ForeignKey(Aula, models.DO_NOTHING, db_column='id_aula', blank=True, null=True)
@@ -145,6 +172,12 @@ class Curso(models.Model):
     class Meta:
         managed = True
         db_table = 'curso'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['nivel_educativo', 'anio', 'comision', 'turno'],
+                name='curso_unico_por_nivel_anio_comision_turno',
+            ),
+        ]
 
 
 class CursoCursaMaterias(models.Model):

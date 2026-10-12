@@ -78,7 +78,7 @@
               {{ alumno.id_curso.anio }}° Año
               {{ alumno.id_curso.comision }}
               ·
-              {{ alumno.id_curso.nivel }}
+              {{ alumno.id_curso.nivel_educativo.nombre }}
           </span>
         </div>
         <nav class="sidebar-nav">
@@ -673,7 +673,7 @@
             <tr><td style="font-weight:600;color:#64748b">Fecha de nacimiento</td><td>{{ persona.fecha_nacimiento }}</td></tr>
             <tr><td style="font-weight:600;color:#64748b">Curso</td><td>{{ alumno.id_curso.comision }}</td></tr>
             <tr><td style="font-weight:600;color:#64748b">Turno</td><td>{{ alumno.id_curso.turno }}</td></tr>
-            <tr><td style="font-weight:600;color:#64748b">Nivel</td><td>{{ alumno.id_curso.nivel }}</td></tr>
+            <tr><td style="font-weight:600;color:#64748b">Nivel</td><td>{{ alumno.id_curso.nivel_educativo.nombre }}</td></tr>
             <tr><td style="font-weight:600;color:#64748b">Tutor responsable</td><td>{{ tutor_relacion.id_tutor.id_persona.nombre }} {{ tutor_relacion.id_tutor.id_persona.apellido }} ({{ tutor_relacion.tipo_parentesco }})</td></tr>
             <tr><td style="font-weight:600;color:#64748b">Legajo</td><td>{{ alumno.legajo }}</td></tr>
             <tr><td style="font-weight:600;color:#64748b">Fecha de ingreso</td><td>{{ alumno.fecha_ingreso }}</td></tr>

@@ -35,6 +35,13 @@ urlpatterns = [
     path('docente/guardar-nota/', views.guardar_nota, name='guardar-nota'),
     # Dashboards administrativos
     path('administrativo/', views.dashboard_administrativo, name='dashboard-administrativo'),
+    path('administrativo/niveles-cursos/', views.lista_niveles_cursos_admin, name='lista-niveles-cursos-admin'),
+    path('administrativo/niveles/alta/', views.alta_nivel_admin, name='alta-nivel-admin'),
+    path('administrativo/niveles/<int:id_nivel>/modificar/', views.modificar_nivel_admin, name='modificar-nivel-admin'),
+    path('administrativo/niveles/<int:id_nivel>/baja/', views.baja_nivel_admin, name='baja-nivel-admin'),
+    path('administrativo/cursos/alta/', views.alta_curso_admin, name='alta-curso-admin'),
+    path('administrativo/cursos/<int:id_curso>/modificar/', views.modificar_curso_admin, name='modificar-curso-admin'),
+    path('administrativo/cursos/<int:id_curso>/baja/', views.baja_curso_admin, name='baja-curso-admin'),
     path('aprobar-pago/<int:id_pago>/',views.aprobar_pago,name='aprobar-pago'),
     path('aprobar-inscripcion/<int:id_solicitud>/',views.aprobar_inscripcion,name='aprobar-inscripcion'),
     path('registrar-pago/',views.registrar_pago,name='registrar_pago'),
