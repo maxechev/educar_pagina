@@ -1538,7 +1538,7 @@ def lista_profesores_admin(request):
     for materia in Materia.objects.all().order_by('nombre'):
         materia.cursos_disponibles = Curso.objects.filter(
             cursocursamaterias__id_materia=materia
-        ).distinct().order_by('nivel', 'anio', 'comision')
+        ).distinct().order_by('nivel_educativo__nombre', 'anio', 'comision')
         for curso in materia.cursos_disponibles:
             curso.asignacion_clave = f'{curso.id_curso}:{materia.id_materia}'
         if materia.cursos_disponibles.exists():
@@ -3374,7 +3374,9 @@ def lista_alumnos_admin(request):
     documentaciones = DocumentacionAlumno.objects.filter(estado='Pendiente').order_by('-fecha_envio')
     
     alumnos = Alumno.objects.select_related('id_persona', 'id_curso').all().order_by('id_persona__apellido', 'id_persona__nombre')
-    cursos_disponibles = Curso.objects.all().order_by('nivel', 'anio', 'comision') # 👈 NUEVO: Para el formulario
+    cursos_disponibles = Curso.objects.select_related('nivel_educativo').all().order_by(
+        'nivel_educativo__nombre', 'anio', 'comision'
+    )
     
     legajo_detalle = request.GET.get('legajo')
     alumno_detalle = None
