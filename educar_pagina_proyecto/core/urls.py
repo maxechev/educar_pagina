@@ -36,6 +36,7 @@ urlpatterns = [
     # Dashboards administrativos
     path('administrativo/', views.dashboard_administrativo, name='dashboard-administrativo'),
     path('administrativo/niveles-cursos/', views.lista_niveles_cursos_admin, name='lista-niveles-cursos-admin'),
+    path('administrativo/materias/', views.lista_materias_admin, name='lista-materias-admin'),
     path('administrativo/niveles/alta/', views.alta_nivel_admin, name='alta-nivel-admin'),
     path('administrativo/niveles/<int:id_nivel>/modificar/', views.modificar_nivel_admin, name='modificar-nivel-admin'),
     path('administrativo/niveles/<int:id_nivel>/baja/', views.baja_nivel_admin, name='baja-nivel-admin'),

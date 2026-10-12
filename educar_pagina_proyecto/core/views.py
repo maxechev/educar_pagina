@@ -1361,6 +1361,15 @@ def lista_niveles_cursos_admin(request):
     return redirect('dashboard-administrativo')
 
 
+@never_cache
+def lista_materias_admin(request):
+    persona, dashboard_url = obtener_datos_sesion(request)
+    if not persona or dashboard_url != 'dashboard-administrativo':
+        return redirect('login')
+    request.session['panel_activo'] = 'materias'
+    return redirect('dashboard-administrativo')
+
+
 def _validar_acceso_niveles(request):
     persona, dashboard_url = obtener_datos_sesion(request)
     return persona if persona and dashboard_url == 'dashboard-administrativo' else None
