@@ -1565,7 +1565,7 @@ def alta_materia_admin(request):
             messages.success(request, 'Materia creada correctamente.')
         except (ValueError, IntegrityError) as error:
             messages.error(request, str(error))
-    return redirect('lista-niveles-cursos-admin')
+    return redirect('lista-materias-admin')
 
 
 @never_cache
@@ -1593,7 +1593,7 @@ def modificar_materia_admin(request, id_materia):
             messages.success(request, 'Materia actualizada correctamente.')
         except (ValueError, IntegrityError) as error:
             messages.error(request, str(error))
-    return redirect('lista-niveles-cursos-admin')
+    return redirect('lista-materias-admin')
 
 
 @never_cache
@@ -1613,7 +1613,7 @@ def baja_materia_admin(request, id_materia):
         else:
             materia.delete()
             messages.success(request, 'Materia eliminada correctamente.')
-    return redirect('lista-niveles-cursos-admin')
+    return redirect('lista-materias-admin')
 
 @never_cache
 def lista_profesores_admin(request):
