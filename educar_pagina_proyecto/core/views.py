@@ -1322,6 +1322,13 @@ def dashboard_administrativo(request):
     cursos_academicos = Curso.objects.select_related('nivel_educativo').all().order_by(
         'nivel_educativo__nombre', 'anio', 'comision', 'turno'
     )
+    materias_academicas = Materia.objects.all().prefetch_related(
+        'cursocursamaterias_set', 'docentedictamateria_set'
+    ).order_by('nombre')
+    for materia in materias_academicas:
+        materia.curso_ids = set(
+            materia.cursocursamaterias_set.values_list('id_curso_id', flat=True)
+        )
     
     panel_activo = request.session.pop("panel_activo", "inicio")
     
@@ -1340,6 +1347,7 @@ def dashboard_administrativo(request):
         'documentacion_pendiente': documentacion_pendiente,
         'niveles_educativos': niveles_educativos,
         'cursos_academicos': cursos_academicos,
+        'materias_academicas': materias_academicas,
         'panel_activo': panel_activo,
     })
 
@@ -1498,6 +1506,104 @@ def baja_curso_admin(request, id_curso):
         else:
             curso.delete()
             messages.success(request, 'Curso eliminado correctamente.')
+    return redirect('lista-niveles-cursos-admin')
+
+
+def _datos_materia(request):
+    nombre = (request.POST.get('nombre') or '').strip()
+    descripcion = (request.POST.get('descripcion') or '').strip()
+    carga_raw = request.POST.get('carga_horaria') or ''
+    clases_raw = request.POST.get('cantidad_clases') or ''
+    if not nombre:
+        raise ValueError('El nombre de la materia es obligatorio.')
+    try:
+        carga_horaria = int(carga_raw)
+        cantidad_clases = int(clases_raw)
+    except (TypeError, ValueError):
+        raise ValueError('La carga horaria y la cantidad de clases deben ser números.')
+    if carga_horaria <= 0 or cantidad_clases <= 0:
+        raise ValueError('La carga horaria y la cantidad de clases deben ser mayores que cero.')
+    cursos = []
+    for curso_id in request.POST.getlist('cursos'):
+        try:
+            cursos.append(int(curso_id))
+        except (TypeError, ValueError):
+            continue
+    return nombre, descripcion, carga_horaria, cantidad_clases, list(dict.fromkeys(cursos))
+
+
+@never_cache
+def alta_materia_admin(request):
+    if not _validar_acceso_niveles(request):
+        return redirect('login')
+    if request.method == 'POST':
+        try:
+            nombre, descripcion, carga_horaria, cantidad_clases, cursos = _datos_materia(request)
+            if Materia.objects.filter(nombre__iexact=nombre).exists():
+                raise ValueError('Ya existe una materia con ese nombre.')
+            with transaction.atomic():
+                materia = Materia.objects.create(
+                    nombre=nombre,
+                    descripcion=descripcion,
+                    carga_horaria=carga_horaria,
+                    cantidad_clases=cantidad_clases,
+                )
+                CursoCursaMaterias.objects.bulk_create([
+                    CursoCursaMaterias(id_curso_id=curso_id, id_materia=materia)
+                    for curso_id in cursos
+                    if Curso.objects.filter(id_curso=curso_id).exists()
+                ])
+            messages.success(request, 'Materia creada correctamente.')
+        except (ValueError, IntegrityError) as error:
+            messages.error(request, str(error))
+    return redirect('lista-niveles-cursos-admin')
+
+
+@never_cache
+def modificar_materia_admin(request, id_materia):
+    if not _validar_acceso_niveles(request):
+        return redirect('login')
+    materia = get_object_or_404(Materia, id_materia=id_materia)
+    if request.method == 'POST':
+        try:
+            nombre, descripcion, carga_horaria, cantidad_clases, cursos = _datos_materia(request)
+            if Materia.objects.filter(nombre__iexact=nombre).exclude(id_materia=id_materia).exists():
+                raise ValueError('Ya existe otra materia con ese nombre.')
+            with transaction.atomic():
+                materia.nombre = nombre
+                materia.descripcion = descripcion
+                materia.carga_horaria = carga_horaria
+                materia.cantidad_clases = cantidad_clases
+                materia.save()
+                CursoCursaMaterias.objects.filter(id_materia=materia).delete()
+                CursoCursaMaterias.objects.bulk_create([
+                    CursoCursaMaterias(id_curso_id=curso_id, id_materia=materia)
+                    for curso_id in cursos
+                    if Curso.objects.filter(id_curso=curso_id).exists()
+                ])
+            messages.success(request, 'Materia actualizada correctamente.')
+        except (ValueError, IntegrityError) as error:
+            messages.error(request, str(error))
+    return redirect('lista-niveles-cursos-admin')
+
+
+@never_cache
+def baja_materia_admin(request, id_materia):
+    if not _validar_acceso_niveles(request):
+        return redirect('login')
+    if request.method == 'POST':
+        materia = get_object_or_404(Materia, id_materia=id_materia)
+        tiene_dependencias = (
+            CursoCursaMaterias.objects.filter(id_materia=materia).exists()
+            or DocenteDictaMateria.objects.filter(id_materia=materia).exists()
+            or Calificacion.objects.filter(id_materia=materia).exists()
+            or Tarea.objects.filter(materia=materia).exists()
+        )
+        if tiene_dependencias:
+            messages.error(request, 'No se puede eliminar la materia porque tiene cursos, profesores o actividades asociadas.')
+        else:
+            materia.delete()
+            messages.success(request, 'Materia eliminada correctamente.')
     return redirect('lista-niveles-cursos-admin')
 
 @never_cache
