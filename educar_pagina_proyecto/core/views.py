@@ -1388,9 +1388,15 @@ def dashboard_administrativo(request):
     grupos_deportivos_admin = GrupoDeportivo.objects.select_related(
         'id_disciplina', 'id_disciplina__id_instalacion', 'nivel_educativo',
         'profesor_responsable__id_persona'
-    ).prefetch_related('inscripciones').order_by(
+    ).prefetch_related('inscripciones__id_alumno__id_persona').order_by(
         'id_disciplina__nombre', 'nivel_educativo__nombre', 'dia_semana', 'hora_inicio'
     )
+    for grupo in grupos_deportivos_admin:
+        grupo.inscriptos_activos = [
+            inscripcion for inscripcion in grupo.inscripciones.all()
+            if inscripcion.estado == 'Activa'
+        ]
+        grupo.cantidad_inscriptos = len(grupo.inscriptos_activos)
     alumnos_deportivos = Alumno.objects.select_related('id_persona').order_by(
         'id_persona__apellido', 'id_persona__nombre'
     )
