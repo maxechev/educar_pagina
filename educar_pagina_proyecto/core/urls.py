@@ -45,6 +45,7 @@ urlpatterns = [
     path('administrativo/deportes/grupos/<int:id_grupo>/modificar/', views.modificar_grupo_deportivo_admin, name='modificar-grupo-deportivo-admin'),
     path('administrativo/deportes/grupos/<int:id_grupo>/baja/', views.baja_grupo_deportivo_admin, name='baja-grupo-deportivo-admin'),
     path('administrativo/deportes/inscripciones/alta/', views.alta_inscripcion_deportiva_admin, name='alta-inscripcion-deportiva-admin'),
+    path('alumno/deportes/inscripciones/<int:id_inscripcion>/baja/', views.baja_inscripcion_deportiva, name='baja-inscripcion-deportiva'),
     path('administrativo/niveles/alta/', views.alta_nivel_admin, name='alta-nivel-admin'),
     path('administrativo/niveles/<int:id_nivel>/modificar/', views.modificar_nivel_admin, name='modificar-nivel-admin'),
     path('administrativo/niveles/<int:id_nivel>/baja/', views.baja_nivel_admin, name='baja-nivel-admin'),

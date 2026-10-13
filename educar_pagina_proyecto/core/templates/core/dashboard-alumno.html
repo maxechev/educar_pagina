@@ -348,7 +348,10 @@
             <div class="stat-label">Tus deportes ({{ inscripciones_deportivas|length }}/2)</div>
             {% for inscripcion in inscripciones_deportivas %}
               <div class="stat-value" style="font-size: 20px; color: #16a34a;">{{ inscripcion.id_grupo.id_disciplina.nombre }}</div>
-              <div class="stat-sub">{{ inscripcion.id_grupo.nivel_educativo.nombre }} · {{ inscripcion.id_grupo.dia_semana|capfirst }} · {{ inscripcion.id_grupo.hora_inicio|time:"H:i" }} a {{ inscripcion.id_grupo.hora_fin|time:"H:i" }} · Prof. {{ inscripcion.id_grupo.profesor_responsable.id_persona.apellido }}</div>
+              <div class="stat-sub">{{ inscripcion.id_grupo.nivel_educativo.nombre }} · Turno {{ inscripcion.id_grupo.turno }} · {{ inscripcion.id_grupo.dia_semana|capfirst }} · {{ inscripcion.id_grupo.hora_inicio|time:"H:i" }} a {{ inscripcion.id_grupo.hora_fin|time:"H:i" }} · Prof. {{ inscripcion.id_grupo.profesor_responsable.id_persona.apellido }}</div>
+              <form method="post" action="{% url 'baja-inscripcion-deportiva' inscripcion.id_inscripcion %}" style="display:inline;">
+                {% csrf_token %}<button type="submit" class="btn-small" style="background:#dc2626; margin-top:6px;" onclick="return confirm('¿Querés desinscribirte de este deporte?');">Desinscribirme</button>
+              </form>
             {% endfor %}
           </div>
           {% else %}
@@ -391,7 +394,7 @@
                 <td>{{ dep.nivel_educativo.nombre }}</td>
                 <td>{{ dep.id_instalacion.nombre }}</td>
                 <td>{{ dep.profesor_responsable.id_persona.apellido }}, {{ dep.profesor_responsable.id_persona.nombre }}</td>
-                <td>{{ dep.horario_formateado }}</td>
+                <td>{{ dep.turno }} · {{ dep.horario_formateado }}</td>
                 <td>
                   {% if dep.esta_inscripto %}
                     <span class="badge badge-green">Inscripto</span>

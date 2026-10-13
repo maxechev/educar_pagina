@@ -247,6 +247,7 @@ class GrupoDeportivo(models.Model):
         related_name='grupos_deportivos',
     )
     dia_semana = models.CharField(max_length=20)
+    turno = models.CharField(max_length=20, default='Mañana')
     hora_inicio = models.TimeField()
     hora_fin = models.TimeField()
     cupo_maximo = models.PositiveIntegerField(blank=True, null=True)

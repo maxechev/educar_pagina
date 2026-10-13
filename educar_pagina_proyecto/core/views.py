@@ -350,6 +350,26 @@ def _grupos_deportivos_en_conflicto(grupo, inscripciones):
 
 
 @never_cache
+def baja_inscripcion_deportiva(request, id_inscripcion):
+    persona, dashboard_url = obtener_datos_sesion(request)
+    if not persona or dashboard_url != 'dashboard-alumno':
+        return redirect('login')
+    if request.method == 'POST':
+        alumno = get_object_or_404(Alumno, id_persona=persona)
+        inscripcion = get_object_or_404(
+            InscripcionDeportiva,
+            id_inscripcion=id_inscripcion,
+            id_alumno=alumno,
+            estado='Activa',
+        )
+        inscripcion.estado = 'Cancelada'
+        inscripcion.save(update_fields=['estado'])
+        messages.success(request, 'Te desinscribiste del deporte correctamente.')
+    request.session['panel_activo'] = 'deportes'
+    return redirect('dashboard-alumno')
+
+
+@never_cache
 def dashboard_alumno(request):
     persona, dashboard_url = obtener_datos_sesion(request)
     if not persona:
@@ -387,6 +407,9 @@ def dashboard_alumno(request):
         ).filter(id_grupo=id_grupo, estado='Activo').first()
         if not grupo_elegido:
             messages.error(request, 'El grupo deportivo seleccionado no existe o no está activo.')
+            return redirect('dashboard-alumno')
+        if alumno.id_curso and (alumno.id_curso.turno or '').strip().lower() == grupo_elegido.turno.strip().lower():
+            messages.error(request, 'El deporte debe estar en el turno contrario al curso del alumno.')
             return redirect('dashboard-alumno')
 
         inscripciones_actuales = list(InscripcionDeportiva.objects.filter(
@@ -1740,17 +1763,18 @@ def _datos_grupo_deportivo(request):
     nivel_id = request.POST.get('nivel_educativo')
     profesor_id = request.POST.get('profesor_responsable')
     dia = (request.POST.get('dia_semana') or '').strip()
+    turno = (request.POST.get('turno') or '').strip()
     inicio = _hora_formulario(request.POST.get('hora_inicio'))
     fin = _hora_formulario(request.POST.get('hora_fin'))
     cupo_raw = request.POST.get('cupo_maximo') or ''
-    if not deporte_id or not nivel_id or not profesor_id or not dia:
-        raise ValueError('Deporte, nivel, profesor, día y horario son obligatorios.')
+    if not deporte_id or not nivel_id or not profesor_id or not dia or not turno:
+        raise ValueError('Deporte, nivel, profesor, día, turno y horario son obligatorios.')
     if inicio >= fin:
         raise ValueError('La hora de finalización debe ser posterior a la de inicio.')
     cupo = int(cupo_raw) if cupo_raw else None
     if cupo is not None and cupo <= 0:
         raise ValueError('El cupo debe ser mayor que cero.')
-    return deporte_id, nivel_id, profesor_id, dia, inicio, fin, cupo
+    return deporte_id, nivel_id, profesor_id, dia, turno, inicio, fin, cupo
 
 
 @never_cache
@@ -1759,13 +1783,13 @@ def alta_grupo_deportivo_admin(request):
         return redirect('login')
     if request.method == 'POST':
         try:
-            deporte_id, nivel_id, profesor_id, dia, inicio, fin, cupo = _datos_grupo_deportivo(request)
-            if GrupoDeportivo.objects.filter(id_disciplina_id=deporte_id, nivel_educativo_id=nivel_id, dia_semana=dia, hora_inicio=inicio, hora_fin=fin).exists():
+            deporte_id, nivel_id, profesor_id, dia, turno, inicio, fin, cupo = _datos_grupo_deportivo(request)
+            if GrupoDeportivo.objects.filter(id_disciplina_id=deporte_id, nivel_educativo_id=nivel_id, dia_semana=dia, turno=turno, hora_inicio=inicio, hora_fin=fin).exists():
                 raise ValueError('Ya existe un grupo con ese deporte, nivel y horario.')
             GrupoDeportivo.objects.create(
                 id_disciplina_id=deporte_id, nivel_educativo_id=nivel_id,
                 profesor_responsable_id=profesor_id, dia_semana=dia,
-                hora_inicio=inicio, hora_fin=fin, cupo_maximo=cupo,
+                turno=turno, hora_inicio=inicio, hora_fin=fin, cupo_maximo=cupo,
             )
             messages.success(request, 'Grupo deportivo creado correctamente.')
         except (ValueError, IntegrityError) as error:
@@ -1781,11 +1805,11 @@ def modificar_grupo_deportivo_admin(request, id_grupo):
     if request.method == 'POST':
         try:
             datos = _datos_grupo_deportivo(request)
-            deporte_id, nivel_id, profesor_id, dia, inicio, fin, cupo = datos
-            if GrupoDeportivo.objects.filter(id_disciplina_id=deporte_id, nivel_educativo_id=nivel_id, dia_semana=dia, hora_inicio=inicio, hora_fin=fin).exclude(id_grupo=id_grupo).exists():
+            deporte_id, nivel_id, profesor_id, dia, turno, inicio, fin, cupo = datos
+            if GrupoDeportivo.objects.filter(id_disciplina_id=deporte_id, nivel_educativo_id=nivel_id, dia_semana=dia, turno=turno, hora_inicio=inicio, hora_fin=fin).exclude(id_grupo=id_grupo).exists():
                 raise ValueError('Ya existe otro grupo con ese deporte, nivel y horario.')
             grupo.id_disciplina_id, grupo.nivel_educativo_id = deporte_id, nivel_id
-            grupo.profesor_responsable_id, grupo.dia_semana = profesor_id, dia
+            grupo.profesor_responsable_id, grupo.dia_semana, grupo.turno = profesor_id, dia, turno
             grupo.hora_inicio, grupo.hora_fin, grupo.cupo_maximo = inicio, fin, cupo
             grupo.save()
             messages.success(request, 'Grupo deportivo actualizado correctamente.')
@@ -1819,6 +1843,8 @@ def alta_inscripcion_deportiva_admin(request):
             grupo = get_object_or_404(GrupoDeportivo.objects.select_related('id_disciplina', 'nivel_educativo'), id_grupo=request.POST.get('id_grupo'), estado='Activo')
             if alumno.id_curso_id is None or alumno.id_curso.nivel_educativo_id != grupo.nivel_educativo_id:
                 raise ValueError('El grupo deportivo no corresponde al nivel del alumno.')
+            if (alumno.id_curso.turno or '').strip().lower() == grupo.turno.strip().lower():
+                raise ValueError('El deporte debe estar en el turno contrario al curso del alumno.')
             actuales = list(InscripcionDeportiva.objects.filter(id_alumno=alumno, estado='Activa').select_related('id_grupo', 'id_grupo__id_disciplina'))
             if len(actuales) >= 2:
                 raise ValueError('El alumno ya tiene el máximo de dos deportes.')
