@@ -226,6 +226,71 @@ class DisciplinaDeportiva(models.Model):
         return self.nombre
 
 
+class GrupoDeportivo(models.Model):
+    id_grupo = models.AutoField(primary_key=True)
+    id_disciplina = models.ForeignKey(
+        DisciplinaDeportiva,
+        models.PROTECT,
+        db_column='id_disciplina',
+        related_name='grupos',
+    )
+    nivel_educativo = models.ForeignKey(
+        'NivelEducativo',
+        models.PROTECT,
+        db_column='id_nivel',
+        related_name='grupos_deportivos',
+    )
+    profesor_responsable = models.ForeignKey(
+        'Docente',
+        models.PROTECT,
+        db_column='legajo_profesor',
+        related_name='grupos_deportivos',
+    )
+    dia_semana = models.CharField(max_length=20)
+    hora_inicio = models.TimeField()
+    hora_fin = models.TimeField()
+    cupo_maximo = models.PositiveIntegerField(blank=True, null=True)
+    estado = models.CharField(max_length=20, default='Activo')
+
+    class Meta:
+        managed = True
+        db_table = 'grupo_deportivo'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['id_disciplina', 'nivel_educativo', 'dia_semana', 'hora_inicio', 'hora_fin'],
+                name='grupo_deportivo_unico_por_horario',
+            )
+        ]
+
+
+class InscripcionDeportiva(models.Model):
+    id_inscripcion = models.AutoField(primary_key=True)
+    id_alumno = models.ForeignKey(
+        Alumno,
+        models.CASCADE,
+        db_column='legajo_alumno',
+        related_name='inscripciones_deportivas',
+    )
+    id_grupo = models.ForeignKey(
+        GrupoDeportivo,
+        models.CASCADE,
+        db_column='id_grupo',
+        related_name='inscripciones',
+    )
+    fecha_inscripcion = models.DateField(auto_now_add=True)
+    estado = models.CharField(max_length=20, default='Activa')
+
+    class Meta:
+        managed = True
+        db_table = 'inscripcion_deportiva'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['id_alumno', 'id_grupo'],
+                name='inscripcion_deportiva_unica',
+            )
+        ]
+
+
 class Docente(models.Model):
     legajo = models.AutoField(primary_key=True)
     id_persona = models.ForeignKey('Persona', models.DO_NOTHING, db_column='id_persona')

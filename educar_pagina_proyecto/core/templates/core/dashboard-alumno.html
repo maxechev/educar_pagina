@@ -137,7 +137,7 @@
               <div class="stat-sub">Materias aprobadas / totales</div>
             </div>
           </div>
-        </div> 
+        </div>
 
         <!-- NOTAS -->
         <div id="panel-notas" class="panel">
@@ -240,7 +240,7 @@
                 <!-- TAREAS Y EVALUACIONES -->
         <div id="panel-tareas-evaluaciones" class="panel">
           <p class="section-title">Tareas y evaluaciones</p>
-          
+
           {% if tareas_alumno %}
             <table class="tabla">
               <thead>
@@ -252,13 +252,13 @@
                   <th>Estado</th>
                 </tr>
               </thead>
-              
+
               <tbody>
                 {% for item in tareas_alumno %}
                 <tr>
                   <td>{{ item.materia_nombre }}</td>
                   <td>{{ item.docente_nombre }}</td>
-                  
+
                   <!-- Título de la tarea -->
                   <td style="font-weight: 600;">
                     {{ item.tarea.titulo|default:"Evaluación" }}
@@ -266,7 +266,7 @@
                       <br><small style="color:#64748b; font-size:12px;">{{ item.tarea.descripcion|truncatechars:50 }}</small>
                     {% endif %}
                   </td>
-                  
+
                   <!-- Fecha de entrega -->
                   <td>
                       {% if item.tarea.fecha %}
@@ -275,7 +275,7 @@
                         -
                       {% endif %}
                   </td>
-                  
+
                   <!-- Estado (solo lectura) -->
                   <td>
                     {% if item.tarea.estado == 'Pendiente' %}
@@ -289,7 +289,7 @@
                     {% endif %}
                   </td>
                 </tr>
-                
+
                 <!-- Subtítulo para cada materia (opcional) -->
                 {% if forloop.first %}
                 <tr style="background:#f1f5f9; font-weight:600;">
@@ -298,7 +298,7 @@
                   </td>
                 </tr>
                 {% endif %}
-                
+
                 {% endfor %}
               </tbody>
             </table>
@@ -313,7 +313,7 @@
         <!-- HORARIO -->
         <div id="panel-horario" class="panel">
           <p class="section-title">Horario semanal</p>
-          
+
           {% if hay_horarios %}
             <div style="display: grid; gap: 15px;">
               {% for dia, clases in horario_por_dia.items %}
@@ -343,13 +343,13 @@
         <div id="panel-deportes" class="panel">
           <p class="section-title">Inscripción deportiva</p>
 
-          {% if disciplina %}
+          {% if inscripciones_deportivas %}
           <div class="stat-card" style="margin-bottom: 24px;">
-            <div class="stat-label">Tu disciplina actual</div>
-            <div class="stat-value" style="font-size: 22px; color: #16a34a;">{{ disciplina.nombre }}</div>
-            <div class="stat-sub">
-              {{ disciplina.id_instalacion.nombre }} · {{ disciplina_horario_formateado }}
-            </div>
+            <div class="stat-label">Tus deportes ({{ inscripciones_deportivas|length }}/2)</div>
+            {% for inscripcion in inscripciones_deportivas %}
+              <div class="stat-value" style="font-size: 20px; color: #16a34a;">{{ inscripcion.id_grupo.id_disciplina.nombre }}</div>
+              <div class="stat-sub">{{ inscripcion.id_grupo.nivel_educativo.nombre }} · {{ inscripcion.id_grupo.dia_semana|capfirst }} · {{ inscripcion.id_grupo.hora_inicio|time:"H:i" }} a {{ inscripcion.id_grupo.hora_fin|time:"H:i" }} · Prof. {{ inscripcion.id_grupo.profesor_responsable.id_persona.apellido }}</div>
+            {% endfor %}
           </div>
           {% else %}
           <div class="stat-card" style="margin-bottom: 24px;">
@@ -377,7 +377,9 @@
             <thead>
               <tr>
                 <th>Disciplina</th>
+                <th>Nivel</th>
                 <th>Instalación</th>
+                <th>Profesor</th>
                 <th>Horario</th>
                 <th>Acción</th>
               </tr>
@@ -386,22 +388,24 @@
               {% for dep in disciplinas_disponibles %}
               <tr>
                 <td>{{ dep.nombre }}</td>
+                <td>{{ dep.nivel_educativo.nombre }}</td>
                 <td>{{ dep.id_instalacion.nombre }}</td>
+                <td>{{ dep.profesor_responsable.id_persona.apellido }}, {{ dep.profesor_responsable.id_persona.nombre }}</td>
                 <td>{{ dep.horario_formateado }}</td>
                 <td>
-                  {% if disciplina and disciplina.id_disciplina == dep.id_disciplina %}
+                  {% if dep.esta_inscripto %}
                     <span class="badge badge-green">Inscripto</span>
                   {% else %}
                     <form method="post" style="display: inline;">
                       {% csrf_token %}
                       <input type="hidden" name="accion" value="inscribir_deporte">
-                      <input type="hidden" name="id_disciplina" value="{{ dep.id_disciplina }}">
+                      <input type="hidden" name="id_grupo" value="{{ dep.id_grupo }}">
                       <button
                         type="submit"
                         class="btn-form"
                         style="margin-top: 0; padding: 8px 16px; font-size: 14px;"
                       >
-                        {% if disciplina %}Cambiar{% else %}Inscribirme{% endif %}
+                        Inscribirme
                       </button>
                     </form>
                   {% endif %}
@@ -409,7 +413,7 @@
               </tr>
               {% empty %}
               <tr>
-                <td colspan="4">No hay disciplinas deportivas disponibles.</td>
+                <td colspan="6">No hay grupos deportivos disponibles.</td>
               </tr>
               {% endfor %}
             </tbody>
