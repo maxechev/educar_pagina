@@ -154,7 +154,9 @@ def _admin_session(request):
 
 
 def _active_comedor():
-    servicio = ServicioComedor.objects.filter(estado='Activo').first()
+    # El comedor es un servicio único. Puede estar inactivo, pero no debe
+    # crearse otro registro con el mismo nombre al cargar el panel admin.
+    servicio = ServicioComedor.objects.filter(nombre='Comedor escolar').first()
     if servicio:
         return servicio
     return ServicioComedor.objects.create(nombre='Comedor escolar', cupo_maximo=100, estado='Activo')
@@ -715,7 +717,9 @@ def dashboard_alumno(request):
                 messages.success(request, 'Solicitud de transporte enviada al administrativo.')
         else:
             servicio = _active_comedor()
-            if InscripcionComedor.objects.filter(id_alumno=alumno, estado='Activa').exists():
+            if servicio.estado != 'Activo':
+                messages.error(request, 'El servicio de comedor está inactivo.')
+            elif InscripcionComedor.objects.filter(id_alumno=alumno, estado='Activa').exists():
                 messages.info(request, 'Ya estás inscripto al comedor.')
             elif SolicitudServicio.objects.filter(id_alumno=alumno, tipo='comedor', estado='Pendiente').exists():
                 messages.info(request, 'Ya existe una solicitud de comedor pendiente.')
