@@ -57,6 +57,11 @@ from .models import (
     GrupoDeportivo,
     InscripcionDeportiva,
     Horario,
+    RecorridoTransporte,
+    ServicioComedor,
+    InscripcionTransporte,
+    InscripcionComedor,
+    SolicitudServicio,
 )
 COMUNICADOS_FILE = os.path.join(
     os.path.dirname(__file__),
@@ -128,6 +133,184 @@ def redireccion_usuarios_con_filtro(request):
     }
     consulta = urlencode(parametros)
     return redirect(f"{reverse('dashboard-administrativo')}?{consulta}")
+
+
+def _admin_service_redirect(request):
+    request.session['panel_activo'] = 'servicios-admin'
+    return redirect(reverse('dashboard-administrativo') + '?panel=servicios-admin')
+
+
+def _student_service_redirect(request):
+    request.session['panel_activo'] = 'servicios'
+    return redirect('dashboard-alumno')
+
+
+def _admin_session(request):
+    persona, dashboard_url = obtener_datos_sesion(request)
+    if not persona or dashboard_url != 'dashboard-administrativo':
+        return None
+    return persona
+
+
+def _active_comedor():
+    servicio = ServicioComedor.objects.filter(estado='Activo').first()
+    if servicio:
+        return servicio
+    return ServicioComedor.objects.create(nombre='Comedor escolar', cupo_maximo=100, estado='Activo')
+
+
+@never_cache
+def alta_recorrido_admin(request):
+    if not _admin_session(request):
+        return redirect('login')
+    if request.method == 'POST':
+        nombre = (request.POST.get('nombre') or '').strip()
+        try:
+            cupo = int(request.POST.get('cupo_maximo') or 0)
+        except ValueError:
+            cupo = 0
+        if not nombre or cupo < 1:
+            messages.error(request, 'Ingresá un nombre y un cupo válido.')
+        elif RecorridoTransporte.objects.filter(nombre__iexact=nombre).exists():
+            messages.error(request, 'Ya existe un recorrido con ese nombre.')
+        else:
+            RecorridoTransporte.objects.create(
+                nombre=nombre,
+                descripcion=(request.POST.get('descripcion') or '').strip(),
+                turno=request.POST.get('turno') or 'Mañana',
+                hora_salida=request.POST.get('hora_salida') or None,
+                cupo_maximo=cupo,
+            )
+            messages.success(request, 'Recorrido creado correctamente.')
+    return _admin_service_redirect(request)
+
+
+@never_cache
+def modificar_recorrido_admin(request, id_recorrido):
+    if not _admin_session(request):
+        return redirect('login')
+    recorrido = get_object_or_404(RecorridoTransporte, id_recorrido=id_recorrido)
+    if request.method == 'POST':
+        recorrido.nombre = (request.POST.get('nombre') or recorrido.nombre).strip()
+        recorrido.descripcion = (request.POST.get('descripcion') or '').strip()
+        recorrido.turno = request.POST.get('turno') or recorrido.turno
+        recorrido.hora_salida = request.POST.get('hora_salida') or None
+        try:
+            recorrido.cupo_maximo = max(1, int(request.POST.get('cupo_maximo') or recorrido.cupo_maximo))
+        except ValueError:
+            messages.error(request, 'El cupo debe ser numérico.')
+        else:
+            recorrido.estado = request.POST.get('estado') or recorrido.estado
+            recorrido.save()
+            messages.success(request, 'Recorrido actualizado.')
+    return _admin_service_redirect(request)
+
+
+@never_cache
+def baja_recorrido_admin(request, id_recorrido):
+    if not _admin_session(request):
+        return redirect('login')
+    recorrido = get_object_or_404(RecorridoTransporte, id_recorrido=id_recorrido)
+    recorrido.estado = 'Inactivo'
+    recorrido.save(update_fields=['estado'])
+    InscripcionTransporte.objects.filter(id_recorrido=recorrido, estado='Activa').update(estado='Baja')
+    messages.success(request, 'Recorrido dado de baja.')
+    return _admin_service_redirect(request)
+
+
+@never_cache
+def modificar_comedor_admin(request):
+    if not _admin_session(request):
+        return redirect('login')
+    servicio = _active_comedor()
+    if request.method == 'POST':
+        try:
+            servicio.cupo_maximo = max(1, int(request.POST.get('cupo_maximo') or servicio.cupo_maximo))
+            servicio.estado = request.POST.get('estado') or servicio.estado
+            servicio.save(update_fields=['cupo_maximo', 'estado'])
+            messages.success(request, 'Cupo del comedor actualizado.')
+        except ValueError:
+            messages.error(request, 'El cupo debe ser numérico.')
+    return _admin_service_redirect(request)
+
+
+@never_cache
+def alta_inscripcion_transporte_admin(request):
+    if not _admin_session(request):
+        return redirect('login')
+    if request.method == 'POST':
+        alumno = Alumno.objects.filter(legajo=request.POST.get('legajo_alumno'), estado='Activo').first()
+        recorrido = RecorridoTransporte.objects.filter(id_recorrido=request.POST.get('id_recorrido'), estado='Activo').first()
+        if not alumno or not recorrido:
+            messages.error(request, 'Seleccioná un alumno y un recorrido activos.')
+        elif InscripcionTransporte.objects.filter(id_alumno=alumno, estado='Activa').exists():
+            messages.error(request, 'El alumno ya tiene un recorrido de transporte activo.')
+        elif InscripcionTransporte.objects.filter(id_recorrido=recorrido, estado='Activa').count() >= recorrido.cupo_maximo:
+            messages.error(request, 'El recorrido alcanzó su cupo.')
+        else:
+            InscripcionTransporte.objects.create(id_alumno=alumno, id_recorrido=recorrido)
+            SolicitudServicio.objects.filter(id_alumno=alumno, tipo='transporte', id_recorrido=recorrido, estado='Pendiente').update(estado='Aprobada')
+            messages.success(request, 'Alumno inscripto al recorrido.')
+    return _admin_service_redirect(request)
+
+
+@never_cache
+def alta_inscripcion_comedor_admin(request):
+    if not _admin_session(request):
+        return redirect('login')
+    if request.method == 'POST':
+        alumno = Alumno.objects.filter(legajo=request.POST.get('legajo_alumno'), estado='Activo').first()
+        servicio = _active_comedor()
+        if not alumno:
+            messages.error(request, 'Seleccioná un alumno activo.')
+        elif InscripcionComedor.objects.filter(id_alumno=alumno, estado='Activa').exists():
+            messages.error(request, 'El alumno ya está inscripto al comedor.')
+        elif InscripcionComedor.objects.filter(id_servicio=servicio, estado='Activa').count() >= servicio.cupo_maximo:
+            messages.error(request, 'El comedor alcanzó su cupo.')
+        else:
+            InscripcionComedor.objects.create(id_alumno=alumno, id_servicio=servicio)
+            SolicitudServicio.objects.filter(id_alumno=alumno, tipo='comedor', id_servicio=servicio, estado='Pendiente').update(estado='Aprobada')
+            messages.success(request, 'Alumno inscripto al comedor.')
+    return _admin_service_redirect(request)
+
+
+@never_cache
+def gestionar_solicitud_servicio_admin(request, id_solicitud):
+    if not _admin_session(request):
+        return redirect('login')
+    solicitud = get_object_or_404(SolicitudServicio.objects.select_related('id_alumno', 'id_recorrido', 'id_servicio'), id_solicitud=id_solicitud)
+    if request.method == 'POST' and solicitud.estado == SolicitudServicio.PENDIENTE:
+        decision = request.POST.get('decision')
+        if decision == 'rechazar':
+            solicitud.estado = SolicitudServicio.RECHAZADA
+            solicitud.save(update_fields=['estado'])
+            messages.success(request, 'Solicitud rechazada.')
+        elif decision == 'aprobar':
+            if solicitud.tipo == SolicitudServicio.TIPO_TRANSPORTE:
+                recorrido = solicitud.id_recorrido
+                if not recorrido or recorrido.estado != 'Activo':
+                    messages.error(request, 'El recorrido ya no está disponible.')
+                elif InscripcionTransporte.objects.filter(id_alumno=solicitud.id_alumno, estado='Activa').exists():
+                    messages.error(request, 'El alumno ya tiene un recorrido activo.')
+                elif InscripcionTransporte.objects.filter(id_recorrido=recorrido, estado='Activa').count() >= recorrido.cupo_maximo:
+                    messages.error(request, 'El recorrido alcanzó su cupo.')
+                else:
+                    InscripcionTransporte.objects.create(id_alumno=solicitud.id_alumno, id_recorrido=recorrido)
+                    solicitud.estado = SolicitudServicio.APROBADA
+                    solicitud.save(update_fields=['estado'])
+                    messages.success(request, 'Solicitud aprobada y alumno inscripto al recorrido.')
+            else:
+                servicio = solicitud.id_servicio or _active_comedor()
+                if InscripcionComedor.objects.filter(id_alumno=solicitud.id_alumno, estado='Activa').exists():
+                    messages.error(request, 'El alumno ya está inscripto al comedor.')
+                elif InscripcionComedor.objects.filter(id_servicio=servicio, estado='Activa').count() >= servicio.cupo_maximo:
+                    messages.error(request, 'El comedor alcanzó su cupo.')
+                else:
+                    InscripcionComedor.objects.create(id_alumno=solicitud.id_alumno, id_servicio=servicio)
+                    solicitud.estado = SolicitudServicio.APROBADA
+                    solicitud.save(update_fields=['estado'])
+                    messages.success(request, 'Solicitud de comedor aprobada.')
+    return _admin_service_redirect(request)
 
 def index(request):
     usuario_datos = Usuario.objects.all()
@@ -460,6 +643,40 @@ def dashboard_alumno(request):
     if not alumno:
         return redirect('login')
 
+    if request.method == 'POST' and request.POST.get('accion') in ('solicitar_transporte', 'solicitar_comedor'):
+        accion = request.POST.get('accion')
+        if accion == 'solicitar_transporte':
+            recorrido = RecorridoTransporte.objects.filter(
+                id_recorrido=request.POST.get('id_recorrido'), estado='Activo'
+            ).first()
+            if not recorrido:
+                messages.error(request, 'El recorrido seleccionado no está disponible.')
+            elif InscripcionTransporte.objects.filter(id_alumno=alumno, estado='Activa').exists():
+                messages.info(request, 'Ya tenés un recorrido de transporte activo.')
+            elif SolicitudServicio.objects.filter(id_alumno=alumno, tipo='transporte', estado='Pendiente').exists():
+                messages.info(request, 'Ya existe una solicitud de transporte pendiente.')
+            elif InscripcionTransporte.objects.filter(id_recorrido=recorrido, estado='Activa').count() >= recorrido.cupo_maximo:
+                messages.error(request, 'El recorrido alcanzó su cupo.')
+            else:
+                SolicitudServicio.objects.create(
+                    id_alumno=alumno, tipo='transporte', id_recorrido=recorrido,
+                )
+                messages.success(request, 'Solicitud de transporte enviada al administrativo.')
+        else:
+            servicio = _active_comedor()
+            if InscripcionComedor.objects.filter(id_alumno=alumno, estado='Activa').exists():
+                messages.info(request, 'Ya estás inscripto al comedor.')
+            elif SolicitudServicio.objects.filter(id_alumno=alumno, tipo='comedor', estado='Pendiente').exists():
+                messages.info(request, 'Ya existe una solicitud de comedor pendiente.')
+            elif InscripcionComedor.objects.filter(id_servicio=servicio, estado='Activa').count() >= servicio.cupo_maximo:
+                messages.error(request, 'El comedor alcanzó su cupo.')
+            else:
+                SolicitudServicio.objects.create(
+                    id_alumno=alumno, tipo='comedor', id_servicio=servicio,
+                )
+                messages.success(request, 'Solicitud de comedor enviada al administrativo.')
+        return _student_service_redirect(request)
+
     if request.method == 'POST' and request.POST.get('accion') == 'inscribir_deporte':
         request.session['panel_activo'] = 'deportes'
         id_grupo = request.POST.get('id_grupo')
@@ -749,6 +966,16 @@ def dashboard_alumno(request):
         grupo.nombre = grupo.id_disciplina.nombre
         grupo.id_instalacion = grupo.id_disciplina.id_instalacion
         grupo.esta_inscripto = grupo.id_grupo in grupos_inscriptos_ids
+
+    recorridos_transporte = list(RecorridoTransporte.objects.filter(estado='Activo').order_by('nombre'))
+    for recorrido in recorridos_transporte:
+        recorrido.cupos_ocupados = InscripcionTransporte.objects.filter(id_recorrido=recorrido, estado='Activa').count()
+        recorrido.cupos_disponibles = max(0, recorrido.cupo_maximo - recorrido.cupos_ocupados)
+    servicio_comedor = _active_comedor()
+    inscripcion_transporte_alumno = InscripcionTransporte.objects.filter(id_alumno=alumno, estado='Activa').select_related('id_recorrido').first()
+    inscripcion_comedor_alumno = InscripcionComedor.objects.filter(id_alumno=alumno, estado='Activa').select_related('id_servicio').first()
+    solicitudes_servicio_alumno = SolicitudServicio.objects.filter(id_alumno=alumno, estado='Pendiente').select_related('id_recorrido', 'id_servicio')
+    comedor_ocupados = InscripcionComedor.objects.filter(id_servicio=servicio_comedor, estado='Activa').count()
             
     
     tutor_relacion = TutorTutoraAlumno.objects.filter(
@@ -935,6 +1162,12 @@ def dashboard_alumno(request):
         'grupos_inscriptos_ids': grupos_inscriptos_ids,
         'disciplina_horario_formateado': disciplina_horario_formateado,
         'disciplinas_disponibles': grupos_deportivos,
+        'recorridos_transporte': recorridos_transporte,
+        'servicio_comedor': servicio_comedor,
+        'comedor_cupos_disponibles': max(0, servicio_comedor.cupo_maximo - comedor_ocupados),
+        'inscripcion_transporte_alumno': inscripcion_transporte_alumno,
+        'inscripcion_comedor_alumno': inscripcion_comedor_alumno,
+        'solicitudes_servicio_alumno': solicitudes_servicio_alumno,
         'tutor_relacion': tutor_relacion,
         'horario_por_dia': horario_por_dia,
         'hay_horarios': hay_horarios,
@@ -1534,6 +1767,25 @@ def dashboard_administrativo(request):
             if inscripcion.estado == 'Activa'
         ]
         grupo.cantidad_inscriptos = len(grupo.inscriptos_activos)
+    recorridos_transporte_admin = list(RecorridoTransporte.objects.order_by('estado', 'nombre'))
+    for recorrido in recorridos_transporte_admin:
+        recorrido.cupos_ocupados = InscripcionTransporte.objects.filter(
+            id_recorrido=recorrido, estado='Activa'
+        ).count()
+    servicio_comedor_admin = _active_comedor()
+    inscripciones_transporte_admin = InscripcionTransporte.objects.filter(
+        estado='Activa'
+    ).select_related('id_alumno__id_persona', 'id_recorrido').order_by(
+        'id_recorrido__nombre', 'id_alumno__id_persona__apellido'
+    )
+    inscripciones_comedor_admin = InscripcionComedor.objects.filter(
+        estado='Activa'
+    ).select_related('id_alumno__id_persona', 'id_servicio').order_by(
+        'id_alumno__id_persona__apellido'
+    )
+    solicitudes_servicio_admin = SolicitudServicio.objects.filter(
+        estado='Pendiente'
+    ).select_related('id_alumno__id_persona', 'id_recorrido', 'id_servicio').order_by('fecha_solicitud')
     alumnos_deportivos = Alumno.objects.select_related('id_persona').order_by(
         'id_persona__apellido', 'id_persona__nombre'
     )
@@ -1580,7 +1832,7 @@ def dashboard_administrativo(request):
         'inicio', 'inscripciones', 'pagos', 'documentacion', 'reservas',
         'opiniones', 'noticias', 'usuarios', 'perfil', 'alumnos',
         'profesores', 'niveles-cursos', 'materias', 'deportes-admin',
-        'horarios-admin', 'asistencia',
+        'horarios-admin', 'servicios-admin', 'asistencia',
     }
     panel_activo = request.session.get("panel_activo", "inicio")
     panel_solicitado = request.GET.get('panel')
@@ -1607,6 +1859,11 @@ def dashboard_administrativo(request):
         'materias_academicas': materias_academicas,
         'deportes_academicos': deportes_academicos,
         'grupos_deportivos_admin': grupos_deportivos_admin,
+        'recorridos_transporte_admin': recorridos_transporte_admin,
+        'servicio_comedor_admin': servicio_comedor_admin,
+        'inscripciones_transporte_admin': inscripciones_transporte_admin,
+        'inscripciones_comedor_admin': inscripciones_comedor_admin,
+        'solicitudes_servicio_admin': solicitudes_servicio_admin,
         'alumnos_deportivos': alumnos_deportivos,
         'docentes_deportivos': docentes_deportivos,
         'cursos_materias_admin': cursos_materias_admin,

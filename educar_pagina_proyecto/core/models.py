@@ -292,6 +292,83 @@ class InscripcionDeportiva(models.Model):
         ]
 
 
+class RecorridoTransporte(models.Model):
+    id_recorrido = models.AutoField(primary_key=True)
+    nombre = models.CharField(max_length=100, unique=True)
+    descripcion = models.TextField(blank=True, null=True)
+    turno = models.CharField(max_length=20, default='Mañana')
+    hora_salida = models.TimeField(blank=True, null=True)
+    cupo_maximo = models.PositiveIntegerField(default=20)
+    estado = models.CharField(max_length=20, default='Activo')
+
+    class Meta:
+        managed = True
+        db_table = 'recorrido_transporte'
+
+    def __str__(self):
+        return self.nombre
+
+
+class ServicioComedor(models.Model):
+    id_servicio = models.AutoField(primary_key=True)
+    nombre = models.CharField(max_length=100, default='Comedor escolar', unique=True)
+    cupo_maximo = models.PositiveIntegerField(default=100)
+    estado = models.CharField(max_length=20, default='Activo')
+
+    class Meta:
+        managed = True
+        db_table = 'servicio_comedor'
+
+    def __str__(self):
+        return self.nombre
+
+
+class InscripcionTransporte(models.Model):
+    id_inscripcion = models.AutoField(primary_key=True)
+    id_alumno = models.ForeignKey(Alumno, models.CASCADE, db_column='legajo_alumno', related_name='inscripciones_transporte')
+    id_recorrido = models.ForeignKey(RecorridoTransporte, models.PROTECT, db_column='id_recorrido', related_name='inscripciones')
+    fecha_inscripcion = models.DateField(auto_now_add=True)
+    estado = models.CharField(max_length=20, default='Activa')
+
+    class Meta:
+        managed = True
+        db_table = 'inscripcion_transporte'
+
+
+class InscripcionComedor(models.Model):
+    id_inscripcion = models.AutoField(primary_key=True)
+    id_alumno = models.ForeignKey(Alumno, models.CASCADE, db_column='legajo_alumno', related_name='inscripciones_comedor')
+    id_servicio = models.ForeignKey(ServicioComedor, models.PROTECT, db_column='id_servicio', related_name='inscripciones')
+    fecha_inscripcion = models.DateField(auto_now_add=True)
+    estado = models.CharField(max_length=20, default='Activa')
+
+    class Meta:
+        managed = True
+        db_table = 'inscripcion_comedor'
+
+
+class SolicitudServicio(models.Model):
+    TIPO_TRANSPORTE = 'transporte'
+    TIPO_COMEDOR = 'comedor'
+    TIPOS = [(TIPO_TRANSPORTE, 'Transporte'), (TIPO_COMEDOR, 'Comedor')]
+    PENDIENTE = 'Pendiente'
+    APROBADA = 'Aprobada'
+    RECHAZADA = 'Rechazada'
+    ESTADOS = [(PENDIENTE, 'Pendiente'), (APROBADA, 'Aprobada'), (RECHAZADA, 'Rechazada')]
+    id_solicitud = models.AutoField(primary_key=True)
+    id_alumno = models.ForeignKey(Alumno, models.CASCADE, db_column='legajo_alumno', related_name='solicitudes_servicio')
+    tipo = models.CharField(max_length=20, choices=TIPOS)
+    id_recorrido = models.ForeignKey(RecorridoTransporte, models.PROTECT, db_column='id_recorrido', blank=True, null=True, related_name='solicitudes')
+    id_servicio = models.ForeignKey(ServicioComedor, models.PROTECT, db_column='id_servicio', blank=True, null=True, related_name='solicitudes')
+    estado = models.CharField(max_length=20, choices=ESTADOS, default=PENDIENTE)
+    fecha_solicitud = models.DateTimeField(auto_now_add=True)
+    observaciones = models.TextField(blank=True, null=True)
+
+    class Meta:
+        managed = True
+        db_table = 'solicitud_servicio'
+
+
 class Horario(models.Model):
     id_horario = models.AutoField(primary_key=True)
     curso_materia = models.ForeignKey(

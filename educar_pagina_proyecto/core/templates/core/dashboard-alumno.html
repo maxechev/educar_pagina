@@ -100,6 +100,9 @@
           <a href="#" onclick="showPanel('deportes', this); return false;">
             <span class="nav-icon">⚽</span> Deportes
           </a>
+          <a href="#" onclick="showPanel('servicios', this); return false;">
+            <span class="nav-icon">🚌</span> Servicios
+          </a>
           <a href="#" onclick="showPanel('asistencia', this); return false;">
             <span class="nav-icon">✅</span> Asistencia
           </a>
@@ -337,6 +340,19 @@
           {% else %}
             <p style="color: #94a3b8;">No hay horarios registrados.</p>
           {% endif %}
+        </div>
+
+        <!-- SERVICIOS -->
+        <div id="panel-servicios" class="panel">
+          <p class="section-title">Transporte y comedor</p>
+          {% if messages and panel_activo == 'servicios' %}{% for message in messages %}<div class="{% if message.tags == 'success' or message.tags == 'info' %}mensaje-exito{% else %}mensaje-error{% endif %}" style="margin-bottom:12px;">{{ message }}</div>{% endfor %}{% endif %}
+          <div class="stat-card" style="margin-bottom:18px;">
+            <div class="stat-label">Transporte</div>
+            {% if inscripcion_transporte_alumno %}<div class="stat-sub">Inscripto en: <strong>{{ inscripcion_transporte_alumno.id_recorrido.nombre }}</strong> · {{ inscripcion_transporte_alumno.id_recorrido.turno }}</div>
+            {% else %}<div class="stat-sub">Elegí un recorrido para enviar una solicitud.</div>{% for recorrido in recorridos_transporte %}<div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid #e2e8f0;padding:10px 0;"><span><strong>{{ recorrido.nombre }}</strong> · {{ recorrido.turno }}{% if recorrido.hora_salida %} · sale {{ recorrido.hora_salida|time:'H:i' }}{% endif %}<br><small>{{ recorrido.cupos_disponibles }} cupos disponibles</small></span>{% if recorrido.cupos_disponibles > 0 %}<form method="post">{% csrf_token %}<input type="hidden" name="accion" value="solicitar_transporte"><input type="hidden" name="id_recorrido" value="{{ recorrido.id_recorrido }}"><button class="btn-small" style="background:#1d66c2;margin:0;">Solicitar</button></form>{% else %}<span class="badge" style="background:#fee2e2;color:#991b1b;">Completo</span>{% endif %}</div>{% empty %}<p>No hay recorridos disponibles.</p>{% endfor %}{% endif %}
+          </div>
+          <div class="stat-card"><div class="stat-label">Comedor escolar</div>{% if inscripcion_comedor_alumno %}<div class="stat-sub">Estás inscripto al comedor.</div>{% else %}<div class="stat-sub">{{ comedor_cupos_disponibles }} cupos disponibles.</div>{% if comedor_cupos_disponibles > 0 %}<form method="post">{% csrf_token %}<input type="hidden" name="accion" value="solicitar_comedor"><button class="btn-form">Solicitar inscripción al comedor</button></form>{% else %}<span class="badge" style="background:#fee2e2;color:#991b1b;">Cupo completo</span>{% endif %}{% endif %}</div>
+          {% if solicitudes_servicio_alumno %}<div class="stat-card" style="margin-top:18px;"><div class="stat-label">Solicitudes pendientes</div>{% for solicitud in solicitudes_servicio_alumno %}<div class="stat-sub">{% if solicitud.tipo == 'transporte' %}Transporte: {{ solicitud.id_recorrido.nombre }}{% else %}Comedor{% endif %} · Pendiente de aprobación</div>{% endfor %}</div>{% endif %}
         </div>
 
         <!-- DEPORTES -->

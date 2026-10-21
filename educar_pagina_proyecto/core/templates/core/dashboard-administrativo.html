@@ -170,6 +170,14 @@
             </a>
             <a
               href="#"
+              id="enlace-servicios-admin"
+              class="{% if panel_activo == 'servicios-admin' %}active{% endif %}"
+              onclick="showPanel('servicios-admin', this); return false;"
+            >
+              <span class="nav-icon">🚌</span> Servicios
+            </a>
+            <a
+              href="#"
               onclick="
                 showPanel('opiniones', this);
                 return false;
@@ -824,6 +832,51 @@
               <section style="background:#f8fafc; border-radius:12px; padding:18px;"><h3>Grupos deportivos</h3><form method="POST" action="{% url 'alta-grupo-deportivo-admin' %}">{% csrf_token %}<div class="form-group"><label>Deporte</label><select name="id_disciplina" required><option value="">Seleccione</option>{% for deporte in deportes_academicos %}<option value="{{ deporte.id_disciplina }}">{{ deporte.nombre }}</option>{% endfor %}</select></div><div class="form-group"><label>Nivel</label><select name="nivel_educativo" required><option value="">Seleccione</option>{% for nivel in niveles_educativos %}<option value="{{ nivel.id_nivel }}">{{ nivel.nombre }}</option>{% endfor %}</select></div><div class="form-group"><label>Profesor responsable</label><select name="profesor_responsable" required><option value="">Seleccione</option>{% for docente in docentes_deportivos %}<option value="{{ docente.legajo }}">{{ docente.id_persona.apellido }}, {{ docente.id_persona.nombre }}</option>{% endfor %}</select></div><div class="form-grid"><div class="form-group"><label>Día</label><select name="dia_semana" required><option value="lunes">Lunes</option><option value="martes">Martes</option><option value="miércoles">Miércoles</option><option value="jueves">Jueves</option><option value="viernes">Viernes</option></select></div><div class="form-group"><label>Turno</label><select name="turno" required><option value="Mañana">Mañana</option><option value="Tarde">Tarde</option></select></div><div class="form-group"><label>Inicio</label><input type="time" name="hora_inicio" required></div><div class="form-group"><label>Fin</label><input type="time" name="hora_fin" required></div><div class="form-group"><label>Cupo</label><input type="number" name="cupo_maximo" min="1"></div></div><button class="btn-form" style="margin-top:10px;">Crear grupo</button></form>{% for grupo in grupos_deportivos_admin %}<div style="background:white; border:1px solid #e2e8f0; border-radius:8px; padding:10px; margin-top:10px;"><strong>{{ grupo.id_disciplina.nombre }}</strong> · {{ grupo.nivel_educativo.nombre }} · {{ grupo.dia_semana|capfirst }} · {{ grupo.turno }} · {{ grupo.hora_inicio|time:'H:i' }}-{{ grupo.hora_fin|time:'H:i' }}<br><small>Responsable: {{ grupo.profesor_responsable.id_persona.apellido }}, {{ grupo.profesor_responsable.id_persona.nombre }} · {{ grupo.cantidad_inscriptos }} {% if grupo.cupo_maximo %}/{{ grupo.cupo_maximo }}{% endif %}</small><button type="button" class="btn-small" style="background:#1d66c4; margin:6px 0 0 8px;" onclick="toggleDisplay('inscriptos-grupo-{{ grupo.id_grupo }}')">Ver alumnos inscriptos</button><div id="inscriptos-grupo-{{ grupo.id_grupo }}" style="display:none; margin-top:8px; padding:8px; background:#f8fafc; border-radius:6px;">{% for inscripcion in grupo.inscriptos_activos %}<div>{{ inscripcion.id_alumno.id_persona.apellido }}, {{ inscripcion.id_alumno.id_persona.nombre }}</div>{% empty %}<div style="color:#64748b;">No hay alumnos inscriptos activos.</div>{% endfor %}</div><form method="POST" action="{% url 'baja-grupo-deportivo-admin' grupo.id_grupo %}" style="display:inline; margin-left:8px;" onsubmit="return confirm('¿Eliminar este grupo?');">{% csrf_token %}<button class="btn-small" style="background:#dc2626; margin-top:6px;">Baja</button></form></div>{% empty %}<p>No hay grupos registrados.</p>{% endfor %}</section>
               <section style="background:#f8fafc; border-radius:12px; padding:18px;"><h3>Inscribir alumno</h3><form method="POST" action="{% url 'alta-inscripcion-deportiva-admin' %}">{% csrf_token %}<div class="form-group"><label>Alumno</label><select name="legajo_alumno" required><option value="">Seleccione</option>{% for alumno in alumnos_deportivos %}<option value="{{ alumno.legajo }}">{{ alumno.id_persona.apellido }}, {{ alumno.id_persona.nombre }}</option>{% endfor %}</select></div><div class="form-group" style="margin-top:8px;"><label>Grupo deportivo</label><select name="id_grupo" required><option value="">Seleccione</option>{% for grupo in grupos_deportivos_admin %}<option value="{{ grupo.id_grupo }}">{{ grupo.id_disciplina.nombre }} · {{ grupo.nivel_educativo.nombre }} · {{ grupo.dia_semana|capfirst }} · {{ grupo.turno }} · {{ grupo.hora_inicio|time:'H:i' }}-{{ grupo.hora_fin|time:'H:i' }}</option>{% endfor %}</select></div><button class="btn-form" style="margin-top:10px;">Inscribir alumno</button></form><p style="color:#64748b; margin-top:12px;">El sistema valida máximo dos deportes, cupo y conflictos de horarios.</p></section>
             </div>
+          </div>
+
+          <!-- Panel de Servicios -->
+          <div id="servicios-admin" class="panel {% if panel_activo == 'servicios-admin' %}active{% endif %}">
+            <h2 class="section-title">🚌 Gestión de transporte y comedor</h2>
+            <p>Administrá recorridos, cupos e inscripciones. Las solicitudes enviadas por alumnos aparecen para aprobar o rechazar.</p>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;">
+              <section style="background:#f8fafc;border-radius:12px;padding:18px;">
+                <h3>Nuevo recorrido</h3>
+                <form method="POST" action="{% url 'alta-recorrido-admin' %}">{% csrf_token %}
+                  <input name="nombre" placeholder="Ej. Recorrido Norte" required maxlength="100">
+                  <input name="descripcion" placeholder="Descripción / paradas">
+                  <select name="turno"><option>Mañana</option><option>Tarde</option></select>
+                  <label>Hora de salida <input type="time" name="hora_salida"></label>
+                  <label>Cupo <input type="number" name="cupo_maximo" min="1" value="20" required></label>
+                  <button class="btn-form">Crear recorrido</button>
+                </form>
+              </section>
+              <section style="background:#f8fafc;border-radius:12px;padding:18px;">
+                <h3>Comedor escolar</h3>
+                <p>Cupo utilizado: {{ inscripciones_comedor_admin|length }} / {{ servicio_comedor_admin.cupo_maximo }}</p>
+                <form method="POST" action="{% url 'modificar-comedor-admin' %}">{% csrf_token %}
+                  <label>Cupo máximo <input type="number" name="cupo_maximo" min="1" value="{{ servicio_comedor_admin.cupo_maximo }}" required></label>
+                  <select name="estado"><option value="Activo" {% if servicio_comedor_admin.estado == 'Activo' %}selected{% endif %}>Activo</option><option value="Inactivo" {% if servicio_comedor_admin.estado == 'Inactivo' %}selected{% endif %}>Inactivo</option></select>
+                  <button class="btn-form">Guardar comedor</button>
+                </form>
+              </section>
+            </div>
+            <section style="margin-top:18px;background:#f8fafc;border-radius:12px;padding:18px;">
+              <h3>Inscripción manual</h3>
+              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;">
+                <form method="POST" action="{% url 'alta-inscripcion-transporte-admin' %}">{% csrf_token %}<label>Alumno<select name="legajo_alumno" required>{% for alumno in alumnos_deportivos %}<option value="{{ alumno.legajo }}">{{ alumno.id_persona.apellido }}, {{ alumno.id_persona.nombre }} ({{ alumno.legajo }})</option>{% endfor %}</select></label><label>Recorrido<select name="id_recorrido" required>{% for recorrido in recorridos_transporte_admin %}{% if recorrido.estado == 'Activo' %}<option value="{{ recorrido.id_recorrido }}">{{ recorrido.nombre }} ({{ recorrido.cupos_ocupados }}/{{ recorrido.cupo_maximo }})</option>{% endif %}{% endfor %}</select></label><button class="btn-form">Inscribir transporte</button></form>
+                <form method="POST" action="{% url 'alta-inscripcion-comedor-admin' %}">{% csrf_token %}<label>Alumno<select name="legajo_alumno" required>{% for alumno in alumnos_deportivos %}<option value="{{ alumno.legajo }}">{{ alumno.id_persona.apellido }}, {{ alumno.id_persona.nombre }} ({{ alumno.legajo }})</option>{% endfor %}</select></label><button class="btn-form">Inscribir comedor</button></form>
+              </div>
+            </section>
+            <section style="margin-top:18px;background:#f8fafc;border-radius:12px;padding:18px;"><h3>Solicitudes pendientes</h3>
+              {% for solicitud in solicitudes_servicio_admin %}<div style="background:white;border:1px solid #e2e8f0;border-radius:8px;padding:10px;margin-top:8px;"><strong>{{ solicitud.id_alumno.id_persona.apellido }}, {{ solicitud.id_alumno.id_persona.nombre }}</strong> · {% if solicitud.tipo == 'transporte' %}{{ solicitud.id_recorrido.nombre }}{% else %}Comedor{% endif %}<form method="POST" action="{% url 'gestionar-solicitud-servicio-admin' solicitud.id_solicitud %}" style="display:inline;float:right;">{% csrf_token %}<button name="decision" value="aprobar" class="btn-small" style="background:#16a34a;margin:0;">Aceptar</button><button name="decision" value="rechazar" class="btn-small" style="background:#dc2626;margin:0;">Denegar</button></form></div>{% empty %}<p>No hay solicitudes pendientes.</p>{% endfor %}
+            </section>
+            <section style="margin-top:18px;background:#f8fafc;border-radius:12px;padding:18px;"><h3>Inscripciones activas</h3>
+              {% for inscripcion in inscripciones_transporte_admin %}<div>{{ inscripcion.id_alumno.id_persona.apellido }}, {{ inscripcion.id_alumno.id_persona.nombre }} · {{ inscripcion.id_recorrido.nombre }}</div>{% empty %}<p>No hay inscripciones de transporte.</p>{% endfor %}
+              {% for inscripcion in inscripciones_comedor_admin %}<div>{{ inscripcion.id_alumno.id_persona.apellido }}, {{ inscripcion.id_alumno.id_persona.nombre }} · Comedor</div>{% endfor %}
+            </section>
+            <section style="margin-top:18px;background:#f8fafc;border-radius:12px;padding:18px;"><h3>Recorridos configurados</h3>
+              {% for recorrido in recorridos_transporte_admin %}<div style="background:white;border:1px solid #e2e8f0;border-radius:8px;padding:10px;margin-top:8px;"><strong>{{ recorrido.nombre }}</strong> · {{ recorrido.turno }} · {{ recorrido.cupos_ocupados }}/{{ recorrido.cupo_maximo }} · {{ recorrido.estado }} <form method="POST" action="{% url 'baja-recorrido-admin' recorrido.id_recorrido %}" style="display:inline;float:right;">{% csrf_token %}<button class="btn-small" style="background:#dc2626;margin:0;">Baja</button></form></div>{% empty %}<p>No hay recorridos configurados.</p>{% endfor %}
+            </section>
           </div>
 
           <!-- Panel de Horarios -->
@@ -1847,7 +1900,7 @@
         document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
         document.querySelectorAll(".sidebar-nav a").forEach((a) => a.classList.remove("active"));
 
-        const targetPanel = document.getElementById("panel-" + id);
+        const targetPanel = document.getElementById("panel-" + id) || document.getElementById(id);
         if (targetPanel) {
             targetPanel.classList.add("active");
         }
@@ -1952,6 +2005,16 @@
           if (panelHorarios) panelHorarios.classList.add("active");
           const enlaceHorarios = document.getElementById("enlace-horarios-admin");
           if (enlaceHorarios) enlaceHorarios.classList.add("active");
+          return;
+        }
+
+        if (panel === "servicios-admin") {
+          document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
+          document.querySelectorAll(".sidebar-nav a").forEach((a) => a.classList.remove("active"));
+          const panelServicios = document.getElementById("servicios-admin");
+          if (panelServicios) panelServicios.classList.add("active");
+          const enlaceServicios = document.getElementById("enlace-servicios-admin");
+          if (enlaceServicios) enlaceServicios.classList.add("active");
           return;
         }
 
