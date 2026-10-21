@@ -1763,6 +1763,15 @@
         if (el) {
             el.classList.add("active");
         }
+
+        // Mantiene el panel seleccionado al recargar la página.
+        const url = new URL(window.location.href);
+        if (id === "inicio") {
+          url.searchParams.delete("panel");
+        } else {
+          url.searchParams.set("panel", id);
+        }
+        window.history.replaceState({}, "", url);
       }
 
       document.addEventListener("DOMContentLoaded", function () {

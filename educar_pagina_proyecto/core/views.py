@@ -1455,9 +1455,20 @@ def dashboard_administrativo(request):
                 Q(grupo_deportivo__nivel_educativo=curso_horario_seleccionado.nivel_educativo)
             )
     
-    panel_activo = request.session.pop("panel_activo", "inicio")
-    if request.GET.get('panel') == 'horarios-admin':
-        panel_activo = 'horarios-admin'
+    # Se conserva el panel seleccionado para que una recarga no vuelva a
+    # mostrar Inicio. Los paneles abiertos con JavaScript también envían su
+    # nombre en la URL mediante history.replaceState.
+    paneles_validos = {
+        'inicio', 'inscripciones', 'pagos', 'documentacion', 'reservas',
+        'opiniones', 'noticias', 'usuarios', 'perfil', 'alumnos',
+        'profesores', 'niveles-cursos', 'materias', 'deportes-admin',
+        'horarios-admin', 'asistencia',
+    }
+    panel_activo = request.session.get("panel_activo", "inicio")
+    panel_solicitado = request.GET.get('panel')
+    if panel_solicitado in paneles_validos:
+        panel_activo = panel_solicitado
+        request.session['panel_activo'] = panel_activo
     mensajes = list(get_messages(request))
     
     return render(request, 'core/dashboard-administrativo.html', {
