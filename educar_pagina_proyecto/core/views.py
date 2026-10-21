@@ -361,6 +361,9 @@ def login(request):
                 })
 
             request.session['usuario_id'] = usuario.id
+            # Cada nuevo inicio de sesión comienza en Inicio. El panel se
+            # conserva solamente durante la sesión activa para las recargas.
+            request.session['panel_activo'] = 'inicio'
             return redirect(redireccion)
         except Usuario.DoesNotExist:
             return render(request, 'core/login.html', {
@@ -3278,6 +3281,7 @@ def obtener_datos_sesion(request):
 def logout(request):
     if 'usuario_id' in request.session:
         del request.session['usuario_id']
+    request.session.pop('panel_activo', None)
     return redirect('index')
 
 def crear_comunicado(request):
