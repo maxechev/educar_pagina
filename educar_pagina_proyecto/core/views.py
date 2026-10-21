@@ -1951,6 +1951,15 @@ def _datos_horario_admin(request):
     return tipo, dia, inicio, fin
 
 
+def _redirect_horarios_admin_con_filtro(request):
+    """Vuelve al listado de horarios conservando el curso seleccionado."""
+    url = reverse('dashboard-administrativo') + '?panel=horarios-admin'
+    curso_id = (request.POST.get('curso_horario') or request.GET.get('curso_horario') or '').strip()
+    if curso_id.isdigit():
+        url += f'&curso_horario={curso_id}'
+    return redirect(url)
+
+
 @never_cache
 def alta_horario_admin(request):
     if not _validar_acceso_niveles(request):
@@ -1973,7 +1982,7 @@ def alta_horario_admin(request):
             messages.success(request, 'Horario creado correctamente.')
         except (ValueError, IntegrityError) as error:
             messages.error(request, str(error))
-    return redirect('lista-horarios-admin')
+    return _redirect_horarios_admin_con_filtro(request)
 
 
 @never_cache
