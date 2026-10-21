@@ -2751,17 +2751,23 @@ def modificar_usuario_admin(request, id_usuario):
     usuario = get_object_or_404(Usuario, id=id_usuario)
 
     if request.method == 'POST':
+        nombre_usuario = (request.POST.get('nombre_usuario') or '').strip()
         correo = (request.POST.get('correo') or '').strip() or None
         contrasenia = request.POST.get('contrasenia') or ''
         rol = (request.POST.get('rol') or '').strip().lower()
         estado = request.POST.get('estado') or 'Activo'
         persona_usuario = Persona.objects.filter(id_usuario=usuario).first()
 
-        if correo and Usuario.objects.filter(correo=correo).exclude(id=usuario.id).exists():
+        if not nombre_usuario:
+            messages.error(request, 'El nombre de usuario es obligatorio.', extra_tags='usuarios')
+        elif Usuario.objects.filter(nombre_usuario=nombre_usuario).exclude(id=usuario.id).exists():
+            messages.error(request, 'El nombre de usuario ya existe.', extra_tags='usuarios')
+        elif correo and Usuario.objects.filter(correo=correo).exclude(id=usuario.id).exists():
             messages.error(request, 'Ese correo ya está registrado.', extra_tags='usuarios')
         elif rol not in ROLES_USUARIO or not persona_usuario or not rol_valido_para_persona(persona_usuario, rol):
             messages.error(request, 'El rol no coincide con la persona asociada.', extra_tags='usuarios')
         else:
+            usuario.nombre_usuario = nombre_usuario
             usuario.correo = correo
             usuario.rol = rol
             usuario.estado = estado if estado in ('Activo', 'Inactivo') else 'Activo'
