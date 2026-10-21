@@ -836,45 +836,60 @@
 
           <!-- Panel de Servicios -->
           <div id="servicios-admin" class="panel {% if panel_activo == 'servicios-admin' %}active{% endif %}">
+            <style>
+              #servicios-admin { background:#fff; border-radius:16px; padding:28px; box-shadow:0 4px 14px rgba(15,23,42,.06); }
+              #servicios-admin .service-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px; margin-top:20px; }
+              #servicios-admin .service-card { background:#f8fafc; border:1px solid #e2e8f0; border-radius:14px; padding:20px; }
+              #servicios-admin .service-card h3, #servicios-admin .service-block h3 { margin:0 0 14px; color:#0f172a; }
+              #servicios-admin .service-form { display:grid; gap:12px; }
+              #servicios-admin .service-form label { display:flex; flex-direction:column; gap:6px; color:#334155; font-size:14px; font-weight:600; }
+              #servicios-admin .service-form input, #servicios-admin .service-form select { width:100%; box-sizing:border-box; min-height:40px; }
+              #servicios-admin .service-form .btn-form { width:max-content; margin-top:4px; }
+              #servicios-admin .service-block { margin-top:20px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:14px; padding:20px; }
+              #servicios-admin .manual-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:24px; }
+              #servicios-admin .service-list-item { background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:12px 14px; margin-top:9px; display:flex; justify-content:space-between; align-items:center; gap:12px; }
+              #servicios-admin .service-list-item form { flex-shrink:0; }
+              @media (max-width:760px) { #servicios-admin .service-grid, #servicios-admin .manual-grid { grid-template-columns:1fr; } #servicios-admin { padding:18px; } }
+            </style>
             <h2 class="section-title">🚌 Gestión de transporte y comedor</h2>
             <p>Administrá recorridos, cupos e inscripciones. Las solicitudes enviadas por alumnos aparecen para aprobar o rechazar.</p>
-            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;">
-              <section style="background:#f8fafc;border-radius:12px;padding:18px;">
+            <div class="service-grid">
+              <section class="service-card">
                 <h3>Nuevo recorrido</h3>
-                <form method="POST" action="{% url 'alta-recorrido-admin' %}">{% csrf_token %}
-                  <input name="nombre" placeholder="Ej. Recorrido Norte" required maxlength="100">
-                  <input name="descripcion" placeholder="Descripción / paradas">
-                  <select name="turno"><option>Mañana</option><option>Tarde</option></select>
-                  <label>Hora de salida <input type="time" name="hora_salida"></label>
-                  <label>Cupo <input type="number" name="cupo_maximo" min="1" value="20" required></label>
+                <form class="service-form" method="POST" action="{% url 'alta-recorrido-admin' %}">{% csrf_token %}
+                  <label>Nombre<input name="nombre" placeholder="Ej. Recorrido Norte" required maxlength="100"></label>
+                  <label>Descripción y paradas<input name="descripcion" placeholder="Ej. Barrio Norte - Escuela"></label>
+                  <label>Turno<select name="turno"><option>Mañana</option><option>Tarde</option></select></label>
+                  <label>Hora de salida<input type="time" name="hora_salida"></label>
+                  <label>Cupo máximo<input type="number" name="cupo_maximo" min="1" value="20" required></label>
                   <button class="btn-form">Crear recorrido</button>
                 </form>
               </section>
-              <section style="background:#f8fafc;border-radius:12px;padding:18px;">
+              <section class="service-card">
                 <h3>Comedor escolar</h3>
                 <p>Cupo utilizado: {{ inscripciones_comedor_admin|length }} / {{ servicio_comedor_admin.cupo_maximo }}</p>
-                <form method="POST" action="{% url 'modificar-comedor-admin' %}">{% csrf_token %}
-                  <label>Cupo máximo <input type="number" name="cupo_maximo" min="1" value="{{ servicio_comedor_admin.cupo_maximo }}" required></label>
-                  <select name="estado"><option value="Activo" {% if servicio_comedor_admin.estado == 'Activo' %}selected{% endif %}>Activo</option><option value="Inactivo" {% if servicio_comedor_admin.estado == 'Inactivo' %}selected{% endif %}>Inactivo</option></select>
+                <form class="service-form" method="POST" action="{% url 'modificar-comedor-admin' %}">{% csrf_token %}
+                  <label>Cupo máximo<input type="number" name="cupo_maximo" min="1" value="{{ servicio_comedor_admin.cupo_maximo }}" required></label>
+                  <label>Estado<select name="estado"><option value="Activo" {% if servicio_comedor_admin.estado == 'Activo' %}selected{% endif %}>Activo</option><option value="Inactivo" {% if servicio_comedor_admin.estado == 'Inactivo' %}selected{% endif %}>Inactivo</option></select></label>
                   <button class="btn-form">Guardar comedor</button>
                 </form>
               </section>
             </div>
-            <section style="margin-top:18px;background:#f8fafc;border-radius:12px;padding:18px;">
+            <section class="service-block">
               <h3>Inscripción manual</h3>
-              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;">
-                <form method="POST" action="{% url 'alta-inscripcion-transporte-admin' %}">{% csrf_token %}<label>Alumno<select name="legajo_alumno" required>{% for alumno in alumnos_deportivos %}<option value="{{ alumno.legajo }}">{{ alumno.id_persona.apellido }}, {{ alumno.id_persona.nombre }} ({{ alumno.legajo }})</option>{% endfor %}</select></label><label>Recorrido<select name="id_recorrido" required>{% for recorrido in recorridos_transporte_admin %}{% if recorrido.estado == 'Activo' %}<option value="{{ recorrido.id_recorrido }}">{{ recorrido.nombre }} ({{ recorrido.cupos_ocupados }}/{{ recorrido.cupo_maximo }})</option>{% endif %}{% endfor %}</select></label><button class="btn-form">Inscribir transporte</button></form>
-                <form method="POST" action="{% url 'alta-inscripcion-comedor-admin' %}">{% csrf_token %}<label>Alumno<select name="legajo_alumno" required>{% for alumno in alumnos_deportivos %}<option value="{{ alumno.legajo }}">{{ alumno.id_persona.apellido }}, {{ alumno.id_persona.nombre }} ({{ alumno.legajo }})</option>{% endfor %}</select></label><button class="btn-form">Inscribir comedor</button></form>
+              <div class="manual-grid">
+                <form class="service-form" method="POST" action="{% url 'alta-inscripcion-transporte-admin' %}">{% csrf_token %}<label>Alumno<select name="legajo_alumno" required>{% for alumno in alumnos_deportivos %}<option value="{{ alumno.legajo }}">{{ alumno.id_persona.apellido }}, {{ alumno.id_persona.nombre }} ({{ alumno.legajo }})</option>{% endfor %}</select></label><label>Recorrido<select name="id_recorrido" required>{% for recorrido in recorridos_transporte_admin %}{% if recorrido.estado == 'Activo' %}<option value="{{ recorrido.id_recorrido }}">{{ recorrido.nombre }} ({{ recorrido.cupos_ocupados }}/{{ recorrido.cupo_maximo }})</option>{% endif %}{% endfor %}</select></label><button class="btn-form">Inscribir transporte</button></form>
+                <form class="service-form" method="POST" action="{% url 'alta-inscripcion-comedor-admin' %}">{% csrf_token %}<label>Alumno<select name="legajo_alumno" required>{% for alumno in alumnos_deportivos %}<option value="{{ alumno.legajo }}">{{ alumno.id_persona.apellido }}, {{ alumno.id_persona.nombre }}</option>{% endfor %}</select></label><button class="btn-form">Inscribir comedor</button></form>
               </div>
             </section>
-            <section style="margin-top:18px;background:#f8fafc;border-radius:12px;padding:18px;"><h3>Solicitudes pendientes</h3>
+            <section class="service-block"><h3>Solicitudes pendientes</h3>
               {% for solicitud in solicitudes_servicio_admin %}<div style="background:white;border:1px solid #e2e8f0;border-radius:8px;padding:10px;margin-top:8px;"><strong>{{ solicitud.id_alumno.id_persona.apellido }}, {{ solicitud.id_alumno.id_persona.nombre }}</strong> · {% if solicitud.tipo == 'transporte' %}{{ solicitud.id_recorrido.nombre }}{% else %}Comedor{% endif %}<form method="POST" action="{% url 'gestionar-solicitud-servicio-admin' solicitud.id_solicitud %}" style="display:inline;float:right;">{% csrf_token %}<button name="decision" value="aprobar" class="btn-small" style="background:#16a34a;margin:0;">Aceptar</button><button name="decision" value="rechazar" class="btn-small" style="background:#dc2626;margin:0;">Denegar</button></form></div>{% empty %}<p>No hay solicitudes pendientes.</p>{% endfor %}
             </section>
-            <section style="margin-top:18px;background:#f8fafc;border-radius:12px;padding:18px;"><h3>Inscripciones activas</h3>
+            <section class="service-block"><h3>Inscripciones activas</h3>
               {% for inscripcion in inscripciones_transporte_admin %}<div>{{ inscripcion.id_alumno.id_persona.apellido }}, {{ inscripcion.id_alumno.id_persona.nombre }} · {{ inscripcion.id_recorrido.nombre }}</div>{% empty %}<p>No hay inscripciones de transporte.</p>{% endfor %}
               {% for inscripcion in inscripciones_comedor_admin %}<div>{{ inscripcion.id_alumno.id_persona.apellido }}, {{ inscripcion.id_alumno.id_persona.nombre }} · Comedor</div>{% endfor %}
             </section>
-            <section style="margin-top:18px;background:#f8fafc;border-radius:12px;padding:18px;"><h3>Recorridos configurados</h3>
+            <section class="service-block"><h3>Recorridos configurados</h3>
               {% for recorrido in recorridos_transporte_admin %}<div style="background:white;border:1px solid #e2e8f0;border-radius:8px;padding:10px;margin-top:8px;"><strong>{{ recorrido.nombre }}</strong> · {{ recorrido.turno }} · {{ recorrido.cupos_ocupados }}/{{ recorrido.cupo_maximo }} · {{ recorrido.estado }} <form method="POST" action="{% url 'baja-recorrido-admin' recorrido.id_recorrido %}" style="display:inline;float:right;">{% csrf_token %}<button class="btn-small" style="background:#dc2626;margin:0;">Baja</button></form></div>{% empty %}<p>No hay recorridos configurados.</p>{% endfor %}
             </section>
           </div>
