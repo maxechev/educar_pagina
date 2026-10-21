@@ -2012,7 +2012,7 @@ def modificar_horario_admin(request, id_horario):
             messages.success(request, 'Horario actualizado correctamente.')
         except (ValueError, IntegrityError) as error:
             messages.error(request, str(error))
-    return redirect('lista-horarios-admin')
+    return _redirect_horarios_admin_con_filtro(request)
 
 
 @never_cache
@@ -2022,7 +2022,7 @@ def baja_horario_admin(request, id_horario):
     if request.method == 'POST':
         get_object_or_404(Horario, id_horario=id_horario).delete()
         messages.success(request, 'Horario eliminado correctamente.')
-    return redirect('lista-horarios-admin')
+    return _redirect_horarios_admin_con_filtro(request)
 
 
 @never_cache
