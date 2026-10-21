@@ -582,6 +582,15 @@ def dashboard_alumno(request):
         }
         return mapping.get(d, d)
 
+    def _hora_orden(hora):
+        """Devuelve los minutos desde medianoche para ordenar la agenda."""
+        if isinstance(hora, (list, tuple)):
+            hora = hora[0] if hora else ''
+        coincidencia = re.search(r'(\d{1,2}):(\d{2})', str(hora))
+        if not coincidencia:
+            return 9999
+        return int(coincidencia.group(1)) * 60 + int(coincidencia.group(2))
+
     # Llenar con datos de las materias
     for materia in materias:
         horarios_normalizados = list(materia.horarios_normalizados.all())
@@ -592,7 +601,11 @@ def dashboard_alumno(request):
                 hora = f'{horario.hora_inicio.strftime("%H:%M")} - {horario.hora_fin.strftime("%H:%M")}'
                 horario_items.append(f'{dia_norm.capitalize()}: {hora}')
                 if dia_norm in horario_por_dia:
-                    horario_por_dia[dia_norm].append({'materia': materia.id_materia.nombre, 'hora': hora})
+                    horario_por_dia[dia_norm].append({
+                        'materia': materia.id_materia.nombre,
+                        'hora': hora,
+                        'orden': _hora_orden(hora),
+                    })
             materia.horario_formateado = ' | '.join(horario_items)
         elif materia.horarios:
             try:
@@ -608,7 +621,8 @@ def dashboard_alumno(request):
                     if dia_norm in horario_por_dia:
                         horario_por_dia[dia_norm].append({
                             'materia': materia.id_materia.nombre,
-                            'hora': hora
+                        'hora': hora,
+                        'orden': _hora_orden(hora),
                         })
 
                 materia.horario_formateado = " | ".join(horario_items)
@@ -634,6 +648,7 @@ def dashboard_alumno(request):
             horario_por_dia[dia].append({
                 'materia': grupo.id_disciplina.nombre,
                 'hora': f'{grupo.hora_inicio.strftime("%H:%M")} a {grupo.hora_fin.strftime("%H:%M")}',
+                'orden': grupo.hora_inicio.hour * 60 + grupo.hora_inicio.minute,
                 'es_deporte': True,
             })
     disciplina_horario_formateado = "Sin horario"
@@ -651,6 +666,7 @@ def dashboard_alumno(request):
                         horario_por_dia[dia_norm].append({
                             'materia': disciplina.nombre,
                             'hora': hora,
+                            'orden': _hora_orden(hora),
                             'es_deporte': True,
                         })
 
@@ -826,6 +842,8 @@ def dashboard_alumno(request):
     panel_activo = request.session.pop("panel_activo", "inicio")
     mensajes = list(get_messages(request))
     hay_horarios = any(clases for clases in horario_por_dia.values())
+    for clases in horario_por_dia.values():
+        clases.sort(key=lambda clase: clase.get('orden', 9999))
     
     alumno = Alumno.objects.select_related(
         'id_curso'
