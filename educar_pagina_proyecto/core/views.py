@@ -2681,6 +2681,48 @@ def dashboard_padres(request):
         for relacion in relaciones:
             alumno = relacion.id_alumno
 
+            # Toda la información académica se obtiene a partir del curso y
+            # de las inscripciones del alumno asociado a este tutor.
+            materias_hijo = []
+            deportes_hijo = []
+            if alumno.id_curso_id:
+                relaciones_materias = list(
+                    CursoCursaMaterias.objects.filter(id_curso=alumno.id_curso)
+                    .select_related('id_materia')
+                    .order_by('id_materia__nombre', 'id')
+                )
+                docentes_materias = DocenteDictaMateria.objects.filter(
+                    id_curso=alumno.id_curso,
+                    id_materia__in=[relacion_materia.id_materia_id for relacion_materia in relaciones_materias],
+                ).select_related('id_materia', 'id_docente__id_persona').order_by(
+                    'id_materia__nombre', 'id_docente__id_persona__apellido'
+                )
+                docentes_por_materia = {}
+                for docente_materia in docentes_materias:
+                    docentes_por_materia.setdefault(docente_materia.id_materia_id, []).append(
+                        docente_materia.id_docente
+                    )
+
+                materias_vistas = set()
+                for relacion_materia in relaciones_materias:
+                    if relacion_materia.id_materia_id in materias_vistas:
+                        continue
+                    materias_vistas.add(relacion_materia.id_materia_id)
+                    materias_hijo.append({
+                        'materia': relacion_materia.id_materia,
+                        'docentes': docentes_por_materia.get(relacion_materia.id_materia_id, []),
+                    })
+
+                deportes_hijo = list(
+                    InscripcionDeportiva.objects.filter(
+                        id_alumno=alumno,
+                        estado='Activa',
+                    ).select_related(
+                        'id_grupo__id_disciplina',
+                        'id_grupo__profesor_responsable__id_persona',
+                    ).order_by('id_grupo__id_disciplina__nombre')
+                )
+
             promedio = Calificacion.objects.filter(
                 legajo_alumno=alumno
             ).aggregate(promedio=Avg('nota'))['promedio']
@@ -2710,6 +2752,8 @@ def dashboard_padres(request):
                 'ausencias': aus,
                 'tardanzas': tar,
                 'documentacion': documentacion,
+                'materias_academicas': materias_hijo,
+                'deportes': deportes_hijo,
             })
 
     # 📊 promedio general

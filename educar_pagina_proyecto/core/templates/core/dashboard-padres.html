@@ -99,6 +99,16 @@
             <a
               href="#"
               onclick="
+                showPanel('informacion-academica', this);
+                return false;
+              "
+            >
+              <span class="nav-icon">📚</span> Información académica
+            </a>
+
+            <a
+              href="#"
+              onclick="
                 showPanel('calificaciones', this);
                 return false;
               "
@@ -245,6 +255,55 @@
                 {% endfor %}
               </tbody>
             </table>
+          </div>
+
+          <!-- INFORMACIÓN ACADÉMICA -->
+          <div id="panel-informacion-academica" class="panel">
+            <p class="section-title">Información académica</p>
+
+            {% for hijo in hijos %}
+              <section style="background:#f8fafc; border-radius:12px; padding:18px; margin-bottom:18px;">
+                <h3 style="margin:0 0 4px; color:#1e3a8a;">{{ hijo.persona.nombre }} {{ hijo.persona.apellido }}</h3>
+                <p style="margin:0 0 14px; color:#64748b;">{{ hijo.curso.nivel_educativo.nombre }} {{ hijo.curso.anio }}° {{ hijo.curso.comision }} · {{ hijo.curso.turno }}</p>
+
+                <h4 style="margin:12px 0 8px;">Materias y profesores</h4>
+                <div style="overflow-x:auto;">
+                  <table class="tabla">
+                    <thead><tr><th>Materia</th><th>Profesor/es</th></tr></thead>
+                    <tbody>
+                      {% for item in hijo.materias_academicas %}
+                        <tr>
+                          <td>{{ item.materia.nombre }}</td>
+                          <td>{% for docente in item.docentes %}{{ docente.id_persona.apellido }}, {{ docente.id_persona.nombre }}{% if not forloop.last %}<br>{% endif %}{% empty %}<span style="color:#94a3b8;">Sin profesor asignado</span>{% endfor %}</td>
+                        </tr>
+                      {% empty %}
+                        <tr><td colspan="2">No hay materias asociadas.</td></tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+
+                <h4 style="margin:18px 0 8px;">Deportes inscriptos</h4>
+                <div style="overflow-x:auto;">
+                  <table class="tabla">
+                    <thead><tr><th>Deporte</th><th>Horario</th><th>Profesor responsable</th></tr></thead>
+                    <tbody>
+                      {% for inscripcion in hijo.deportes %}
+                        <tr>
+                          <td>{{ inscripcion.id_grupo.id_disciplina.nombre }}</td>
+                          <td>{{ inscripcion.id_grupo.dia_semana|capfirst }} · {{ inscripcion.id_grupo.hora_inicio|time:'H:i' }} - {{ inscripcion.id_grupo.hora_fin|time:'H:i' }}</td>
+                          <td>{{ inscripcion.id_grupo.profesor_responsable.id_persona.apellido }}, {{ inscripcion.id_grupo.profesor_responsable.id_persona.nombre }}</td>
+                        </tr>
+                      {% empty %}
+                        <tr><td colspan="3">No está inscripto en ningún deporte.</td></tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+            {% empty %}
+              <p style="color:#94a3b8;">No hay hijos asociados.</p>
+            {% endfor %}
           </div>
 
           <!-- CALIFICACIONES -->
