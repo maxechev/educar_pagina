@@ -754,6 +754,30 @@ def cancelar_solicitud_servicio(request, id_solicitud):
 
 
 @never_cache
+def baja_inscripcion_transporte_admin(request, id_inscripcion):
+    if not _admin_session(request):
+        return redirect('login')
+    inscripcion = get_object_or_404(InscripcionTransporte, id_inscripcion=id_inscripcion, estado='Activa')
+    if request.method == 'POST':
+        inscripcion.estado = 'Baja'
+        inscripcion.save(update_fields=['estado'])
+        messages.success(request, 'La inscripción al transporte fue dada de baja.')
+    return _admin_service_redirect(request)
+
+
+@never_cache
+def baja_inscripcion_comedor_admin(request, id_inscripcion):
+    if not _admin_session(request):
+        return redirect('login')
+    inscripcion = get_object_or_404(InscripcionComedor, id_inscripcion=id_inscripcion, estado='Activa')
+    if request.method == 'POST':
+        inscripcion.estado = 'Baja'
+        inscripcion.save(update_fields=['estado'])
+        messages.success(request, 'La inscripción al comedor fue dada de baja.')
+    return _admin_service_redirect(request)
+
+
+@never_cache
 def dashboard_alumno(request):
     persona, dashboard_url = obtener_datos_sesion(request)
     if not persona:
