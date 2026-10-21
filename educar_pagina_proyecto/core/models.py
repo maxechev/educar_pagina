@@ -292,6 +292,42 @@ class InscripcionDeportiva(models.Model):
         ]
 
 
+class Horario(models.Model):
+    id_horario = models.AutoField(primary_key=True)
+    curso_materia = models.ForeignKey(
+        CursoCursaMaterias,
+        models.CASCADE,
+        db_column='id_curso_materia',
+        related_name='horarios_normalizados',
+        blank=True,
+        null=True,
+    )
+    grupo_deportivo = models.ForeignKey(
+        GrupoDeportivo,
+        models.CASCADE,
+        db_column='id_grupo_deportivo',
+        related_name='horarios_normalizados',
+        blank=True,
+        null=True,
+    )
+    dia_semana = models.CharField(max_length=20)
+    hora_inicio = models.TimeField()
+    hora_fin = models.TimeField()
+
+    class Meta:
+        managed = True
+        db_table = 'horario'
+        constraints = [
+            models.CheckConstraint(
+                condition=(
+                    models.Q(curso_materia__isnull=False, grupo_deportivo__isnull=True)
+                    | models.Q(curso_materia__isnull=True, grupo_deportivo__isnull=False)
+                ),
+                name='horario_unico_tipo',
+            ),
+        ]
+
+
 class Docente(models.Model):
     legajo = models.AutoField(primary_key=True)
     id_persona = models.ForeignKey('Persona', models.DO_NOTHING, db_column='id_persona')
