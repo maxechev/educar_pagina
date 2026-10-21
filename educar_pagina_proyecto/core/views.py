@@ -1506,7 +1506,7 @@ def lista_niveles_cursos_admin(request):
     if not persona or dashboard_url != 'dashboard-administrativo':
         return redirect('login')
     request.session['panel_activo'] = 'niveles-cursos'
-    return redirect('dashboard-administrativo')
+    return redirect(reverse('dashboard-administrativo') + '?panel=niveles-cursos')
 
 
 @never_cache
@@ -1515,7 +1515,7 @@ def lista_materias_admin(request):
     if not persona or dashboard_url != 'dashboard-administrativo':
         return redirect('login')
     request.session['panel_activo'] = 'materias'
-    return redirect('dashboard-administrativo')
+    return redirect(reverse('dashboard-administrativo') + '?panel=materias')
 
 
 def _validar_acceso_niveles(request):
@@ -1770,7 +1770,7 @@ def lista_deportes_admin(request):
     if not persona or dashboard_url != 'dashboard-administrativo':
         return redirect('login')
     request.session['panel_activo'] = 'deportes-admin'
-    return redirect('dashboard-administrativo')
+    return redirect(reverse('dashboard-administrativo') + '?panel=deportes-admin')
 
 
 def _hora_formulario(valor):
@@ -1926,7 +1926,7 @@ def lista_horarios_admin(request):
     if not persona or dashboard_url != 'dashboard-administrativo':
         return redirect('login')
     request.session['panel_activo'] = 'horarios-admin'
-    return redirect('dashboard-administrativo')
+    return redirect(reverse('dashboard-administrativo') + '?panel=horarios-admin')
 
 
 def _datos_horario_admin(request):
