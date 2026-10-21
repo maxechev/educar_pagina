@@ -12,7 +12,6 @@ materias ni migraciones.
 
 import json
 import os
-from collections import Counter
 from datetime import time
 
 import django
@@ -71,6 +70,12 @@ def asignar_slots(ccms, slots, stats):
         for ccm in ccms
     }
     necesarios = sum(clases_por_ccm.values())
+    if necesarios > len(slots):
+        # Prioridad elegida: una clase semanal por materia para que todos los
+        # cursos tengan horarios sin superposiciones.
+        clases_por_ccm = {ccm: 1 for ccm in ccms}
+        necesarios = len(ccms)
+        stats["cursos_con_una_clase"] += 1
     if necesarios > len(slots):
         stats["cursos_sin_slots"] += 1
         return {ccm: [] for ccm in ccms}
@@ -152,20 +157,33 @@ def duplicados_academicos():
     ).annotate(cantidad=Count("id_horario")).filter(cantidad__gt=1).count()
 
 
+def separar_relaciones_duplicadas(ccms, stats):
+    """Conserva una relación por materia para asignar un único horario."""
+    unicas = []
+    vistas = set()
+    duplicadas = []
+    for ccm in ccms:
+        if ccm.id_materia_id in vistas:
+            duplicadas.append(ccm)
+        else:
+            vistas.add(ccm.id_materia_id)
+            unicas.append(ccm)
+    stats["relaciones_duplicadas"] += len(duplicadas)
+    stats["relaciones_a_eliminar"] += len(duplicadas)
+    return unicas, duplicadas
+
+
 def procesar_curso(curso, stats, simulacion):
-    ccms = list(
+    ccms_todas = list(
         CursoCursaMaterias.objects.filter(id_curso=curso)
         .select_related("id_materia")
         .order_by("id_materia__nombre", "id")
     )
-    if not ccms:
+    if not ccms_todas:
         stats["cursos_sin_materias"] += 1
         return
 
-    nombres = [ccm.id_materia_id for ccm in ccms]
-    stats["relaciones_duplicadas"] += sum(
-        cantidad - 1 for cantidad in Counter(nombres).values() if cantidad > 1
-    )
+    ccms, relaciones_duplicadas = separar_relaciones_duplicadas(ccms_todas, stats)
 
     asignaciones = asignar_slots(ccms, slots_para_turno(curso.turno), stats)
     if any(not slots for slots in asignaciones.values()):
@@ -183,6 +201,8 @@ def procesar_curso(curso, stats, simulacion):
         return
 
     existentes.delete()
+    for duplicada in relaciones_duplicadas:
+        duplicada.delete()
     for ccm, slots in asignaciones.items():
         for dia, inicio, fin in slots:
             Horario.objects.create(
@@ -205,7 +225,9 @@ def main():
         "sincronizados": 0,
         "cursos_sin_materias": 0,
         "cursos_sin_slots": 0,
+        "cursos_con_una_clase": 0,
         "relaciones_duplicadas": 0,
+        "relaciones_a_eliminar": 0,
     }
 
     print("=" * 70)
