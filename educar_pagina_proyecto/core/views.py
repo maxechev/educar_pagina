@@ -271,8 +271,14 @@ def modificar_comedor_admin(request):
                 cambios.append('cupo')
             if estado_anterior != nuevo_estado:
                 cambios.append('estado')
-            if cambios:
-                messages.success(request, 'Comedor actualizado: ' + ' y '.join(cambios) + '.')
+            if cupo_anterior != nuevo_cupo and estado_anterior != nuevo_estado:
+                estado_texto = 'activado' if nuevo_estado == 'Activo' else 'desactivado'
+                messages.success(request, f'El comedor fue {estado_texto} y su cupo fue actualizado.')
+            elif estado_anterior != nuevo_estado:
+                estado_texto = 'activado' if nuevo_estado == 'Activo' else 'desactivado'
+                messages.success(request, f'El comedor fue {estado_texto} correctamente.')
+            elif cupo_anterior != nuevo_cupo:
+                messages.success(request, 'El cupo del comedor fue actualizado correctamente.')
             else:
                 messages.info(request, 'No hubo cambios en el comedor.')
         except ValueError:
