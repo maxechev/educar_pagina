@@ -354,6 +354,7 @@ def gestionar_solicitud_servicio_admin(request, id_solicitud):
         decision = request.POST.get('decision')
         if decision == 'rechazar':
             solicitud.estado = SolicitudServicio.RECHAZADA
+            solicitud.observaciones = 'Rechazada por el administrativo.'
             solicitud.save(update_fields=['estado'])
             messages.success(request, 'Solicitud rechazada.')
         elif decision == 'aprobar':
@@ -743,7 +744,7 @@ def cancelar_solicitud_servicio(request, id_solicitud):
             estado=SolicitudServicio.PENDIENTE,
         ).first()
         if solicitud:
-            solicitud.estado = SolicitudServicio.RECHAZADA
+            solicitud.estado = SolicitudServicio.CANCELADA
             solicitud.observaciones = 'Cancelada por el alumno.'
             solicitud.save(update_fields=['estado', 'observaciones'])
             messages.success(request, 'La solicitud fue cancelada correctamente.')
@@ -1132,6 +1133,9 @@ def dashboard_alumno(request):
         grupo.esta_inscripto = grupo.id_grupo in grupos_inscriptos_ids
 
     solicitudes_servicio_alumno = SolicitudServicio.objects.filter(id_alumno=alumno, estado='Pendiente').select_related('id_recorrido', 'id_servicio')
+    solicitudes_rechazadas_servicio = SolicitudServicio.objects.filter(
+        id_alumno=alumno, estado='Rechazada'
+    ).select_related('id_recorrido', 'id_servicio').order_by('-fecha_solicitud')[:5]
     turno_alumno = (alumno.id_curso.turno or '').strip() if alumno.id_curso else ''
     recorridos_transporte = list(RecorridoTransporte.objects.filter(
         estado='Activo', turno__iexact=turno_alumno
@@ -1351,6 +1355,7 @@ def dashboard_alumno(request):
         'solicitudes_servicio_alumno': solicitudes_servicio_alumno,
         'solicitudes_transporte_ids': solicitudes_transporte_ids,
         'solicitud_comedor_alumno': solicitud_comedor_alumno,
+        'solicitudes_rechazadas_servicio': solicitudes_rechazadas_servicio,
         'tutor_relacion': tutor_relacion,
         'horario_por_dia': horario_por_dia,
         'hay_horarios': hay_horarios,

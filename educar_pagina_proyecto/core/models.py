@@ -354,7 +354,8 @@ class SolicitudServicio(models.Model):
     PENDIENTE = 'Pendiente'
     APROBADA = 'Aprobada'
     RECHAZADA = 'Rechazada'
-    ESTADOS = [(PENDIENTE, 'Pendiente'), (APROBADA, 'Aprobada'), (RECHAZADA, 'Rechazada')]
+    CANCELADA = 'Cancelada'
+    ESTADOS = [(PENDIENTE, 'Pendiente'), (APROBADA, 'Aprobada'), (RECHAZADA, 'Rechazada'), (CANCELADA, 'Cancelada')]
     id_solicitud = models.AutoField(primary_key=True)
     id_alumno = models.ForeignKey(Alumno, models.CASCADE, db_column='legajo_alumno', related_name='solicitudes_servicio')
     tipo = models.CharField(max_length=20, choices=TIPOS)
