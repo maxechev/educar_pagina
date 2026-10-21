@@ -28,7 +28,7 @@ from core.models import Curso, CursoCursaMaterias, GrupoDeportivo, Horario
 
 
 # Dejar en True para revisar primero el informe sin guardar cambios.
-SIMULACION = True
+SIMULACION = False
 
 DIAS = ["lunes", "martes", "miércoles", "jueves", "viernes"]
 BLOQUES_MANANA = [
