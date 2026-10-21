@@ -631,10 +631,83 @@
                       placeholder="ejemplo@colegio.edu.ar"
                     />
                   </div>
+
+                  <div class="form-group">
+                    <label>Rol</label>
+                    <select name="rol" required>
+                      <option value="">Seleccione un rol</option>
+                      <option value="administrativo">Administrador</option>
+                      <option value="padre">Padre</option>
+                      <option value="alumno">Alumno</option>
+                      <option value="docente">Docente</option>
+                      <option value="preceptor">Preceptor</option>
+                      <option value="directivo">Directivo</option>
+                    </select>
+                  </div>
                 </div>
 
                 <button type="submit" class="btn-form">Crear usuario</button>
               </form>
+            </div>
+
+            <div style="margin-top: 28px; overflow-x: auto;">
+              <h2>Usuarios registrados</h2>
+              <table class="tabla">
+                <thead>
+                  <tr>
+                    <th>Usuario</th>
+                    <th>Persona</th>
+                    <th>Correo</th>
+                    <th>Rol</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for usuario in usuarios_sistema %}
+                  <tr>
+                    <td>{{ usuario.nombre_usuario }}</td>
+                    <td>
+                      {% if usuario.persona_asociada %}
+                        {{ usuario.persona_asociada.apellido }}, {{ usuario.persona_asociada.nombre }}
+                      {% else %}
+                        Sin persona asociada
+                      {% endif %}
+                    </td>
+                    <td>{{ usuario.correo|default:'-' }}</td>
+                    <td>{{ usuario.rol_visible }}</td>
+                    <td>
+                      <span class="badge {% if usuario.estado == 'Activo' %}badge-green{% else %}badge-red{% endif %}">
+                        {{ usuario.estado }}
+                      </span>
+                    </td>
+                    <td>
+                      <button type="button" class="btn-small" style="background:#d97706; margin-top:0;" onclick="toggleDisplay('editar-usuario-{{ usuario.id }}')">Editar</button>
+                      {% if usuario.estado == 'Activo' %}
+                      <form method="POST" action="{% url 'baja-usuario-admin' usuario.id %}" style="display:inline;" onsubmit="return confirm('¿Dar de baja este usuario?');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-small" style="background:#dc2626; margin-top:0;">Baja</button>
+                      </form>
+                      {% endif %}
+                    </td>
+                  </tr>
+                  <tr id="editar-usuario-{{ usuario.id }}" style="display:none; background:#f8fafc;">
+                    <td colspan="6">
+                      <form method="POST" action="{% url 'modificar-usuario-admin' usuario.id %}" class="form-grid" style="padding:14px;">
+                        {% csrf_token %}
+                        <div class="form-group"><label>Correo</label><input type="email" name="correo" value="{{ usuario.correo|default:'' }}"></div>
+                        <div class="form-group"><label>Nueva contraseña</label><input type="password" name="contrasenia" placeholder="Dejar vacío para conservarla"></div>
+                        <div class="form-group"><label>Rol</label><select name="rol"><option value="administrativo" {% if usuario.rol == 'administrativo' %}selected{% endif %}>Administrador</option><option value="padre" {% if usuario.rol == 'padre' %}selected{% endif %}>Padre</option><option value="alumno" {% if usuario.rol == 'alumno' %}selected{% endif %}>Alumno</option><option value="docente" {% if usuario.rol == 'docente' %}selected{% endif %}>Docente</option><option value="preceptor" {% if usuario.rol == 'preceptor' %}selected{% endif %}>Preceptor</option><option value="directivo" {% if usuario.rol == 'directivo' %}selected{% endif %}>Directivo</option></select></div>
+                        <div class="form-group"><label>Estado</label><select name="estado"><option value="Activo" {% if usuario.estado == 'Activo' %}selected{% endif %}>Activo</option><option value="Inactivo" {% if usuario.estado == 'Inactivo' %}selected{% endif %}>Inactivo</option></select></div>
+                        <div><button type="submit" class="btn-small" style="background:#16a34a; margin-top:22px;">Guardar cambios</button></div>
+                      </form>
+                    </td>
+                  </tr>
+                  {% empty %}
+                  <tr><td colspan="6">No hay usuarios registrados.</td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
             </div>
 
             <div style="margin-top: 40px"></div>

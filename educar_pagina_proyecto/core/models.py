@@ -654,6 +654,8 @@ class Usuario(models.Model):
     nombre_usuario = models.CharField(unique=True, max_length=60)
     contrasenia = models.CharField(max_length=20)
     correo = models.CharField(unique=True, max_length=100, blank=True, null=True)
+    rol = models.CharField(max_length=30, blank=True, null=True)
+    estado = models.CharField(max_length=20, default='Activo')
 
     class Meta:
         managed = True

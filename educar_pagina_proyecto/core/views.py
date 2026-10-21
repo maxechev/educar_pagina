@@ -78,6 +78,40 @@ def obtener_persona(request):
     usuario = Usuario.objects.get(id=usuario_id)
     return Persona.objects.filter(id_usuario=usuario).first()
 
+
+ROLES_USUARIO = {
+    'administrativo': ('Administrativo', PersonalAdministrativo),
+    'docente': ('Docente', Docente),
+    'padre': ('Padre', Tutor),
+    'alumno': ('Alumno', Alumno),
+    'preceptor': ('Preceptor', Preceptor),
+    'directivo': ('Directivo', Directivo),
+}
+
+
+def rol_persona(persona):
+    if not persona:
+        return 'Sin rol'
+
+    usuario = getattr(persona, 'id_usuario', None)
+    if usuario and usuario.rol:
+        return dict(ROLES_USUARIO).get(
+            usuario.rol,
+            (usuario.rol.title(), None),
+        )[0]
+
+    for clave, (etiqueta, modelo) in ROLES_USUARIO.items():
+        if modelo.objects.filter(id_persona=persona).exists():
+            return etiqueta
+
+    return 'Sin rol'
+
+
+def rol_valido_para_persona(persona, rol):
+    if rol not in ROLES_USUARIO:
+        return False
+    return ROLES_USUARIO[rol][1].objects.filter(id_persona=persona).exists()
+
 def index(request):
     usuario_datos = Usuario.objects.all()
     persona, dashboard_url = obtener_datos_sesion(request)
@@ -283,9 +317,19 @@ def login(request):
                     contrasenia=password
                 )
 
+            if getattr(usuario, 'estado', 'Activo') != 'Activo':
+                return render(request, 'core/login.html', {
+                    'error': 'Esta cuenta se encuentra inactiva.'
+                })
+
             # 🔥 DETECTAR ROL POR TABLAS
             redireccion = 'login'
             rol_correcto = False
+
+            if usuario.rol and usuario.rol != rol_input:
+                return render(request, 'core/login.html', {
+                    'error': 'El tipo de usuario seleccionado no corresponde a esta cuenta.'
+                })
             
             if rol_input == 'administrativo' and PersonalAdministrativo.objects.filter(id_persona__id_usuario=usuario).exists():
                 rol_correcto = True
@@ -1366,6 +1410,15 @@ def dashboard_administrativo(request):
         id_persona=persona
     ).first()
 
+    usuarios_sistema = []
+    for usuario_sistema in Usuario.objects.all().order_by('nombre_usuario'):
+        persona_usuario = Persona.objects.filter(
+            id_usuario=usuario_sistema
+        ).first()
+        usuario_sistema.persona_asociada = persona_usuario
+        usuario_sistema.rol_visible = rol_persona(persona_usuario)
+        usuarios_sistema.append(usuario_sistema)
+
     instalaciones = Instalacion.objects.all()
     
     reservas = Reserva.objects.select_related(
@@ -1507,6 +1560,7 @@ def dashboard_administrativo(request):
         'curso_horario_seleccionado': curso_horario_seleccionado,
         'panel_activo': panel_activo,
         'messages': mensajes,
+        'usuarios_sistema': usuarios_sistema,
     })
 
 
@@ -2229,6 +2283,8 @@ def alta_profesor_admin(request):
                 nombre_usuario=nombre_usuario,
                 contrasenia=contrasenia,
                 correo=email,
+                rol='docente',
+                estado='Activo',
             )
             persona = Persona.objects.create(
                 id_usuario=usuario,
@@ -2575,74 +2631,107 @@ def eliminar_opinion(request, indice):
 
 @never_cache
 def crear_usuario(request):
+    persona_sesion, dashboard_url = obtener_datos_sesion(request)
+    if not persona_sesion or dashboard_url != 'dashboard-administrativo':
+        return redirect('login')
 
-    if request.method == "POST":
+    if request.method != 'POST':
+        return redirect('dashboard-administrativo')
 
-        dni = request.POST.get("dni")
-        nombre_usuario = request.POST.get("nombre_usuario")
-        contrasenia = request.POST.get("contrasenia")
+    dni = (request.POST.get('dni') or '').strip()
+    nombre_usuario = (request.POST.get('nombre_usuario') or '').strip()
+    contrasenia = request.POST.get('contrasenia') or ''
+    correo = (request.POST.get('correo') or '').strip() or None
+    rol = (request.POST.get('rol') or '').strip().lower()
 
-        persona = Persona.objects.filter(
-            dni=dni
-        ).first()
+    persona = Persona.objects.filter(dni=dni).first()
+    error = None
 
-        if not persona:
-            messages.error(
-                request,
-                "No existe una persona con ese DNI.",
-                extra_tags="usuarios"
-            )
-            request.session["panel_activo"] = "usuarios"
-            return redirect("dashboard-administrativo")
+    if not persona:
+        error = 'No existe una persona con ese DNI.'
+    elif persona.id_usuario:
+        error = 'La persona ya tiene un usuario asignado.'
+    elif not nombre_usuario or not contrasenia:
+        error = 'El usuario y la contraseña son obligatorios.'
+    elif rol not in ROLES_USUARIO:
+        error = 'Debe seleccionar un rol válido.'
+    elif not rol_valido_para_persona(persona, rol):
+        error = 'El rol seleccionado no coincide con la persona indicada.'
+    elif Usuario.objects.filter(nombre_usuario=nombre_usuario).exists():
+        error = 'El nombre de usuario ya existe.'
+    elif correo and Usuario.objects.filter(correo=correo).exists():
+        error = 'Ese correo ya está registrado.'
 
-        if persona.id_usuario:
-            messages.error(
-                request,
-                "La persona ya tiene un usuario asignado.",
-                extra_tags="usuarios"
-            )
-            request.session["panel_activo"] = "usuarios"
-            return redirect("dashboard-administrativo")
-
-        if Usuario.objects.filter(
-            nombre_usuario=nombre_usuario
-        ).exists():
-
-            messages.error(
-                request,
-                "El nombre de usuario ya existe.",
-                extra_tags="usuarios"
-            )
-            request.session["panel_activo"] = "usuarios"
-            return redirect("dashboard-administrativo")
-        
-        correo = request.POST.get("correo")
-        
-        if Usuario.objects.filter(correo=correo).exists():
-            messages.error(
-                request,
-                "Ese correo ya está registrado.",
-                extra_tags="usuarios"
-            )
-            request.session["panel_activo"] = "usuarios"
-            return redirect("dashboard-administrativo")
-
+    if error:
+        messages.error(request, error, extra_tags='usuarios')
+    else:
         usuario = Usuario.objects.create(
             nombre_usuario=nombre_usuario,
             contrasenia=contrasenia,
-            correo=correo
+            correo=correo,
+            rol=rol,
+            estado='Activo',
         )
-
         persona.id_usuario = usuario
-        persona.save()
-
+        persona.save(update_fields=['id_usuario'])
         messages.success(
             request,
-            "Usuario creado correctamente.",
-            extra_tags="usuarios"
+            'Usuario creado correctamente con el rol seleccionado.',
+            extra_tags='usuarios',
         )
-        request.session["panel_activo"] = "usuarios"
 
+    request.session['panel_activo'] = 'usuarios'
+    return redirect('dashboard-administrativo')
+
+
+@never_cache
+def modificar_usuario_admin(request, id_usuario):
+    persona_sesion, dashboard_url = obtener_datos_sesion(request)
+    if not persona_sesion or dashboard_url != 'dashboard-administrativo':
+        return redirect('login')
+
+    usuario = get_object_or_404(Usuario, id=id_usuario)
+
+    if request.method == 'POST':
+        correo = (request.POST.get('correo') or '').strip() or None
+        contrasenia = request.POST.get('contrasenia') or ''
+        rol = (request.POST.get('rol') or '').strip().lower()
+        estado = request.POST.get('estado') or 'Activo'
+        persona_usuario = Persona.objects.filter(id_usuario=usuario).first()
+
+        if correo and Usuario.objects.filter(correo=correo).exclude(id=usuario.id).exists():
+            messages.error(request, 'Ese correo ya está registrado.', extra_tags='usuarios')
+        elif rol not in ROLES_USUARIO or not persona_usuario or not rol_valido_para_persona(persona_usuario, rol):
+            messages.error(request, 'El rol no coincide con la persona asociada.', extra_tags='usuarios')
+        else:
+            usuario.correo = correo
+            usuario.rol = rol
+            usuario.estado = estado if estado in ('Activo', 'Inactivo') else 'Activo'
+            if contrasenia:
+                usuario.contrasenia = contrasenia
+            usuario.save()
+            messages.success(request, 'Usuario modificado correctamente.', extra_tags='usuarios')
+
+    request.session['panel_activo'] = 'usuarios'
+    return redirect('dashboard-administrativo')
+
+
+@never_cache
+def baja_usuario_admin(request, id_usuario):
+    persona_sesion, dashboard_url = obtener_datos_sesion(request)
+    if not persona_sesion or dashboard_url != 'dashboard-administrativo':
+        return redirect('login')
+
+    usuario = get_object_or_404(Usuario, id=id_usuario)
+
+    if usuario.id == request.session.get('usuario_id'):
+        messages.error(request, 'No podés dar de baja tu propio usuario.', extra_tags='usuarios')
+    else:
+        usuario.estado = 'Inactivo'
+        usuario.save(update_fields=['estado'])
+        messages.success(request, 'Usuario dado de baja correctamente.', extra_tags='usuarios')
+
+    request.session['panel_activo'] = 'usuarios'
     return redirect('dashboard-administrativo')
 
 @never_cache
@@ -4079,7 +4168,9 @@ def alta_alumno_admin(request):
             usuario = Usuario.objects.create(
                 nombre_usuario=nombre_usuario,
                 contrasenia=contrasenia,
-                correo=email if email else None
+                correo=email if email else None,
+                rol='alumno',
+                estado='Activo',
             )
 
             persona = Persona.objects.create(
