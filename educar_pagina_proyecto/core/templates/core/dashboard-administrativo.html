@@ -847,6 +847,8 @@
               #servicios-admin .service-form .btn-form { width:max-content; margin-top:4px; }
               #servicios-admin .service-block { margin-top:20px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:14px; padding:20px; }
               #servicios-admin .manual-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:24px; }
+              #servicios-admin .manual-card { background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:18px; }
+              #servicios-admin .manual-card h4 { margin:0 0 14px; color:#1e3a8a; font-size:16px; }
               #servicios-admin .service-list-item { background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:12px 14px; margin-top:9px; display:flex; justify-content:space-between; align-items:center; gap:12px; }
               #servicios-admin .service-list-item form { flex-shrink:0; }
               @media (max-width:760px) { #servicios-admin .service-grid, #servicios-admin .manual-grid { grid-template-columns:1fr; } #servicios-admin { padding:18px; } }
@@ -878,8 +880,8 @@
             <section class="service-block">
               <h3>Inscripción manual</h3>
               <div class="manual-grid">
-                <form class="service-form" method="POST" action="{% url 'alta-inscripcion-transporte-admin' %}">{% csrf_token %}<label>Alumno<select name="legajo_alumno" required>{% for alumno in alumnos_deportivos %}<option value="{{ alumno.legajo }}">{{ alumno.id_persona.apellido }}, {{ alumno.id_persona.nombre }} ({{ alumno.legajo }})</option>{% endfor %}</select></label><label>Recorrido<select name="id_recorrido" required>{% for recorrido in recorridos_transporte_admin %}{% if recorrido.estado == 'Activo' %}<option value="{{ recorrido.id_recorrido }}">{{ recorrido.nombre }} ({{ recorrido.cupos_ocupados }}/{{ recorrido.cupo_maximo }})</option>{% endif %}{% endfor %}</select></label><button class="btn-form">Inscribir transporte</button></form>
-                <form class="service-form" method="POST" action="{% url 'alta-inscripcion-comedor-admin' %}">{% csrf_token %}<label>Alumno<select name="legajo_alumno" required>{% for alumno in alumnos_deportivos %}<option value="{{ alumno.legajo }}">{{ alumno.id_persona.apellido }}, {{ alumno.id_persona.nombre }}</option>{% endfor %}</select></label><button class="btn-form">Inscribir comedor</button></form>
+                <div class="manual-card"><h4>Inscribir al transporte</h4><form class="service-form" method="POST" action="{% url 'alta-inscripcion-transporte-admin' %}">{% csrf_token %}<label>Alumno<select name="legajo_alumno" required>{% for alumno in alumnos_deportivos %}<option value="{{ alumno.legajo }}">{{ alumno.id_persona.apellido }}, {{ alumno.id_persona.nombre }} ({{ alumno.legajo }})</option>{% endfor %}</select></label><label>Recorrido<select name="id_recorrido" required>{% for recorrido in recorridos_transporte_admin %}{% if recorrido.estado == 'Activo' %}<option value="{{ recorrido.id_recorrido }}">{{ recorrido.nombre }} ({{ recorrido.cupos_ocupados }}/{{ recorrido.cupo_maximo }})</option>{% endif %}{% endfor %}</select></label><button class="btn-form">Inscribir transporte</button></form></div>
+                <div class="manual-card"><h4>Inscribir al comedor</h4><form class="service-form" method="POST" action="{% url 'alta-inscripcion-comedor-admin' %}">{% csrf_token %}<label>Alumno<select name="legajo_alumno" required>{% for alumno in alumnos_deportivos %}<option value="{{ alumno.legajo }}">{{ alumno.id_persona.apellido }}, {{ alumno.id_persona.nombre }}</option>{% endfor %}</select></label><button class="btn-form">Inscribir comedor</button></form></div>
               </div>
             </section>
             <section class="service-block"><h3>Solicitudes pendientes</h3>
