@@ -82,7 +82,7 @@
           <nav class="sidebar-nav">
             <a
               href="#"
-              class="active"
+              class="{% if panel_activo == 'inicio' %}active{% endif %}"
               onclick="
                 showPanel('inicio', this);
                 return false;
@@ -208,7 +208,7 @@
         </aside>
 
         <main class="dashboard-main">
-          <div id="panel-inicio" class="panel active">
+          <div id="panel-inicio" class="panel {% if panel_activo == 'inicio' %}active{% endif %}">
             <p class="section-title">Hola de nuevo, {{ persona.nombre }}</p>
 
             <div class="stat-grid">
