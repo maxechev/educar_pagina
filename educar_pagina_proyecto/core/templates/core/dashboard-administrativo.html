@@ -837,13 +837,14 @@
           <!-- Panel de Servicios -->
           <div id="servicios-admin" class="panel {% if panel_activo == 'servicios-admin' %}active{% endif %}">
             <style>
-              #servicios-admin { background:#fff; border-radius:16px; padding:28px; box-shadow:0 4px 14px rgba(15,23,42,.06); }
+              #servicios-admin { background:#fff; border-radius:16px; padding:28px; box-shadow:0 4px 14px rgba(15,23,42,.06); font-family:inherit; color:#0f172a; }
               #servicios-admin .service-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px; margin-top:20px; }
               #servicios-admin .service-card { background:#f8fafc; border:1px solid #e2e8f0; border-radius:14px; padding:20px; }
               #servicios-admin .service-card h3, #servicios-admin .service-block h3 { margin:0 0 14px; color:#0f172a; }
               #servicios-admin .service-form { display:grid; gap:12px; }
               #servicios-admin .service-form label { display:flex; flex-direction:column; gap:6px; color:#334155; font-size:14px; font-weight:600; }
-              #servicios-admin .service-form input, #servicios-admin .service-form select { width:100%; box-sizing:border-box; min-height:40px; }
+              #servicios-admin .service-form input, #servicios-admin .service-form select { width:100%; box-sizing:border-box; min-height:48px; padding:0 16px; font-family:inherit; font-size:16px; color:#0f172a; background:#f8fafc; border:1px solid #cbd5e1; border-radius:12px; outline:none; }
+              #servicios-admin .service-form input:focus, #servicios-admin .service-form select:focus { border-color:#2563eb; box-shadow:0 0 0 3px rgba(37,99,235,.12); }
               #servicios-admin .service-form .btn-form { width:max-content; margin-top:4px; }
               #servicios-admin .service-block { margin-top:20px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:14px; padding:20px; }
               #servicios-admin .manual-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:24px; }
