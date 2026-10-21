@@ -12,7 +12,7 @@ import re
 import resend
 import os
 from django.shortcuts import render, redirect
-from django.db.models import Avg
+from django.db.models import Avg, Q
 from django.db import transaction, IntegrityError
 import json
 from django.core.mail import EmailMessage
@@ -1421,8 +1421,25 @@ def dashboard_administrativo(request):
         'curso_materia__id_curso__nivel_educativo', 'curso_materia__id_curso', 'curso_materia__id_materia',
         'grupo_deportivo__id_disciplina', 'grupo_deportivo__nivel_educativo',
     ).order_by('dia_semana', 'hora_inicio')
+
+    # Permite consultar únicamente los horarios de un curso desde el panel.
+    # Los deportes se incluyen por nivel, ya que un grupo deportivo está
+    # asociado al nivel educativo y no a un curso puntual.
+    curso_horario_filtro = request.GET.get('curso_horario', '').strip()
+    curso_horario_seleccionado = None
+    if curso_horario_filtro.isdigit():
+        curso_horario_seleccionado = cursos_academicos.filter(
+            id_curso=int(curso_horario_filtro)
+        ).first()
+        if curso_horario_seleccionado:
+            horarios_admin = horarios_admin.filter(
+                Q(curso_materia__id_curso=curso_horario_seleccionado) |
+                Q(grupo_deportivo__nivel_educativo=curso_horario_seleccionado.nivel_educativo)
+            )
     
     panel_activo = request.session.pop("panel_activo", "inicio")
+    if request.GET.get('panel') == 'horarios-admin':
+        panel_activo = 'horarios-admin'
     mensajes = list(get_messages(request))
     
     return render(request, 'core/dashboard-administrativo.html', {
@@ -1447,6 +1464,8 @@ def dashboard_administrativo(request):
         'docentes_deportivos': docentes_deportivos,
         'cursos_materias_admin': cursos_materias_admin,
         'horarios_admin': horarios_admin,
+        'curso_horario_filtro': curso_horario_filtro,
+        'curso_horario_seleccionado': curso_horario_seleccionado,
         'panel_activo': panel_activo,
         'messages': mensajes,
     })
