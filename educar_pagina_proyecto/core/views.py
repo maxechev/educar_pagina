@@ -361,6 +361,8 @@ def gestionar_solicitud_servicio_admin(request, id_solicitud):
                 recorrido = solicitud.id_recorrido
                 if not recorrido or recorrido.estado != 'Activo':
                     messages.error(request, 'El recorrido ya no está disponible.')
+                elif solicitud.id_alumno.id_curso and recorrido.turno.strip().lower() != (solicitud.id_alumno.id_curso.turno or '').strip().lower():
+                    messages.error(request, 'El recorrido no corresponde al turno del curso del alumno.')
                 elif InscripcionTransporte.objects.filter(id_alumno=solicitud.id_alumno, estado='Activa').exists():
                     messages.error(request, 'El alumno ya tiene un recorrido activo.')
                 elif InscripcionTransporte.objects.filter(id_recorrido=recorrido, estado='Activa').count() >= recorrido.cupo_maximo:
@@ -785,6 +787,8 @@ def dashboard_alumno(request):
             ).first()
             if not recorrido:
                 messages.error(request, 'El recorrido seleccionado no está disponible.')
+            elif (alumno.id_curso and recorrido.turno.strip().lower() != (alumno.id_curso.turno or '').strip().lower()):
+                messages.error(request, 'El recorrido no corresponde al turno de tu curso.')
             elif InscripcionTransporte.objects.filter(id_alumno=alumno, estado='Activa').exists():
                 messages.info(request, 'Ya tenés un recorrido de transporte activo.')
             elif SolicitudServicio.objects.filter(id_alumno=alumno, tipo='transporte', estado='Pendiente').exists():
@@ -1104,7 +1108,10 @@ def dashboard_alumno(request):
         grupo.esta_inscripto = grupo.id_grupo in grupos_inscriptos_ids
 
     solicitudes_servicio_alumno = SolicitudServicio.objects.filter(id_alumno=alumno, estado='Pendiente').select_related('id_recorrido', 'id_servicio')
-    recorridos_transporte = list(RecorridoTransporte.objects.filter(estado='Activo').order_by('nombre'))
+    turno_alumno = (alumno.id_curso.turno or '').strip() if alumno.id_curso else ''
+    recorridos_transporte = list(RecorridoTransporte.objects.filter(
+        estado='Activo', turno__iexact=turno_alumno
+    ).order_by('nombre'))
     for recorrido in recorridos_transporte:
         recorrido.cupos_ocupados = InscripcionTransporte.objects.filter(id_recorrido=recorrido, estado='Activa').count()
         recorrido.cupos_disponibles = max(0, recorrido.cupo_maximo - recorrido.cupos_ocupados)
