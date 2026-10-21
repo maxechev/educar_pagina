@@ -364,6 +364,7 @@ class SolicitudServicio(models.Model):
     estado = models.CharField(max_length=20, choices=ESTADOS, default=PENDIENTE)
     fecha_solicitud = models.DateTimeField(auto_now_add=True)
     observaciones = models.TextField(blank=True, null=True)
+    notificacion_vista = models.BooleanField(default=False)
 
     class Meta:
         managed = True

@@ -1133,9 +1133,21 @@ def dashboard_alumno(request):
         grupo.esta_inscripto = grupo.id_grupo in grupos_inscriptos_ids
 
     solicitudes_servicio_alumno = SolicitudServicio.objects.filter(id_alumno=alumno, estado='Pendiente').select_related('id_recorrido', 'id_servicio')
-    solicitudes_rechazadas_servicio = SolicitudServicio.objects.filter(
-        id_alumno=alumno, estado='Rechazada'
-    ).select_related('id_recorrido', 'id_servicio').order_by('-fecha_solicitud')[:5]
+    notificaciones_servicio = list(SolicitudServicio.objects.filter(
+        id_alumno=alumno,
+        estado__in=['Aprobada', 'Rechazada'],
+        notificacion_vista=False,
+    ).select_related('id_recorrido', 'id_servicio').order_by('-fecha_solicitud')[:10])
+    if notificaciones_servicio and request.session.get('panel_activo', 'inicio') == 'servicios':
+        SolicitudServicio.objects.filter(
+            id_solicitud__in=[solicitud.id_solicitud for solicitud in notificaciones_servicio]
+        ).update(notificacion_vista=True)
+    solicitudes_rechazadas_servicio = [
+        solicitud for solicitud in notificaciones_servicio if solicitud.estado == 'Rechazada'
+    ]
+    solicitudes_aprobadas_servicio = [
+        solicitud for solicitud in notificaciones_servicio if solicitud.estado == 'Aprobada'
+    ]
     turno_alumno = (alumno.id_curso.turno or '').strip() if alumno.id_curso else ''
     recorridos_transporte = list(RecorridoTransporte.objects.filter(
         estado='Activo', turno__iexact=turno_alumno
@@ -1356,6 +1368,7 @@ def dashboard_alumno(request):
         'solicitudes_transporte_ids': solicitudes_transporte_ids,
         'solicitud_comedor_alumno': solicitud_comedor_alumno,
         'solicitudes_rechazadas_servicio': solicitudes_rechazadas_servicio,
+        'solicitudes_aprobadas_servicio': solicitudes_aprobadas_servicio,
         'tutor_relacion': tutor_relacion,
         'horario_por_dia': horario_por_dia,
         'hay_horarios': hay_horarios,
