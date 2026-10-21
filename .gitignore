@@ -1,0 +1,21 @@
+# Local secrets and environment files
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+venv/
+env/
+
+# Local development data
+*.sqlite3
+media/
+*.log
+
+# Editors and operating systems
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini

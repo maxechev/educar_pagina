@@ -11,25 +11,28 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 from pathlib import Path
+import os
+
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR / ".env")
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-l^n1bt2ey@d=d^1#alypeaeo6%%d1n)z(zkum)eii*2#-41)m&'
+# Configure SECRET_KEY in the environment or in the local .env file.
+SECRET_KEY = os.environ["SECRET_KEY"]
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv("DEBUG", "False").lower() in ("true", "1", "yes", "on")
 
-ALLOWED_HOSTS = [
-    "educarparatransformar.pythonanywhere.com",
-    "localhost",
-    "127.0.0.1",
-]
+ALLOWED_HOSTS = [host.strip() for host in os.getenv(
+    "ALLOWED_HOSTS",
+    "educarparatransformar.pythonanywhere.com,localhost,127.0.0.1",
+).split(",") if host.strip()]
 
 # Application definition
 
@@ -134,24 +137,18 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 
-#Conectar con Airtable
-AIRTABLE_TOKEN = "patXqBRQT7VKBJ4ho.ca0978a60586b75d7dbbbd048718e3787d8d6bfcad3b9b85469507b0115e68d6"
-AIRTABLE_BASE_ID = "appZFfSOhXkYJDNKA"
-AIRTABLE_TABLE_NAME = "Solicitudes" 
-
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-
-EMAIL_HOST_USER = 'educarparatransformarcolegio@gmail.com'
-EMAIL_HOST_PASSWORD = 'wjvyxygngxebxsgl'
-
-EMAIL_TIMEOUT = 10
+EMAIL_BACKEND = os.getenv(
+    "EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend"
+)
+EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.gmail.com")
+EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
+EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True").lower() in ("true", "1", "yes", "on")
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
+EMAIL_TIMEOUT = int(os.getenv("EMAIL_TIMEOUT", "10"))
 
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
-CSRF_TRUSTED_ORIGINS = [
-    "https://educar-production.up.railway.app",
-]
+CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in os.getenv(
+    "CSRF_TRUSTED_ORIGINS", "https://educar-production.up.railway.app"
+).split(",") if origin.strip()]
