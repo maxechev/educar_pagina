@@ -64,6 +64,7 @@ COMUNICADOS_FILE = os.path.join(
 )
 import json
 import os
+from urllib.parse import urlencode
 from django.db.models import Avg
 from django.views.decorators.cache import never_cache
 
@@ -111,6 +112,22 @@ def rol_valido_para_persona(persona, rol):
     if rol not in ROLES_USUARIO:
         return False
     return ROLES_USUARIO[rol][1].objects.filter(id_persona=persona).exists()
+
+
+def redireccion_usuarios_con_filtro(request):
+    parametros = {
+        'panel': 'usuarios',
+        'usuario_busqueda': (request.POST.get('usuario_busqueda') or '').strip(),
+        'usuario_rol': (request.POST.get('usuario_rol_filtro') or '').strip(),
+        'usuario_estado': (request.POST.get('usuario_estado_filtro') or '').strip(),
+    }
+    parametros = {
+        clave: valor
+        for clave, valor in parametros.items()
+        if valor
+    }
+    consulta = urlencode(parametros)
+    return redirect(f"{reverse('dashboard-administrativo')}?{consulta}")
 
 def index(request):
     usuario_datos = Usuario.objects.all()
@@ -2722,7 +2739,7 @@ def crear_usuario(request):
         )
 
     request.session['panel_activo'] = 'usuarios'
-    return redirect('dashboard-administrativo')
+    return redireccion_usuarios_con_filtro(request)
 
 
 @never_cache
@@ -2754,7 +2771,7 @@ def modificar_usuario_admin(request, id_usuario):
             messages.success(request, 'Usuario modificado correctamente.', extra_tags='usuarios')
 
     request.session['panel_activo'] = 'usuarios'
-    return redirect('dashboard-administrativo')
+    return redireccion_usuarios_con_filtro(request)
 
 
 @never_cache
@@ -2773,7 +2790,7 @@ def baja_usuario_admin(request, id_usuario):
         messages.success(request, 'Usuario dado de baja correctamente.', extra_tags='usuarios')
 
     request.session['panel_activo'] = 'usuarios'
-    return redirect('dashboard-administrativo')
+    return redireccion_usuarios_con_filtro(request)
 
 @never_cache
 def dashboard_padres(request):
