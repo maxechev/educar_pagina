@@ -893,7 +893,23 @@
               {% for inscripcion in inscripciones_comedor_admin %}<div>{{ inscripcion.id_alumno.id_persona.apellido }}, {{ inscripcion.id_alumno.id_persona.nombre }} · Comedor</div>{% endfor %}
             </section>
             <section class="service-block"><h3>Recorridos configurados</h3>
-              {% for recorrido in recorridos_transporte_admin %}<div style="background:white;border:1px solid #e2e8f0;border-radius:8px;padding:10px;margin-top:8px;"><strong>{{ recorrido.nombre }}</strong> · {{ recorrido.turno }} · {{ recorrido.cupos_ocupados }}/{{ recorrido.cupo_maximo }} · {{ recorrido.estado }} <form method="POST" action="{% url 'baja-recorrido-admin' recorrido.id_recorrido %}" style="display:inline;float:right;">{% csrf_token %}<button class="btn-small" style="background:#dc2626;margin:0;">Baja</button></form></div>{% empty %}<p>No hay recorridos configurados.</p>{% endfor %}
+              {% for recorrido in recorridos_transporte_admin %}
+                <div class="service-list-item">
+                  <div><strong>{{ recorrido.nombre }}</strong><br><small>{{ recorrido.turno }} · {{ recorrido.cupos_ocupados }}/{{ recorrido.cupo_maximo }} · {{ recorrido.estado }}</small></div>
+                  <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end;">
+                    <button type="button" class="btn-small" style="background:#d97706;margin:0;" onclick="toggleDisplay('editar-recorrido-{{ recorrido.id_recorrido }}')">Editar</button>
+                    {% if recorrido.estado == 'Activo' %}
+                      <form method="POST" action="{% url 'baja-recorrido-admin' recorrido.id_recorrido %}" style="display:inline;">{% csrf_token %}<button class="btn-small" style="background:#dc2626;margin:0;" onclick="return confirm('¿Dar de baja este recorrido?');">Baja</button></form>
+                    {% else %}
+                      <form method="POST" action="{% url 'alta-recorrido-existente-admin' recorrido.id_recorrido %}" style="display:inline;">{% csrf_token %}<button class="btn-small" style="background:#16a34a;margin:0;">Alta</button></form>
+                      <form method="POST" action="{% url 'eliminar-recorrido-admin' recorrido.id_recorrido %}" style="display:inline;">{% csrf_token %}<button class="btn-small" style="background:#991b1b;margin:0;" onclick="return confirm('¿Eliminar definitivamente este recorrido?');">Eliminar</button></form>
+                    {% endif %}
+                  </div>
+                  <div id="editar-recorrido-{{ recorrido.id_recorrido }}" style="display:none;grid-column:1/-1;margin-top:10px;padding-top:12px;border-top:1px solid #e2e8f0;">
+                    <form class="service-form" method="POST" action="{% url 'modificar-recorrido-admin' recorrido.id_recorrido %}">{% csrf_token %}<label>Nombre<input name="nombre" value="{{ recorrido.nombre }}" required></label><label>Descripción<input name="descripcion" value="{{ recorrido.descripcion|default:'' }}"></label><label>Turno<select name="turno"><option {% if recorrido.turno == 'Mañana' %}selected{% endif %}>Mañana</option><option {% if recorrido.turno == 'Tarde' %}selected{% endif %}>Tarde</option></select></label><label>Hora de salida<input type="time" name="hora_salida" value="{{ recorrido.hora_salida|time:'H:i' }}"></label><label>Cupo máximo<input type="number" name="cupo_maximo" min="1" value="{{ recorrido.cupo_maximo }}" required></label><input type="hidden" name="estado" value="{{ recorrido.estado }}"><button class="btn-form">Guardar cambios</button></form>
+                  </div>
+                </div>
+              {% empty %}<p>No hay recorridos configurados.</p>{% endfor %}
             </section>
           </div>
 

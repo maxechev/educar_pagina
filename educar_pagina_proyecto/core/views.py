@@ -14,6 +14,7 @@ import os
 from django.shortcuts import render, redirect
 from django.db.models import Avg, Q, Case, When, Value, IntegerField
 from django.db import transaction, IntegrityError
+from django.db.models.deletion import ProtectedError
 import json
 from django.core.mail import EmailMessage
 from django.contrib import messages
@@ -215,6 +216,33 @@ def baja_recorrido_admin(request, id_recorrido):
     recorrido.save(update_fields=['estado'])
     InscripcionTransporte.objects.filter(id_recorrido=recorrido, estado='Activa').update(estado='Baja')
     messages.success(request, 'Recorrido dado de baja.')
+    return _admin_service_redirect(request)
+
+
+@never_cache
+def alta_recorrido_existente_admin(request, id_recorrido):
+    if not _admin_session(request):
+        return redirect('login')
+    recorrido = get_object_or_404(RecorridoTransporte, id_recorrido=id_recorrido)
+    recorrido.estado = 'Activo'
+    recorrido.save(update_fields=['estado'])
+    messages.success(request, 'Recorrido dado de alta nuevamente.')
+    return _admin_service_redirect(request)
+
+
+@never_cache
+def eliminar_recorrido_admin(request, id_recorrido):
+    if not _admin_session(request):
+        return redirect('login')
+    recorrido = get_object_or_404(RecorridoTransporte, id_recorrido=id_recorrido)
+    if recorrido.estado == 'Activo':
+        messages.error(request, 'Primero tenés que dar de baja el recorrido.')
+    else:
+        try:
+            recorrido.delete()
+            messages.success(request, 'Recorrido eliminado definitivamente.')
+        except ProtectedError:
+            messages.error(request, 'No se puede eliminar porque tiene solicitudes o inscripciones asociadas.')
     return _admin_service_redirect(request)
 
 
