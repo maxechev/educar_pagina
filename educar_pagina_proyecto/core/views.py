@@ -1138,7 +1138,7 @@ def dashboard_alumno(request):
         estado__in=['Aprobada', 'Rechazada'],
         notificacion_vista=False,
     ).select_related('id_recorrido', 'id_servicio').order_by('-fecha_solicitud')[:10])
-    if notificaciones_servicio and request.session.get('panel_activo', 'inicio') == 'servicios':
+    if notificaciones_servicio:
         SolicitudServicio.objects.filter(
             id_solicitud__in=[solicitud.id_solicitud for solicitud in notificaciones_servicio]
         ).update(notificacion_vista=True)
