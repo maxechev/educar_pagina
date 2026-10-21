@@ -1413,14 +1413,49 @@ def dashboard_administrativo(request):
         id_persona=persona
     ).first()
 
+    usuario_busqueda = (request.GET.get('usuario_busqueda') or '').strip()
+    usuario_rol_filtro = (request.GET.get('usuario_rol') or '').strip().lower()
+    usuario_estado_filtro = (request.GET.get('usuario_estado') or '').strip()
+
     usuarios_sistema = []
-    for usuario_sistema in Usuario.objects.all().order_by('nombre_usuario'):
+    usuarios_query = Usuario.objects.all().order_by('nombre_usuario')
+    for usuario_sistema in usuarios_query:
         persona_usuario = Persona.objects.filter(
             id_usuario=usuario_sistema
         ).first()
         usuario_sistema.persona_asociada = persona_usuario
         usuario_sistema.rol_visible = rol_persona(persona_usuario)
-        usuarios_sistema.append(usuario_sistema)
+        usuario_sistema.rol_clave_visible = next(
+            (
+                clave
+                for clave, datos in ROLES_USUARIO.items()
+                if datos[0] == usuario_sistema.rol_visible
+            ),
+            '',
+        )
+
+        texto_busqueda = ' '.join([
+            usuario_sistema.nombre_usuario or '',
+            persona_usuario.dni if persona_usuario else '',
+            persona_usuario.nombre if persona_usuario else '',
+            persona_usuario.apellido if persona_usuario else '',
+        ]).lower()
+
+        coincide_busqueda = (
+            not usuario_busqueda.lower()
+            or usuario_busqueda.lower() in texto_busqueda
+        )
+        coincide_rol = (
+            not usuario_rol_filtro
+            or usuario_sistema.rol_clave_visible == usuario_rol_filtro
+        )
+        coincide_estado = (
+            not usuario_estado_filtro
+            or usuario_sistema.estado == usuario_estado_filtro
+        )
+
+        if coincide_busqueda and coincide_rol and coincide_estado:
+            usuarios_sistema.append(usuario_sistema)
 
     instalaciones = Instalacion.objects.all()
     
@@ -1564,6 +1599,9 @@ def dashboard_administrativo(request):
         'panel_activo': panel_activo,
         'messages': mensajes,
         'usuarios_sistema': usuarios_sistema,
+        'usuario_busqueda': usuario_busqueda,
+        'usuario_rol_filtro': usuario_rol_filtro,
+        'usuario_estado_filtro': usuario_estado_filtro,
     })
 
 
