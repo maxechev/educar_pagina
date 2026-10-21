@@ -62,6 +62,7 @@ urlpatterns = [
     path('alumno/deportes/inscripciones/<int:id_inscripcion>/baja/', views.baja_inscripcion_deportiva, name='baja-inscripcion-deportiva'),
     path('alumno/servicios/transporte/baja/', views.baja_inscripcion_transporte, name='baja-inscripcion-transporte'),
     path('alumno/servicios/comedor/baja/', views.baja_inscripcion_comedor, name='baja-inscripcion-comedor'),
+    path('alumno/servicios/solicitudes/<int:id_solicitud>/cancelar/', views.cancelar_solicitud_servicio, name='cancelar-solicitud-servicio'),
     path('administrativo/niveles/alta/', views.alta_nivel_admin, name='alta-nivel-admin'),
     path('administrativo/niveles/<int:id_nivel>/modificar/', views.modificar_nivel_admin, name='modificar-nivel-admin'),
     path('administrativo/niveles/<int:id_nivel>/baja/', views.baja_nivel_admin, name='baja-nivel-admin'),

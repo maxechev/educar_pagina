@@ -729,6 +729,29 @@ def baja_inscripcion_comedor(request):
 
 
 @never_cache
+def cancelar_solicitud_servicio(request, id_solicitud):
+    persona, dashboard_url = obtener_datos_sesion(request)
+    if not persona or dashboard_url != 'dashboard-alumno':
+        return redirect('login')
+    if request.method == 'POST':
+        alumno = get_object_or_404(Alumno, id_persona=persona)
+        solicitud = SolicitudServicio.objects.filter(
+            id_solicitud=id_solicitud,
+            id_alumno=alumno,
+            estado=SolicitudServicio.PENDIENTE,
+        ).first()
+        if solicitud:
+            solicitud.estado = SolicitudServicio.RECHAZADA
+            solicitud.observaciones = 'Cancelada por el alumno.'
+            solicitud.save(update_fields=['estado', 'observaciones'])
+            messages.success(request, 'La solicitud fue cancelada correctamente.')
+        else:
+            messages.error(request, 'La solicitud ya no está pendiente o no te pertenece.')
+    request.session['panel_activo'] = 'servicios'
+    return redirect('dashboard-alumno')
+
+
+@never_cache
 def dashboard_alumno(request):
     persona, dashboard_url = obtener_datos_sesion(request)
     if not persona:
@@ -1080,14 +1103,28 @@ def dashboard_alumno(request):
         grupo.id_instalacion = grupo.id_disciplina.id_instalacion
         grupo.esta_inscripto = grupo.id_grupo in grupos_inscriptos_ids
 
+    solicitudes_servicio_alumno = SolicitudServicio.objects.filter(id_alumno=alumno, estado='Pendiente').select_related('id_recorrido', 'id_servicio')
     recorridos_transporte = list(RecorridoTransporte.objects.filter(estado='Activo').order_by('nombre'))
     for recorrido in recorridos_transporte:
         recorrido.cupos_ocupados = InscripcionTransporte.objects.filter(id_recorrido=recorrido, estado='Activa').count()
         recorrido.cupos_disponibles = max(0, recorrido.cupo_maximo - recorrido.cupos_ocupados)
+        recorrido.solicitud_pendiente = next(
+            (solicitud for solicitud in solicitudes_servicio_alumno
+             if solicitud.tipo == 'transporte' and solicitud.id_recorrido_id == recorrido.id_recorrido),
+            None,
+        )
     servicio_comedor = _active_comedor()
     inscripcion_transporte_alumno = InscripcionTransporte.objects.filter(id_alumno=alumno, estado='Activa').select_related('id_recorrido').first()
     inscripcion_comedor_alumno = InscripcionComedor.objects.filter(id_alumno=alumno, estado='Activa').select_related('id_servicio').first()
-    solicitudes_servicio_alumno = SolicitudServicio.objects.filter(id_alumno=alumno, estado='Pendiente').select_related('id_recorrido', 'id_servicio')
+    solicitudes_transporte_ids = {
+        solicitud.id_recorrido_id: solicitud.id_solicitud
+        for solicitud in solicitudes_servicio_alumno
+        if solicitud.tipo == 'transporte' and solicitud.id_recorrido_id
+    }
+    solicitud_comedor_alumno = next(
+        (solicitud for solicitud in solicitudes_servicio_alumno if solicitud.tipo == 'comedor'),
+        None,
+    )
     comedor_ocupados = InscripcionComedor.objects.filter(id_servicio=servicio_comedor, estado='Activa').count()
             
     
@@ -1281,6 +1318,8 @@ def dashboard_alumno(request):
         'inscripcion_transporte_alumno': inscripcion_transporte_alumno,
         'inscripcion_comedor_alumno': inscripcion_comedor_alumno,
         'solicitudes_servicio_alumno': solicitudes_servicio_alumno,
+        'solicitudes_transporte_ids': solicitudes_transporte_ids,
+        'solicitud_comedor_alumno': solicitud_comedor_alumno,
         'tutor_relacion': tutor_relacion,
         'horario_por_dia': horario_por_dia,
         'hay_horarios': hay_horarios,
