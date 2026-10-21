@@ -689,6 +689,46 @@ def baja_inscripcion_deportiva(request, id_inscripcion):
 
 
 @never_cache
+def baja_inscripcion_transporte(request):
+    persona, dashboard_url = obtener_datos_sesion(request)
+    if not persona or dashboard_url != 'dashboard-alumno':
+        return redirect('login')
+    if request.method == 'POST':
+        alumno = get_object_or_404(Alumno, id_persona=persona)
+        inscripcion = InscripcionTransporte.objects.filter(
+            id_alumno=alumno, estado='Activa'
+        ).first()
+        if inscripcion:
+            inscripcion.estado = 'Baja'
+            inscripcion.save(update_fields=['estado'])
+            messages.success(request, 'Te diste de baja del recorrido de transporte correctamente.')
+        else:
+            messages.error(request, 'No tenés una inscripción activa al transporte.')
+    request.session['panel_activo'] = 'servicios'
+    return redirect('dashboard-alumno')
+
+
+@never_cache
+def baja_inscripcion_comedor(request):
+    persona, dashboard_url = obtener_datos_sesion(request)
+    if not persona or dashboard_url != 'dashboard-alumno':
+        return redirect('login')
+    if request.method == 'POST':
+        alumno = get_object_or_404(Alumno, id_persona=persona)
+        inscripcion = InscripcionComedor.objects.filter(
+            id_alumno=alumno, estado='Activa'
+        ).first()
+        if inscripcion:
+            inscripcion.estado = 'Baja'
+            inscripcion.save(update_fields=['estado'])
+            messages.success(request, 'Te diste de baja del comedor correctamente.')
+        else:
+            messages.error(request, 'No tenés una inscripción activa al comedor.')
+    request.session['panel_activo'] = 'servicios'
+    return redirect('dashboard-alumno')
+
+
+@never_cache
 def dashboard_alumno(request):
     persona, dashboard_url = obtener_datos_sesion(request)
     if not persona:
