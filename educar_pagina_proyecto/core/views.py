@@ -12,7 +12,7 @@ import re
 import resend
 import os
 from django.shortcuts import render, redirect
-from django.db.models import Avg, Q
+from django.db.models import Avg, Q, Case, When, Value, IntegerField
 from django.db import transaction, IntegrityError
 import json
 from django.core.mail import EmailMessage
@@ -1438,7 +1438,17 @@ def dashboard_administrativo(request):
     horarios_admin = Horario.objects.select_related(
         'curso_materia__id_curso__nivel_educativo', 'curso_materia__id_curso', 'curso_materia__id_materia',
         'grupo_deportivo__id_disciplina', 'grupo_deportivo__nivel_educativo',
-    ).order_by('dia_semana', 'hora_inicio')
+    ).annotate(
+        dia_orden=Case(
+            When(dia_semana='lunes', then=Value(1)),
+            When(dia_semana='martes', then=Value(2)),
+            When(dia_semana__in=['miércoles', 'miercoles'], then=Value(3)),
+            When(dia_semana='jueves', then=Value(4)),
+            When(dia_semana='viernes', then=Value(5)),
+            default=Value(99),
+            output_field=IntegerField(),
+        )
+    ).order_by('dia_orden', 'hora_inicio')
 
     # Permite consultar únicamente los horarios de un curso desde el panel.
     # Los deportes se incluyen por nivel, ya que un grupo deportivo está
