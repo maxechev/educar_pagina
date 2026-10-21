@@ -192,7 +192,11 @@ def modificar_recorrido_admin(request, id_recorrido):
         return redirect('login')
     recorrido = get_object_or_404(RecorridoTransporte, id_recorrido=id_recorrido)
     if request.method == 'POST':
-        recorrido.nombre = (request.POST.get('nombre') or recorrido.nombre).strip()
+        nuevo_nombre = (request.POST.get('nombre') or recorrido.nombre).strip()
+        if RecorridoTransporte.objects.filter(nombre__iexact=nuevo_nombre).exclude(id_recorrido=recorrido.id_recorrido).exists():
+            messages.error(request, 'Ya existe otro recorrido con ese nombre.')
+            return _admin_service_redirect(request)
+        recorrido.nombre = nuevo_nombre
         recorrido.descripcion = (request.POST.get('descripcion') or '').strip()
         recorrido.turno = request.POST.get('turno') or recorrido.turno
         recorrido.hora_salida = request.POST.get('hora_salida') or None
