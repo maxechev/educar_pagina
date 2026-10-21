@@ -845,6 +845,9 @@
               #servicios-admin .service-form label { display:flex; flex-direction:column; gap:6px; color:#334155; font-size:14px; font-weight:600; }
               #servicios-admin .service-form input, #servicios-admin .service-form select { width:100%; box-sizing:border-box; min-height:48px; padding:0 16px; font-family:inherit; font-size:16px; color:#0f172a; background:#f8fafc; border:1px solid #cbd5e1; border-radius:12px; outline:none; }
               #servicios-admin .service-form input:focus, #servicios-admin .service-form select:focus { border-color:#2563eb; box-shadow:0 0 0 3px rgba(37,99,235,.12); }
+              #servicios-admin .resultado-alumno-servicio { min-height:42px; padding:10px 12px; border-radius:10px; background:#f1f5f9; color:#64748b; font-size:14px; }
+              #servicios-admin .resultado-alumno-servicio.encontrado { background:#dcfce7; color:#166534; }
+              #servicios-admin .resultado-alumno-servicio.error { background:#fee2e2; color:#991b1b; }
               #servicios-admin .service-form .btn-form { width:max-content; margin-top:4px; }
               #servicios-admin .service-block { margin-top:20px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:14px; padding:20px; }
               #servicios-admin .manual-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:24px; }
@@ -881,8 +884,8 @@
             <section class="service-block">
               <h3>Inscripción manual</h3>
               <div class="manual-grid">
-                <div class="manual-card"><h4>Inscribir al transporte</h4><form class="service-form" method="POST" action="{% url 'alta-inscripcion-transporte-admin' %}">{% csrf_token %}<label>Alumno<select name="legajo_alumno" required>{% for alumno in alumnos_deportivos %}<option value="{{ alumno.legajo }}">{{ alumno.id_persona.apellido }}, {{ alumno.id_persona.nombre }} ({{ alumno.legajo }})</option>{% endfor %}</select></label><label>Recorrido<select name="id_recorrido" required>{% for recorrido in recorridos_transporte_admin %}{% if recorrido.estado == 'Activo' %}<option value="{{ recorrido.id_recorrido }}">{{ recorrido.nombre }} ({{ recorrido.cupos_ocupados }}/{{ recorrido.cupo_maximo }})</option>{% endif %}{% endfor %}</select></label><button class="btn-form">Inscribir transporte</button></form></div>
-                <div class="manual-card"><h4>Inscribir al comedor</h4><form class="service-form" method="POST" action="{% url 'alta-inscripcion-comedor-admin' %}">{% csrf_token %}<label>Alumno<select name="legajo_alumno" required>{% for alumno in alumnos_deportivos %}<option value="{{ alumno.legajo }}">{{ alumno.id_persona.apellido }}, {{ alumno.id_persona.nombre }}</option>{% endfor %}</select></label><button class="btn-form">Inscribir comedor</button></form></div>
+                <div class="manual-card"><h4>Inscribir al transporte</h4><form class="service-form service-enrollment-form" method="POST" action="{% url 'alta-inscripcion-transporte-admin' %}" data-lookup-url="{% url 'buscar-alumno-servicio' %}">{% csrf_token %}<label>DNI del alumno<input class="dni-alumno-servicio" name="dni_alumno" inputmode="numeric" maxlength="20" placeholder="Ej. 70000041" required></label><input type="hidden" name="legajo_alumno" class="legajo-alumno-servicio"><div class="resultado-alumno-servicio">Ingresá un DNI para verificar el alumno.</div><label>Recorrido<select name="id_recorrido" required><option value="">Seleccione un recorrido</option>{% for recorrido in recorridos_transporte_admin %}{% if recorrido.estado == 'Activo' %}<option value="{{ recorrido.id_recorrido }}">{{ recorrido.nombre }} ({{ recorrido.cupos_ocupados }}/{{ recorrido.cupo_maximo }})</option>{% endif %}{% endfor %}</select></label><button class="btn-form" disabled>Inscribir transporte</button></form></div>
+                <div class="manual-card"><h4>Inscribir al comedor</h4><form class="service-form service-enrollment-form" method="POST" action="{% url 'alta-inscripcion-comedor-admin' %}" data-lookup-url="{% url 'buscar-alumno-servicio' %}">{% csrf_token %}<label>DNI del alumno<input class="dni-alumno-servicio" name="dni_alumno" inputmode="numeric" maxlength="20" placeholder="Ej. 70000041" required></label><input type="hidden" name="legajo_alumno" class="legajo-alumno-servicio"><div class="resultado-alumno-servicio">Ingresá un DNI para verificar el alumno.</div><button class="btn-form" disabled>Inscribir comedor</button></form></div>
               </div>
             </section>
             <section class="service-block"><h3>Solicitudes pendientes</h3>
@@ -2101,6 +2104,40 @@
             el.style.display = 'none';
         }
       }
+
+      document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.service-enrollment-form').forEach(function (form) {
+          const dni = form.querySelector('.dni-alumno-servicio');
+          const legajo = form.querySelector('.legajo-alumno-servicio');
+          const resultado = form.querySelector('.resultado-alumno-servicio');
+          const boton = form.querySelector('button');
+          let timer;
+          dni.addEventListener('input', function () {
+            clearTimeout(timer);
+            legajo.value = '';
+            boton.disabled = true;
+            resultado.className = 'resultado-alumno-servicio';
+            resultado.textContent = 'Buscando alumno...';
+            if (!dni.value.trim()) { resultado.textContent = 'Ingresá un DNI para verificar el alumno.'; return; }
+            timer = setTimeout(function () {
+              fetch(form.dataset.lookupUrl + '?dni=' + encodeURIComponent(dni.value.trim()), {headers: {'X-Requested-With': 'XMLHttpRequest'}})
+                .then(function (response) { return response.json(); })
+                .then(function (data) {
+                  if (data.ok) {
+                    legajo.value = data.legajo;
+                    resultado.className = 'resultado-alumno-servicio encontrado';
+                    resultado.textContent = data.nombre + ' · ' + data.curso + ' · Legajo ' + data.legajo;
+                    boton.disabled = false;
+                  } else {
+                    resultado.className = 'resultado-alumno-servicio error';
+                    resultado.textContent = data.error || 'No se encontró el alumno.';
+                  }
+                })
+                .catch(function () { resultado.className = 'resultado-alumno-servicio error'; resultado.textContent = 'No se pudo consultar el DNI.'; });
+            }, 300);
+          });
+        });
+      });
     </script>
   </body>
 </html>

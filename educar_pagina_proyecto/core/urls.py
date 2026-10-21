@@ -57,6 +57,7 @@ urlpatterns = [
     path('administrativo/servicios/comedor/modificar/', views.modificar_comedor_admin, name='modificar-comedor-admin'),
     path('administrativo/servicios/transporte/inscribir/', views.alta_inscripcion_transporte_admin, name='alta-inscripcion-transporte-admin'),
     path('administrativo/servicios/comedor/inscribir/', views.alta_inscripcion_comedor_admin, name='alta-inscripcion-comedor-admin'),
+    path('administrativo/servicios/alumnos/buscar/', views.buscar_alumno_servicio, name='buscar-alumno-servicio'),
     path('administrativo/servicios/solicitudes/<int:id_solicitud>/', views.gestionar_solicitud_servicio_admin, name='gestionar-solicitud-servicio-admin'),
     path('alumno/deportes/inscripciones/<int:id_inscripcion>/baja/', views.baja_inscripcion_deportiva, name='baja-inscripcion-deportiva'),
     path('administrativo/niveles/alta/', views.alta_nivel_admin, name='alta-nivel-admin'),

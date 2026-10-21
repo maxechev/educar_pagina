@@ -302,6 +302,25 @@ def alta_inscripcion_comedor_admin(request):
     return _admin_service_redirect(request)
 
 
+def buscar_alumno_servicio(request):
+    if not _admin_session(request):
+        return JsonResponse({'ok': False, 'error': 'No autorizado'}, status=403)
+    dni = (request.GET.get('dni') or '').strip()
+    if not dni:
+        return JsonResponse({'ok': False, 'error': 'Ingresá un DNI.'})
+    alumno = Alumno.objects.filter(
+        id_persona__dni=dni, estado='Activo'
+    ).select_related('id_persona', 'id_curso').first()
+    if not alumno:
+        return JsonResponse({'ok': False, 'error': 'No se encontró un alumno activo con ese DNI.'})
+    return JsonResponse({
+        'ok': True,
+        'legajo': alumno.legajo,
+        'nombre': f'{alumno.id_persona.apellido}, {alumno.id_persona.nombre}',
+        'curso': f'{alumno.id_curso.nivel_educativo.nombre} {alumno.id_curso.anio}° {alumno.id_curso.comision}' if alumno.id_curso else 'Sin curso',
+    })
+
+
 @never_cache
 def gestionar_solicitud_servicio_admin(request, id_solicitud):
     if not _admin_session(request):
