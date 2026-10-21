@@ -782,10 +782,14 @@
         if (el) {
           el.classList.add("active");
         }
+        const url = new URL(window.location.href);
+        if (id === "inicio") url.searchParams.delete("panel");
+        else url.searchParams.set("panel", id);
+        window.history.replaceState({}, "", url);
       }
 
       document.addEventListener("DOMContentLoaded", function () {
-        const panelActivo = "{{ panel_activo|default:'inicio' }}";
+      const panelActivo = new URLSearchParams(window.location.search).get("panel") || "{{ panel_activo|default:'inicio' }}";
 
         document
           .querySelectorAll(".panel")
