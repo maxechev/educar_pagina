@@ -258,11 +258,23 @@ def modificar_comedor_admin(request):
         return redirect('login')
     servicio = _active_comedor()
     if request.method == 'POST':
+        cupo_anterior = servicio.cupo_maximo
+        estado_anterior = servicio.estado
         try:
-            servicio.cupo_maximo = max(1, int(request.POST.get('cupo_maximo') or servicio.cupo_maximo))
-            servicio.estado = request.POST.get('estado') or servicio.estado
+            nuevo_cupo = max(1, int(request.POST.get('cupo_maximo') or servicio.cupo_maximo))
+            nuevo_estado = request.POST.get('estado') or servicio.estado
+            servicio.cupo_maximo = nuevo_cupo
+            servicio.estado = nuevo_estado
             servicio.save(update_fields=['cupo_maximo', 'estado'])
-            messages.success(request, 'Cupo del comedor actualizado.')
+            cambios = []
+            if cupo_anterior != nuevo_cupo:
+                cambios.append('cupo')
+            if estado_anterior != nuevo_estado:
+                cambios.append('estado')
+            if cambios:
+                messages.success(request, 'Comedor actualizado: ' + ' y '.join(cambios) + '.')
+            else:
+                messages.info(request, 'No hubo cambios en el comedor.')
         except ValueError:
             messages.error(request, 'El cupo debe ser numérico.')
     return _admin_service_redirect(request)

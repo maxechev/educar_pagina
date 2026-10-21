@@ -874,12 +874,16 @@
               </section>
               <section class="service-card">
                 <h3>Comedor escolar</h3>
-                <p>Cupo utilizado: {{ inscripciones_comedor_admin|length }} / {{ servicio_comedor_admin.cupo_maximo }}</p>
-                <form class="service-form" method="POST" action="{% url 'modificar-comedor-admin' %}">{% csrf_token %}
-                  <label>Cupo máximo<input type="number" name="cupo_maximo" min="1" value="{{ servicio_comedor_admin.cupo_maximo }}" required></label>
-                  <label>Estado<select name="estado"><option value="Activo" {% if servicio_comedor_admin.estado == 'Activo' %}selected{% endif %}>Activo</option><option value="Inactivo" {% if servicio_comedor_admin.estado == 'Inactivo' %}selected{% endif %}>Inactivo</option></select></label>
-                  <button class="btn-form">Guardar comedor</button>
-                </form>
+                <p style="margin:0 0 8px;color:#475569;">Cupo utilizado: <strong>{{ inscripciones_comedor_admin|length }} / {{ servicio_comedor_admin.cupo_maximo }}</strong></p>
+                <p style="margin:0 0 14px;color:#475569;">Estado: <strong style="color:{% if servicio_comedor_admin.estado == 'Activo' %}#166534{% else %}#991b1b{% endif %};">{{ servicio_comedor_admin.estado }}</strong></p>
+                <button type="button" class="btn-small" style="background:#d97706;margin:0;" onclick="toggleDisplay('editar-comedor')">Modificar</button>
+                <div id="editar-comedor" style="display:none;margin-top:16px;padding-top:16px;border-top:1px solid #e2e8f0;">
+                  <form class="service-form" method="POST" action="{% url 'modificar-comedor-admin' %}">{% csrf_token %}
+                    <label>Cupo máximo<input type="number" name="cupo_maximo" min="1" value="{{ servicio_comedor_admin.cupo_maximo }}" required></label>
+                    <label>Estado<select name="estado"><option value="Activo" {% if servicio_comedor_admin.estado == 'Activo' %}selected{% endif %}>Activo</option><option value="Inactivo" {% if servicio_comedor_admin.estado == 'Inactivo' %}selected{% endif %}>Inactivo</option></select></label>
+                    <button class="btn-form">Guardar cambios</button>
+                  </form>
+                </div>
               </section>
             </div>
             <section class="service-block">
