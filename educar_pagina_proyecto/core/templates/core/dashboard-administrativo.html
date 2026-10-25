@@ -348,11 +348,36 @@
               <div class="form-grid">
                 <div class="form-group">
                   <label for="reporte-docente-tipo">Tipo de reporte</label>
-                  <select id="reporte-docente-tipo" name="reporte_docente_tipo" required>
+                  <select id="reporte-docente-tipo" name="reporte_docente_tipo" onchange="mostrarFiltroReporteDocente()" required>
                     <option value="">Seleccione un reporte</option>
                     <option value="nivel" {% if reporte_docente_tipo == 'nivel' %}selected{% endif %}>Por nivel educativo</option>
                     <option value="cursos" {% if reporte_docente_tipo == 'cursos' %}selected{% endif %}>Cursos y materias a cargo</option>
                     <option value="horarios" {% if reporte_docente_tipo == 'horarios' %}selected{% endif %}>Horarios</option>
+                  </select>
+                </div>
+                <div id="filtro-docente-nivel" class="form-group filtro-docente" style="display:none;">
+                  <label for="reporte-docente-filtro-nivel">Nivel educativo</label>
+                  <select id="reporte-docente-filtro-nivel" name="reporte_docente_filtro">
+                    <option value="">Todos</option>
+                    {% for nivel in niveles_educativos %}<option value="{{ nivel.id_nivel }}" {% if reporte_docente_filtro == nivel.id_nivel|stringformat:'s' %}selected{% endif %}>{{ nivel.nombre }}</option>{% endfor %}
+                  </select>
+                </div>
+                <div id="filtro-docente-cursos" class="form-group filtro-docente" style="display:none;">
+                  <label for="reporte-docente-filtro-curso">Curso</label>
+                  <select id="reporte-docente-filtro-curso" name="reporte_docente_filtro">
+                    <option value="">Todos</option>
+                    {% for curso in cursos_academicos %}<option value="{{ curso.id_curso }}" {% if reporte_docente_filtro == curso.id_curso|stringformat:'s' %}selected{% endif %}>{{ curso.nivel_educativo.nombre }} {{ curso.anio }}° {{ curso.comision }} ({{ curso.turno }})</option>{% endfor %}
+                  </select>
+                </div>
+                <div id="filtro-docente-horarios" class="form-group filtro-docente" style="display:none;">
+                  <label for="reporte-docente-filtro-dia">Día</label>
+                  <select id="reporte-docente-filtro-dia" name="reporte_docente_filtro">
+                    <option value="">Todos</option>
+                    <option value="lunes" {% if reporte_docente_filtro == 'lunes' %}selected{% endif %}>Lunes</option>
+                    <option value="martes" {% if reporte_docente_filtro == 'martes' %}selected{% endif %}>Martes</option>
+                    <option value="miércoles" {% if reporte_docente_filtro == 'miércoles' %}selected{% endif %}>Miércoles</option>
+                    <option value="jueves" {% if reporte_docente_filtro == 'jueves' %}selected{% endif %}>Jueves</option>
+                    <option value="viernes" {% if reporte_docente_filtro == 'viernes' %}selected{% endif %}>Viernes</option>
                   </select>
                 </div>
               </div>
@@ -2087,6 +2112,21 @@
         });
       }
 
+      function mostrarFiltroReporteDocente() {
+        const tipo = document.getElementById("reporte-docente-tipo")?.value || "";
+        const filtros = {
+          nivel: "filtro-docente-nivel",
+          cursos: "filtro-docente-cursos",
+          horarios: "filtro-docente-horarios",
+        };
+        document.querySelectorAll(".filtro-docente").forEach((filtro) => {
+          const activo = filtros[tipo] === filtro.id;
+          filtro.style.display = activo ? "block" : "none";
+          const selector = filtro.querySelector("select");
+          if (selector) selector.disabled = !activo;
+        });
+      }
+
       function showPanel(id, el) {
         document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
         document.querySelectorAll(".sidebar-nav a").forEach((a) => a.classList.remove("active"));
@@ -2111,6 +2151,7 @@
 
       document.addEventListener("DOMContentLoaded", function () {
         mostrarFiltroReporte();
+        mostrarFiltroReporteDocente();
         const panel = "{{ panel_activo }}";
         if (!panel || panel === "inicio") return;
 

@@ -2132,6 +2132,9 @@ def dashboard_administrativo(request):
     reporte_docente_tipo = (
         request.GET.get('reporte_docente_tipo') or ''
     ).strip().lower()
+    reporte_docente_filtro = (
+        request.GET.get('reporte_docente_filtro') or ''
+    ).strip()
     tipos_reporte_docentes = {
         'nivel': 'Por nivel educativo',
         'cursos': 'Cursos y materias a cargo',
@@ -2157,12 +2160,36 @@ def dashboard_administrativo(request):
             to_attr='asignaciones_reporte',
         ),
     ).order_by('id_persona__apellido', 'id_persona__nombre')
+
+    if reporte_docente_tipo == 'nivel' and reporte_docente_filtro.isdigit():
+        docentes_reporte = docentes_reporte.filter(
+            docentedictamateria__id_curso__nivel_educativo_id=int(
+                reporte_docente_filtro
+            )
+        ).distinct()
+    elif reporte_docente_tipo == 'cursos' and reporte_docente_filtro.isdigit():
+        docentes_reporte = docentes_reporte.filter(
+            docentedictamateria__id_curso_id=int(reporte_docente_filtro)
+        ).distinct()
+
     horarios_reporte = []
     if reporte_docente_tipo == 'horarios':
+        horarios_reporte_query = Horario.objects.filter(
+            curso_materia__isnull=False
+        )
+        if reporte_docente_filtro in {
+            'lunes', 'martes', 'miércoles', 'miercoles', 'jueves', 'viernes'
+        }:
+            dias_filtro = (
+                ['miércoles', 'miercoles']
+                if reporte_docente_filtro in {'miércoles', 'miercoles'}
+                else [reporte_docente_filtro]
+            )
+            horarios_reporte_query = horarios_reporte_query.filter(
+                dia_semana__in=dias_filtro
+            )
         horarios_reporte = list(
-            Horario.objects.filter(
-                curso_materia__isnull=False
-            ).select_related(
+            horarios_reporte_query.select_related(
                 'curso_materia__id_curso__nivel_educativo',
                 'curso_materia__id_curso',
                 'curso_materia__id_materia',
@@ -2210,6 +2237,8 @@ def dashboard_administrativo(request):
                 f'{horario.curso_materia.id_curso.comision}'
                 for horario in horarios
             ]
+            if reporte_docente_tipo == 'horarios' and not horarios:
+                continue
             detalles_docente = {
                 'nivel': ', '.join(niveles) or 'Sin nivel asignado',
                 'cursos': (
@@ -2297,6 +2326,7 @@ def dashboard_administrativo(request):
         'reportes_alumnos': reportes_alumnos,
         'tipos_reporte_docentes': tipos_reporte_docentes,
         'reporte_docente_tipo': reporte_docente_tipo,
+        'reporte_docente_filtro': reporte_docente_filtro,
         'reportes_docentes': reportes_docentes,
         'reporte_docente_nombre': reporte_docente_nombre,
     })
