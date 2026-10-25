@@ -2252,6 +2252,105 @@ def dashboard_administrativo(request):
                 'detalle': detalles_docente[reporte_docente_tipo],
             })
 
+    # HU15: reporte avanzado de actividades extracurriculares. Todos los
+    # filtros son opcionales y se aplican sobre las inscripciones activas.
+    reporte_avanzado_generar = (
+        request.GET.get('generar_reporte_avanzado') == '1'
+    )
+    reporte_avanzado_filtros = {
+        'deporte': (request.GET.get('reporte_avanzado_deporte') or '').strip(),
+        'nivel': (request.GET.get('reporte_avanzado_nivel') or '').strip(),
+        'horario': (request.GET.get('reporte_avanzado_horario') or '').strip(),
+        'profesor': (request.GET.get('reporte_avanzado_profesor') or '').strip(),
+    }
+    horarios_deportivos_reporte = []
+    horarios_deportivos_vistos = set()
+    for grupo in grupos_deportivos_admin:
+        if grupo.estado != 'Activo':
+            continue
+        clave_horario = (
+            f'{grupo.dia_semana}|{grupo.hora_inicio.strftime("%H:%M")}|'
+            f'{grupo.hora_fin.strftime("%H:%M")}'
+        )
+        if clave_horario in horarios_deportivos_vistos:
+            continue
+        horarios_deportivos_vistos.add(clave_horario)
+        horarios_deportivos_reporte.append({
+            'valor': clave_horario,
+            'nombre': (
+                f'{grupo.dia_semana.capitalize()} '
+                f'{grupo.hora_inicio.strftime("%H:%M")}-'
+                f'{grupo.hora_fin.strftime("%H:%M")}'
+            ),
+        })
+    horarios_deportivos_reporte.sort(key=lambda horario: horario['nombre'])
+
+    reportes_avanzados = []
+    if reporte_avanzado_generar:
+        inscripciones_avanzadas = InscripcionDeportiva.objects.filter(
+            estado='Activa'
+        ).select_related(
+            'id_alumno__id_persona',
+            'id_alumno__id_curso__nivel_educativo',
+            'id_grupo__id_disciplina',
+            'id_grupo__nivel_educativo',
+            'id_grupo__profesor_responsable__id_persona',
+        ).order_by(
+            'id_alumno__id_persona__apellido',
+            'id_alumno__id_persona__nombre',
+        )
+        filtro_deporte = reporte_avanzado_filtros['deporte']
+        filtro_nivel = reporte_avanzado_filtros['nivel']
+        filtro_horario = reporte_avanzado_filtros['horario']
+        filtro_profesor = reporte_avanzado_filtros['profesor']
+
+        if filtro_deporte.isdigit():
+            inscripciones_avanzadas = inscripciones_avanzadas.filter(
+                id_grupo__id_disciplina_id=int(filtro_deporte)
+            )
+        if filtro_nivel.isdigit():
+            inscripciones_avanzadas = inscripciones_avanzadas.filter(
+                id_grupo__nivel_educativo_id=int(filtro_nivel)
+            )
+        if filtro_profesor.isdigit():
+            inscripciones_avanzadas = inscripciones_avanzadas.filter(
+                id_grupo__profesor_responsable_id=int(filtro_profesor)
+            )
+        if filtro_horario:
+            partes_horario = filtro_horario.split('|')
+            if len(partes_horario) == 3:
+                inscripciones_avanzadas = inscripciones_avanzadas.filter(
+                    id_grupo__dia_semana__in=(
+                        [partes_horario[0], 'miercoles']
+                        if partes_horario[0] == 'miércoles'
+                        else [partes_horario[0]]
+                    ),
+                    id_grupo__hora_inicio=partes_horario[1],
+                    id_grupo__hora_fin=partes_horario[2],
+                )
+
+        for inscripcion in inscripciones_avanzadas:
+            grupo = inscripcion.id_grupo
+            alumno = inscripcion.id_alumno
+            reportes_avanzados.append({
+                'alumno': alumno,
+                'deporte': grupo.id_disciplina.nombre,
+                'nivel': grupo.nivel_educativo.nombre,
+                'curso': (
+                    f'{alumno.id_curso.anio}° {alumno.id_curso.comision}'
+                    if alumno.id_curso else 'Sin curso'
+                ),
+                'horario': (
+                    f'{grupo.dia_semana.capitalize()} '
+                    f'{grupo.hora_inicio.strftime("%H:%M")}-'
+                    f'{grupo.hora_fin.strftime("%H:%M")}'
+                ),
+                'profesor': (
+                    f'{grupo.profesor_responsable.id_persona.apellido}, '
+                    f'{grupo.profesor_responsable.id_persona.nombre}'
+                ),
+            })
+
     # Permite consultar únicamente los horarios de un curso desde el panel.
     # Los deportes se incluyen por nivel, ya que un grupo deportivo está
     # asociado al nivel educativo y no a un curso puntual.
@@ -2275,7 +2374,7 @@ def dashboard_administrativo(request):
         'opiniones', 'noticias', 'usuarios', 'perfil', 'alumnos',
         'profesores', 'niveles-cursos', 'materias', 'deportes-admin',
         'horarios-admin', 'servicios-admin', 'asistencia',
-        'reportes', 'reportes-docentes',
+        'reportes', 'reportes-docentes', 'reportes-avanzados',
     }
     panel_activo = request.session.get("panel_activo", "inicio")
     panel_solicitado = request.GET.get('panel')
@@ -2329,6 +2428,10 @@ def dashboard_administrativo(request):
         'reporte_docente_filtro': reporte_docente_filtro,
         'reportes_docentes': reportes_docentes,
         'reporte_docente_nombre': reporte_docente_nombre,
+        'reporte_avanzado_generar': reporte_avanzado_generar,
+        'reporte_avanzado_filtros': reporte_avanzado_filtros,
+        'horarios_deportivos_reporte': horarios_deportivos_reporte,
+        'reportes_avanzados': reportes_avanzados,
     })
 
 

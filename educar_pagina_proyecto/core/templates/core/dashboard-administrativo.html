@@ -112,6 +112,16 @@
             </a>
             <a
               href="#"
+              class="{% if panel_activo == 'reportes-avanzados' %}active{% endif %}"
+              onclick="
+                showPanel('reportes-avanzados', this);
+                return false;
+              "
+            >
+              <span class="nav-icon">🔎</span> Reportes avanzados
+            </a>
+            <a
+              href="#"
               onclick="
                 showPanel('inscripciones', this);
                 return false;
@@ -400,6 +410,74 @@
                       <td>{{ fila.detalle }}</td>
                     </tr>
                     {% empty %}<tr><td colspan="5">No hay docentes para el reporte seleccionado.</td></tr>{% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            {% endif %}
+          </div>
+
+          <div id="panel-reportes-avanzados" class="panel {% if panel_activo == 'reportes-avanzados' %}active{% endif %}">
+            <p class="section-title">🔎 Reportes avanzados</p>
+            <p style="color:#64748b; margin-top:-8px;">
+              Combiná deporte, nivel educativo, horario y profesor responsable
+              para analizar las actividades extracurriculares.
+            </p>
+
+            <form method="get" action="{% url 'dashboard-administrativo' %}" class="form-section" style="margin:20px 0;">
+              <input type="hidden" name="panel" value="reportes-avanzados">
+              <input type="hidden" name="generar_reporte_avanzado" value="1">
+              <div class="form-grid">
+                <div class="form-group">
+                  <label for="reporte-avanzado-deporte">Deporte</label>
+                  <select id="reporte-avanzado-deporte" name="reporte_avanzado_deporte">
+                    <option value="">Todos</option>
+                    {% for deporte in deportes_academicos %}<option value="{{ deporte.id_disciplina }}" {% if reporte_avanzado_filtros.deporte == deporte.id_disciplina|stringformat:'s' %}selected{% endif %}>{{ deporte.nombre }}</option>{% endfor %}
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="reporte-avanzado-nivel">Nivel educativo</label>
+                  <select id="reporte-avanzado-nivel" name="reporte_avanzado_nivel">
+                    <option value="">Todos</option>
+                    {% for nivel in niveles_educativos %}<option value="{{ nivel.id_nivel }}" {% if reporte_avanzado_filtros.nivel == nivel.id_nivel|stringformat:'s' %}selected{% endif %}>{{ nivel.nombre }}</option>{% endfor %}
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="reporte-avanzado-horario">Horario</label>
+                  <select id="reporte-avanzado-horario" name="reporte_avanzado_horario">
+                    <option value="">Todos</option>
+                    {% for horario in horarios_deportivos_reporte %}<option value="{{ horario.valor }}" {% if reporte_avanzado_filtros.horario == horario.valor %}selected{% endif %}>{{ horario.nombre }}</option>{% endfor %}
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="reporte-avanzado-profesor">Profesor responsable</label>
+                  <select id="reporte-avanzado-profesor" name="reporte_avanzado_profesor">
+                    <option value="">Todos</option>
+                    {% for docente in docentes_deportivos %}<option value="{{ docente.legajo }}" {% if reporte_avanzado_filtros.profesor == docente.legajo|stringformat:'s' %}selected{% endif %}>{{ docente.id_persona.apellido }}, {{ docente.id_persona.nombre }}</option>{% endfor %}
+                  </select>
+                </div>
+              </div>
+              <button type="submit" class="btn-form" style="margin-top:14px;">Generar reporte avanzado</button>
+            </form>
+
+            {% if reporte_avanzado_generar %}
+            <div class="report-card" style="margin-top:20px;">
+              <h3>Alumnos en actividades extracurriculares — {{ reportes_avanzados|length }} resultado{{ reportes_avanzados|length|pluralize }}</h3>
+              <div style="overflow-x:auto;">
+                <table class="tabla">
+                  <thead><tr><th>Alumno</th><th>DNI</th><th>Nivel</th><th>Curso</th><th>Deporte</th><th>Horario</th><th>Profesor responsable</th></tr></thead>
+                  <tbody>
+                    {% for fila in reportes_avanzados %}
+                    <tr>
+                      <td>{{ fila.alumno.id_persona.apellido }}, {{ fila.alumno.id_persona.nombre }}</td>
+                      <td>{{ fila.alumno.id_persona.dni }}</td>
+                      <td>{{ fila.nivel }}</td>
+                      <td>{{ fila.curso }}</td>
+                      <td>{{ fila.deporte }}</td>
+                      <td>{{ fila.horario }}</td>
+                      <td>{{ fila.profesor }}</td>
+                    </tr>
+                    {% empty %}<tr><td colspan="7">No hay alumnos que coincidan con los filtros seleccionados.</td></tr>{% endfor %}
                   </tbody>
                 </table>
               </div>
