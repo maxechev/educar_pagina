@@ -1,784 +1,2497 @@
 {% load static %}
-{% load custom_tags %}
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Portal del Alumno</title>
-  <link rel="stylesheet" href="{% static 'core/css/styles.css' %}">
-</head>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Portal Administrativo</title>
+    <link rel="stylesheet" href="{% static 'core/css/styles.css' %}" />
+  </head>
 
-<div class="modal-overlay" id="modalCerrarSesion">
+  <div class="modal-overlay" id="modalCerrarSesion">
+    <div class="modal-box">
+      <h2>¿Cerrar sesión?</h2>
 
-  <div class="modal-box">
+      <p>Vas a salir del portal administrativo.</p>
 
-    <h2>¿Cerrar sesión?</h2>
+      <div class="modal-buttons">
+        <button class="btn-cancelar" onclick="cerrarModal()">Cancelar</button>
 
-    <p>
-      Vas a salir del portal de alumno.
-    </p>
-
-    <div class="modal-buttons">
-
-      <button class="btn-cancelar" onclick="cerrarModal()">
-        Cancelar
-      </button>
-
-      <button class="btn-cerrar" onclick="confirmarCerrarSesion()">
-        Cerrar sesión
-      </button>
-
+        <button class="btn-cerrar" onclick="confirmarCerrarSesion()">
+          Cerrar sesión
+        </button>
+      </div>
     </div>
-
   </div>
 
-</div>
+  <script>
+    function abrirModalCerrarSesion() {
+      document.getElementById("modalCerrarSesion").classList.add("active");
+    }
 
-<script>
+    function cerrarModal() {
+      document.getElementById("modalCerrarSesion").classList.remove("active");
+    }
 
-  function abrirModalCerrarSesion() {
-    document.getElementById("modalCerrarSesion").classList.add("active");
-  }
+    function confirmarCerrarSesion() {
+      window.location.href = "{% url 'logout' %}";
+    }
+  </script>
 
-  function cerrarModal() {
-    document.getElementById("modalCerrarSesion").classList.remove("active");
-  }
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const textarea = document.querySelector('textarea[name="contenido"]');
+      const contador = document.getElementById("contador-caracteres");
 
-  function confirmarCerrarSesion() {
-    window.location.href = "{% url 'logout' %}";
-  }
+      if (textarea && contador) {
+        textarea.addEventListener("input", function () {
+          contador.textContent = `${this.value.length} / 350 caracteres`;
+        });
+      }
+    });
+  </script>
 
-</script>
-
-<body>
-  <div class="page">
-    <header>
-      <a href="{% url 'index' %}" class="brand">
-        <img src="{% static 'core/IMG/logo.png' %}" alt="Logo">
-        <div>
-          <div class="brand-title">Educar para Transformar</div>
-          <div class="brand-subtitle">Portal del Alumno</div>
-        </div>
-      </a>
-      <nav></nav>
-      <div class="login">
-        <a href="#" onclick="abrirModalCerrarSesion()" class="btn-logout">Cerrar sesión</a>
-      </div>
-    </header>
-
-    <div class="dashboard-layout">
-      <aside class="sidebar">
-        <div class="sidebar-user">
-          <div class="avatar">
-            {{ persona.nombre|slice:":1"|upper }}{{ persona.apellido|slice:":1"|upper }}
+  <body>
+    <div class="page">
+      <header>
+        <a href="{% url 'index' %}" class="brand">
+          <img src="{% static 'core/IMG/logo.png' %}" alt="Logo" />
+          <div>
+            <div class="brand-title">Educar para Transformar</div>
+            <div class="brand-subtitle">Portal Administrativo</div>
           </div>
-          <strong>{{ persona.nombre }} {{ persona.apellido }}</strong>
-          <span>
-              {{ alumno.id_curso.anio }}° Año
-              {{ alumno.id_curso.comision }}
-              ·
-              {{ alumno.id_curso.nivel_educativo.nombre }}
-          </span>
+        </a>
+        <nav></nav>
+        <div class="login">
+          <a href="#" onclick="abrirModalCerrarSesion()" class="btn-logout"
+            >Cerrar sesión</a
+          >
         </div>
-        <nav class="sidebar-nav">
-          <a href="#" class="active" onclick="showPanel('inicio', this); return false;">
-            <span class="nav-icon">🏠</span> Inicio
-          </a>
-          <a href="#" onclick="showPanel('notas', this); return false;">
-            <span class="nav-icon">📊</span> Mis notas
-          </a>
-          <a href="#" onclick="showPanel('materias', this); return false;">
-            <span class="nav-icon">📚</span> Materias
-          </a>
-          <a href="#" onclick="showPanel('tareas-evaluaciones', this); return false;">
-            <span class="nav-icon">📝</span> Tareas y evaluaciones
-          </a>
-          <a href="#" onclick="showPanel('horario', this); return false;">
-            <span class="nav-icon">📅</span> Horario
-          </a>
-          <a href="#" onclick="showPanel('deportes', this); return false;">
-            <span class="nav-icon">⚽</span> Deportes
-          </a>
-          <a href="#" onclick="showPanel('servicios', this); return false;">
-            <span class="nav-icon">🚌</span> Servicios
-          </a>
-          <a href="#" onclick="showPanel('asistencia', this); return false;">
-            <span class="nav-icon">✅</span> Asistencia
-          </a>
-          <a href="#" onclick="showPanel('comunicados', this); return false;">
-            <span class="nav-icon">📢</span> Comunicados
-          </a>
-          <a href="#" onclick="showPanel('contacto', this); return false;">
-            <span class="nav-icon">📞</span> Contacto
-          </a>
-          <a href="#" onclick="showPanel('perfil', this); return false;">
-            <span class="nav-icon">👤</span> Mi perfil
-          </a>
-        </nav>
-      </aside>
+      </header>
 
-      <main class="dashboard-main">
+      <div class="dashboard-layout">
+        <aside class="sidebar">
+          <div class="sidebar-user">
+            <div class="avatar">
+              {{ persona.nombre|slice:":1"|upper }}{{ persona.apellido|slice:":1"|upper }}
+            </div>
+            <strong>{{ persona.nombre }} {{ persona.apellido }}</strong>
+            <span>Área administrativa</span>
+          </div>
 
-        <!-- INICIO -->
-        <div id="panel-inicio" class="panel active">
-          <p class="section-title">Hola de nuevo, {{ persona.nombre }}</p>
-          <div class="stat-grid">
-            <div class="stat-card">
-              <div class="stat-label">Promedio general</div>
-              <div class="stat-value" style="color:#16a34a">{{ promedio_general }}</div>
-              <div class="stat-sub">Sobre 10 puntos</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-label">Asistencia</div>
-              <div class="stat-value" style="color:#1d66c2">{{ asistencia_pct }}%</div>
-              <div class="stat-sub">Este ciclo lectivo</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-label">Materias aprobadas</div>
-              <div class="stat-value">{{ materias_aprobadas }} / {{ total_materias }}</div>
-              <div class="stat-sub">Materias aprobadas / totales</div>
+          <nav class="sidebar-nav">
+            <a
+              href="#"
+              class="{% if panel_activo == 'inicio' %}active{% endif %}"
+              onclick="
+                showPanel('inicio', this);
+                return false;
+              "
+            >
+              <span class="nav-icon">🏠</span> Inicio
+            </a>
+            <a
+              href="#"
+              class="{% if panel_activo == 'reportes' %}active{% endif %}"
+              onclick="
+                showPanel('reportes', this);
+                return false;
+              "
+            >
+              <span class="nav-icon">📊</span> Reportes de alumnos
+            </a>
+            <a
+              href="#"
+              class="{% if panel_activo == 'reportes-docentes' %}active{% endif %}"
+              onclick="
+                showPanel('reportes-docentes', this);
+                return false;
+              "
+            >
+              <span class="nav-icon">👨‍🏫</span> Reportes de docentes
+            </a>
+            <a
+              href="#"
+              class="{% if panel_activo == 'reportes-avanzados' %}active{% endif %}"
+              onclick="
+                showPanel('reportes-avanzados', this);
+                return false;
+              "
+            >
+              <span class="nav-icon">🔎</span> Reportes avanzados
+            </a>
+            <a
+              href="#"
+              onclick="
+                showPanel('inscripciones', this);
+                return false;
+              "
+            >
+              <span class="nav-icon">📝</span> Inscripciones
+            </a>
+            <a
+              href="#"
+              onclick="
+                showPanel('pagos', this);
+                return false;
+              "
+            >
+              <span class="nav-icon">💸</span> Pagos
+            </a>
+            <a
+              href="#"
+              onclick="
+                showPanel('documentacion', this);
+                return false;
+              "
+            >
+              <span class="nav-icon">📄</span> Documentación
+            </a>
+            <a
+              href="#"
+              onclick="
+                showPanel('reservas', this);
+                return false;
+              "
+            >
+              <span class="nav-icon">🏨</span> Reservas
+            </a>
+            <a
+              href="{% url 'lista-alumnos-admin' %}"
+              id="enlace-alumnos"
+              class="{% if panel_activo == 'alumnos' %}active{% endif %}"
+            >
+              <span class="nav-icon">🎓</span> Alumnos
+            </a>
+            <a
+              href="{% url 'lista-profesores-admin' %}"
+              id="enlace-profesores"
+              class="{% if panel_activo == 'profesores' %}active{% endif %}"
+            >
+              <span class="nav-icon">👨‍🏫</span> Profesores
+            </a>
+            <a
+              href="{% url 'lista-niveles-cursos-admin' %}"
+              id="enlace-niveles-cursos"
+              class="{% if panel_activo == 'niveles-cursos' %}active{% endif %}"
+            >
+              <span class="nav-icon">🏫</span> Niveles y cursos
+            </a>
+            <a
+              href="{% url 'lista-materias-admin' %}"
+              id="enlace-materias"
+              class="{% if panel_activo == 'materias' %}active{% endif %}"
+            >
+              <span class="nav-icon">📚</span> Materias
+            </a>
+            <a
+              href="{% url 'lista-deportes-admin' %}"
+              id="enlace-deportes-admin"
+              class="{% if panel_activo == 'deportes-admin' %}active{% endif %}"
+            >
+              <span class="nav-icon">⚽</span> Deportes
+            </a>
+            <a
+              href="{% url 'lista-horarios-admin' %}"
+              id="enlace-horarios-admin"
+              class="{% if panel_activo == 'horarios-admin' %}active{% endif %}"
+            >
+              <span class="nav-icon">🕒</span> Horarios
+            </a>
+            <a
+              href="#"
+              id="enlace-servicios-admin"
+              class="{% if panel_activo == 'servicios-admin' %}active{% endif %}"
+              onclick="showPanel('servicios-admin', this); return false;"
+            >
+              <span class="nav-icon">🚌</span> Servicios
+            </a>
+            <a
+              href="#"
+              onclick="
+                showPanel('opiniones', this);
+                return false;
+              "
+            >
+              <span class="nav-icon">💬</span> Opiniones
+            </a>
+            <a
+              href="#"
+              onclick="
+                showPanel('noticias', this);
+                return false;
+              "
+            >
+              <span class="nav-icon">📰</span> Noticias
+            </a>
+            <a
+              href="#"
+              onclick="
+                showPanel('usuarios', this);
+                return false;
+              "
+            >
+              <span class="nav-icon">🔼</span> Gestión de usuarios
+            </a>
+            <a
+              href="#"
+              class="{% if panel_activo == 'padres-admin' %}active{% endif %}"
+              onclick="showPanel('padres-admin', this); return false;"
+            >
+              <span class="nav-icon">👨‍👩‍👧</span> Padres y tutores
+            </a>
+            <a
+              href="#"
+              onclick="
+                showPanel('perfil', this);
+                return false;
+              "
+            >
+              <span class="nav-icon">👤</span> Mi perfil
+            </a>
+          </nav>
+        </aside>
+
+        <main class="dashboard-main">
+          <div id="panel-inicio" class="panel {% if panel_activo == 'inicio' %}active{% endif %}">
+            <p class="section-title">Hola de nuevo, {{ persona.nombre }}</p>
+
+            <div class="stat-grid">
+              <div class="stat-card">
+                <div class="stat-label">Inscripciones nuevas</div>
+                <div class="stat-value" style="color: #1d66c2">
+                  {{ inscripciones_pendientes }}
+                </div>
+                <div class="stat-sub">Pendientes de revisión</div>
+              </div>
+
+              <div class="stat-card">
+                <div class="stat-label">Cuotas pendientes</div>
+                <div class="stat-value" style="color: #dc2626">
+                  {{ cuotas_pendientes }}
+                </div>
+                <div class="stat-sub">Este mes</div>
+              </div>
+
+              <div class="stat-card">
+                <div class="stat-label">Documentos</div>
+                <div class="stat-value" style="color: #d97706">
+                  {{ documentacion_pendiente }}
+                </div>
+                <div class="stat-sub">Por validar</div>
+              </div>
             </div>
           </div>
-        </div>
 
-        <!-- NOTAS -->
-        <div id="panel-notas" class="panel">
-          <p class="section-title">Mis notas</p>
-          <table class="tabla">
-            <thead>
-              <tr>
-                <th>Materia</th>
-                <th>1° Bimestre</th>
-                <th>2° Bimestre</th>
-                <th>3° Bimestre</th> <!-- 👈 Fila de cabecera -->
-                <th>Promedio</th>
-                <th>Estado</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for nota in notas_resumen %}
-              <tr>
-                <td>{{ nota.materia }}</td>
-                <td>{% if nota.trim1 %}{{ nota.trim1 }}{% else %}-{% endif %}</td>
-                <td>{% if nota.trim2 %}{{ nota.trim2 }}{% else %}-{% endif %}</td>
-                <td>{% if nota.trim3 %}{{ nota.trim3 }}{% else %}-{% endif %}</td> <!-- 👈 Celda de dato -->
-                <td>{% if nota.promedio %}{{ nota.promedio }}{% else %}-{% endif %}</td>
-                <td>
-                  {% if nota.estado == 'Aprobado' %}
-                    <span class="badge badge-green">Aprobado</span>
-                  {% elif nota.estado == 'En curso' %}
-                    <span class="badge">En curso</span>
-                  {% else %}
-                    <span class="badge">{{ nota.estado }}</span>
-                  {% endif %}
-                </td>
-              </tr>
-              {% empty %}
-              <tr>
-                <td colspan="6">No hay calificaciones registradas.</td> <!-- 👈 colspan cambiado a 6 -->
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
+          <div id="panel-reportes" class="panel {% if panel_activo == 'reportes' %}active{% endif %}">
+            <p class="section-title">📊 Reportes de alumnos</p>
+            <p style="color:#64748b; margin-top:-8px;">
+              Generá listados por curso, materia, deporte, nivel educativo,
+              recorrido de transporte o comedor.
+            </p>
 
-        <!-- MATERIAS -->
-        <div id="panel-materias" class="panel">
+            <form method="get" action="{% url 'dashboard-administrativo' %}" class="form-section" style="margin:20px 0;">
+              <input type="hidden" name="panel" value="reportes">
+              <div class="form-grid">
+                <div class="form-group">
+                  <label for="reporte-tipo">Tipo de reporte</label>
+                  <select id="reporte-tipo" name="reporte_tipo" onchange="mostrarFiltroReporte()" required>
+                    <option value="">Seleccione un reporte</option>
+                    <option value="curso" {% if reporte_tipo == 'curso' %}selected{% endif %}>Curso</option>
+                    <option value="materia" {% if reporte_tipo == 'materia' %}selected{% endif %}>Materia</option>
+                    <option value="deporte" {% if reporte_tipo == 'deporte' %}selected{% endif %}>Deporte</option>
+                    <option value="nivel" {% if reporte_tipo == 'nivel' %}selected{% endif %}>Nivel educativo</option>
+                    <option value="transporte" {% if reporte_tipo == 'transporte' %}selected{% endif %}>Recorrido de transporte</option>
+                    <option value="comedor" {% if reporte_tipo == 'comedor' %}selected{% endif %}>Comedor</option>
+                  </select>
+                </div>
 
-          <p class="section-title">Materias del curso</p>
+                {% for clave, nombre in tipos_reporte.items %}
+                <div id="filtro-reporte-{{ clave }}" class="form-group filtro-reporte" style="display:none;">
+                  <label for="reporte-{{ clave }}">{{ nombre }}</label>
+                  <select id="reporte-{{ clave }}" name="reporte_{{ clave }}">
+                    <option value="">Todos</option>
+                    {% if clave == 'curso' %}
+                      {% for curso in cursos_academicos %}<option value="{{ curso.id_curso }}" {% if reporte_filtros.curso == curso.id_curso|stringformat:'s' %}selected{% endif %}>{{ curso.nivel_educativo.nombre }} {{ curso.anio }}° {{ curso.comision }} ({{ curso.turno }})</option>{% endfor %}
+                    {% elif clave == 'materia' %}
+                      {% for materia in materias_academicas %}<option value="{{ materia.id_materia }}" {% if reporte_filtros.materia == materia.id_materia|stringformat:'s' %}selected{% endif %}>{{ materia.nombre }}</option>{% endfor %}
+                    {% elif clave == 'deporte' %}
+                      {% for deporte in deportes_academicos %}<option value="{{ deporte.id_disciplina }}" {% if reporte_filtros.deporte == deporte.id_disciplina|stringformat:'s' %}selected{% endif %}>{{ deporte.nombre }}</option>{% endfor %}
+                    {% elif clave == 'nivel' %}
+                      {% for nivel in niveles_educativos %}<option value="{{ nivel.id_nivel }}" {% if reporte_filtros.nivel == nivel.id_nivel|stringformat:'s' %}selected{% endif %}>{{ nivel.nombre }}</option>{% endfor %}
+                    {% elif clave == 'transporte' %}
+                      {% for recorrido in recorridos_transporte_admin %}<option value="{{ recorrido.id_recorrido }}" {% if reporte_filtros.transporte == recorrido.id_recorrido|stringformat:'s' %}selected{% endif %}>{{ recorrido.nombre }}</option>{% endfor %}
+                    {% elif clave == 'comedor' %}
+                      <option value="{{ servicio_comedor_admin.id_servicio }}" {% if reporte_filtros.comedor == servicio_comedor_admin.id_servicio|stringformat:'s' %}selected{% endif %}>{{ servicio_comedor_admin.nombre }}</option>
+                    {% endif %}
+                  </select>
+                </div>
+                {% endfor %}
+              </div>
+              <button type="submit" class="btn-form" style="margin-top:14px;">Generar reporte</button>
+            </form>
 
-          <table class="tabla">
-            <thead>
-              <tr>
-                <th>Materia</th>
-                <th>Horario</th>
-              </tr>
-            </thead>
+            {% if reporte_tipo %}
+            <div class="report-card" style="margin-top:20px;">
+              <h3>{{ reporte_nombre }} — {{ reportes_alumnos|length }} alumno{{ reportes_alumnos|length|pluralize }}</h3>
+              <div style="overflow-x:auto;">
+                <table class="tabla">
+                  <thead><tr><th>Alumno</th><th>DNI</th><th>Nivel</th><th>Curso</th><th>Detalle</th></tr></thead>
+                  <tbody>
+                    {% for fila in reportes_alumnos %}
+                    <tr>
+                      <td>{{ fila.alumno.id_persona.apellido }}, {{ fila.alumno.id_persona.nombre }}</td>
+                      <td>{{ fila.alumno.id_persona.dni }}</td>
+                      <td>{% if fila.alumno.id_curso %}{{ fila.alumno.id_curso.nivel_educativo.nombre }}{% else %}-{% endif %}</td>
+                      <td>{% if fila.alumno.id_curso %}{{ fila.alumno.id_curso.anio }}° {{ fila.alumno.id_curso.comision }}{% else %}Sin curso{% endif %}</td>
+                      <td>{{ fila.detalle }}</td>
+                    </tr>
+                    {% empty %}<tr><td colspan="5">No hay alumnos para el reporte seleccionado.</td></tr>{% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            {% endif %}
+          </div>
 
-            <tbody>
+          <div id="panel-reportes-docentes" class="panel {% if panel_activo == 'reportes-docentes' %}active{% endif %}">
+            <p class="section-title">👨‍🏫 Reportes de docentes</p>
+            <p style="color:#64748b; margin-top:-8px;">
+              Consultá la carga académica por nivel educativo, cursos, materias y horarios.
+            </p>
 
-              {% for materia in materias %}
-              <tr>
-                <td>{{ materia.id_materia.nombre }}</td>
-                <td>{{ materia.horario_formateado }}</td>
-              </tr>
-              {% empty %}
-              <tr>
-                <td colspan="2">No hay materias asignadas.</td>
-              </tr>
-              {% endfor %}
+            <form method="get" action="{% url 'dashboard-administrativo' %}" class="form-section" style="margin:20px 0;">
+              <input type="hidden" name="panel" value="reportes-docentes">
+              <div class="form-grid">
+                <div class="form-group">
+                  <label for="reporte-docente-tipo">Tipo de reporte</label>
+                  <select id="reporte-docente-tipo" name="reporte_docente_tipo" onchange="mostrarFiltroReporteDocente()" required>
+                    <option value="">Seleccione un reporte</option>
+                    <option value="nivel" {% if reporte_docente_tipo == 'nivel' %}selected{% endif %}>Por nivel educativo</option>
+                    <option value="cursos" {% if reporte_docente_tipo == 'cursos' %}selected{% endif %}>Cursos y materias a cargo</option>
+                    <option value="horarios" {% if reporte_docente_tipo == 'horarios' %}selected{% endif %}>Horarios</option>
+                  </select>
+                </div>
+                <div id="filtro-docente-nivel" class="form-group filtro-docente" style="display:none;">
+                  <label for="reporte-docente-filtro-nivel">Nivel educativo</label>
+                  <select id="reporte-docente-filtro-nivel" name="reporte_docente_filtro">
+                    <option value="">Todos</option>
+                    {% for nivel in niveles_educativos %}<option value="{{ nivel.id_nivel }}" {% if reporte_docente_filtro == nivel.id_nivel|stringformat:'s' %}selected{% endif %}>{{ nivel.nombre }}</option>{% endfor %}
+                  </select>
+                </div>
+                <div id="filtro-docente-cursos" class="form-group filtro-docente" style="display:none;">
+                  <label for="reporte-docente-filtro-curso">Curso</label>
+                  <select id="reporte-docente-filtro-curso" name="reporte_docente_filtro">
+                    <option value="">Todos</option>
+                    {% for curso in cursos_academicos %}<option value="{{ curso.id_curso }}" {% if reporte_docente_filtro == curso.id_curso|stringformat:'s' %}selected{% endif %}>{{ curso.nivel_educativo.nombre }} {{ curso.anio }}° {{ curso.comision }} ({{ curso.turno }})</option>{% endfor %}
+                  </select>
+                </div>
+                <div id="filtro-docente-horarios" class="form-group filtro-docente" style="display:none;">
+                  <label for="reporte-docente-filtro-dia">Día</label>
+                  <select id="reporte-docente-filtro-dia" name="reporte_docente_filtro">
+                    <option value="">Todos</option>
+                    <option value="lunes" {% if reporte_docente_filtro == 'lunes' %}selected{% endif %}>Lunes</option>
+                    <option value="martes" {% if reporte_docente_filtro == 'martes' %}selected{% endif %}>Martes</option>
+                    <option value="miércoles" {% if reporte_docente_filtro == 'miércoles' %}selected{% endif %}>Miércoles</option>
+                    <option value="jueves" {% if reporte_docente_filtro == 'jueves' %}selected{% endif %}>Jueves</option>
+                    <option value="viernes" {% if reporte_docente_filtro == 'viernes' %}selected{% endif %}>Viernes</option>
+                  </select>
+                </div>
+              </div>
+              <button type="submit" class="btn-form" style="margin-top:14px;">Generar reporte</button>
+            </form>
 
-            </tbody>
-          </table>
+            {% if reporte_docente_tipo %}
+            <div class="report-card" style="margin-top:20px;">
+              <h3>{{ reporte_docente_nombre }} — {{ reportes_docentes|length }} docente{{ reportes_docentes|length|pluralize }}</h3>
+              <div style="overflow-x:auto;">
+                <table class="tabla">
+                  <thead><tr><th>Docente</th><th>DNI</th><th>Título</th><th>Especialidad</th><th>Detalle</th></tr></thead>
+                  <tbody>
+                    {% for fila in reportes_docentes %}
+                    <tr>
+                      <td>{{ fila.docente.id_persona.apellido }}, {{ fila.docente.id_persona.nombre }}</td>
+                      <td>{{ fila.docente.id_persona.dni }}</td>
+                      <td>{{ fila.docente.titulo }}</td>
+                      <td>{{ fila.docente.especialidad|default:'-' }}</td>
+                      <td>{{ fila.detalle }}</td>
+                    </tr>
+                    {% empty %}<tr><td colspan="5">No hay docentes para el reporte seleccionado.</td></tr>{% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            {% endif %}
+          </div>
 
-          <p class="section-title" style="margin-top: 30px;">Disciplina deportiva</p>
+          <div id="panel-reportes-avanzados" class="panel {% if panel_activo == 'reportes-avanzados' %}active{% endif %}">
+            <p class="section-title">🔎 Reportes avanzados</p>
+            <p style="color:#64748b; margin-top:-8px;">
+              Combiná deporte, nivel educativo, horario y profesor responsable
+              para analizar las actividades extracurriculares.
+            </p>
 
-          <table class="tabla">
-            <thead>
-              <tr>
-                <th>Disciplina</th>
-                <th>Instalación</th>
-                <th>Horario</th>
-              </tr>
-            </thead>
+            <form method="get" action="{% url 'dashboard-administrativo' %}" class="form-section" style="margin:20px 0;">
+              <input type="hidden" name="panel" value="reportes-avanzados">
+              <input type="hidden" name="generar_reporte_avanzado" value="1">
+              <div class="form-grid">
+                <div class="form-group">
+                  <label for="reporte-avanzado-deporte">Deporte</label>
+                  <select id="reporte-avanzado-deporte" name="reporte_avanzado_deporte">
+                    <option value="">Todos</option>
+                    {% for deporte in deportes_academicos %}<option value="{{ deporte.id_disciplina }}" {% if reporte_avanzado_filtros.deporte == deporte.id_disciplina|stringformat:'s' %}selected{% endif %}>{{ deporte.nombre }}</option>{% endfor %}
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="reporte-avanzado-nivel">Nivel educativo</label>
+                  <select id="reporte-avanzado-nivel" name="reporte_avanzado_nivel">
+                    <option value="">Todos</option>
+                    {% for nivel in niveles_educativos %}<option value="{{ nivel.id_nivel }}" {% if reporte_avanzado_filtros.nivel == nivel.id_nivel|stringformat:'s' %}selected{% endif %}>{{ nivel.nombre }}</option>{% endfor %}
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="reporte-avanzado-horario">Horario</label>
+                  <select id="reporte-avanzado-horario" name="reporte_avanzado_horario">
+                    <option value="">Todos</option>
+                    {% for horario in horarios_deportivos_reporte %}<option value="{{ horario.valor }}" {% if reporte_avanzado_filtros.horario == horario.valor %}selected{% endif %}>{{ horario.nombre }}</option>{% endfor %}
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="reporte-avanzado-profesor">Profesor responsable</label>
+                  <select id="reporte-avanzado-profesor" name="reporte_avanzado_profesor">
+                    <option value="">Todos</option>
+                    {% for docente in docentes_deportivos %}<option value="{{ docente.legajo }}" {% if reporte_avanzado_filtros.profesor == docente.legajo|stringformat:'s' %}selected{% endif %}>{{ docente.id_persona.apellido }}, {{ docente.id_persona.nombre }}</option>{% endfor %}
+                  </select>
+                </div>
+              </div>
+              <button type="submit" class="btn-form" style="margin-top:14px;">Generar reporte avanzado</button>
+            </form>
 
-            <tbody>
-              {% if disciplina %}
-              <tr>
-                <td>{{ disciplina.nombre }}</td>
-                <td>{{ disciplina.id_instalacion.nombre }}</td>
-                <td>{{ disciplina_horario_formateado }}</td>
-              </tr>
-              {% else %}
-              <tr>
-                <td colspan="3">No tenés una disciplina deportiva asignada.</td>
-              </tr>
-              {% endif %}
-            </tbody>
-          </table>
+            {% if reporte_avanzado_generar %}
+            <div class="report-card" style="margin-top:20px;">
+              <h3>Alumnos en actividades extracurriculares — {{ reportes_avanzados|length }} resultado{{ reportes_avanzados|length|pluralize }}</h3>
+              <div style="overflow-x:auto;">
+                <table class="tabla">
+                  <thead><tr><th>Alumno</th><th>DNI</th><th>Nivel</th><th>Curso</th><th>Deporte</th><th>Horario</th><th>Profesor responsable</th></tr></thead>
+                  <tbody>
+                    {% for fila in reportes_avanzados %}
+                    <tr>
+                      <td>{{ fila.alumno.id_persona.apellido }}, {{ fila.alumno.id_persona.nombre }}</td>
+                      <td>{{ fila.alumno.id_persona.dni }}</td>
+                      <td>{{ fila.nivel }}</td>
+                      <td>{{ fila.curso }}</td>
+                      <td>{{ fila.deporte }}</td>
+                      <td>{{ fila.horario }}</td>
+                      <td>{{ fila.profesor }}</td>
+                    </tr>
+                    {% empty %}<tr><td colspan="7">No hay alumnos que coincidan con los filtros seleccionados.</td></tr>{% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            {% endif %}
+          </div>
 
-        </div>
+          <div id="panel-inscripciones" class="panel">
+            <p class="section-title">Gestión de inscripciones</p>
 
-                <!-- TAREAS Y EVALUACIONES -->
-        <div id="panel-tareas-evaluaciones" class="panel">
-          <p class="section-title">Tareas y evaluaciones</p>
-
-          {% if tareas_alumno %}
             <table class="tabla">
               <thead>
                 <tr>
-                  <th>Materia</th>
-                  <th>Docente</th>
-                  <th>Tarea / Evaluación</th>
-                  <th>Fecha de entrega</th>
+                  <th>Estudiante</th>
+                  <th>Nivel</th>
+                  <th>Tutor</th>
+                  <th>Fecha</th>
                   <th>Estado</th>
                 </tr>
               </thead>
 
               <tbody>
-                {% for item in tareas_alumno %}
+                {% for solicitud in solicitudes %}
+
                 <tr>
-                  <td>{{ item.materia_nombre }}</td>
-                  <td>{{ item.docente_nombre }}</td>
-
-                  <!-- Título de la tarea -->
-                  <td style="font-weight: 600;">
-                    {{ item.tarea.titulo|default:"Evaluación" }}
-                    {% if item.tarea.descripcion %}
-                      <br><small style="color:#64748b; font-size:12px;">{{ item.tarea.descripcion|truncatechars:50 }}</small>
-                    {% endif %}
+                  <td>
+                    {{ solicitud.nombre_alumno }} {{ solicitud.apellido_alumno
+                    }}
                   </td>
 
-                  <!-- Fecha de entrega -->
+                  <td>{{ solicitud.nivel }}</td>
+
                   <td>
-                      {% if item.tarea.fecha %}
-                        {{ item.tarea.fecha|date:"d/m/Y" }}
-                      {% else %}
-                        -
-                      {% endif %}
+                    {{ solicitud.nombre_tutor }} {{ solicitud.apellido_tutor }}
                   </td>
 
-                  <!-- Estado (solo lectura) -->
+                  <td>{{ solicitud.fecha_solicitud|date:"d/m/Y" }}</td>
+
                   <td>
-                    {% if item.tarea.estado == 'Pendiente' %}
-                      <span class="badge badge-yellow">Pendiente</span>
-                    {% elif item.tarea.estado == 'Completada' %}
-                      <span class="badge badge-green">Completada</span>
-                    {% elif item.tarea.estado == 'Entregada' %}
-                      <span class="badge badge-blue">Entregada</span>
+                    {% if solicitud.estado == 'Pendiente' %}
+
+                    <span class="badge badge-yellow"> Pendiente </span>
+
+                    <form
+                      method="POST"
+                      action="{% url 'aprobar-inscripcion' solicitud.id_solicitud %}"
+                      style="margin-top: 5px"
+                    >
+                      {% csrf_token %}
+                      <button type="submit" class="btn-aprobar">Aprobar</button>
+                    </form>
+
+                    <form
+                      method="POST"
+                      action="{% url 'rechazar-inscripcion' solicitud.id_solicitud %}"
+                      style="margin-top: 5px"
+                    >
+                      {% csrf_token %}
+                      <button type="submit" class="btn-rechazar">
+                        Rechazar
+                      </button>
+                    </form>
+
                     {% else %}
-                      <span class="badge">{{ item.tarea.estado|default:"-" }}</span>
+
+                    <span class="badge badge-green"> Aprobada </span>
+
                     {% endif %}
                   </td>
                 </tr>
 
-                <!-- Subtítulo para cada materia (opcional) -->
-                {% if forloop.first %}
-                <tr style="background:#f1f5f9; font-weight:600;">
-                  <td colspan="5" style="padding:8px 12px; color:#475569;">
-                    📚 {{ item.materia_nombre }}
-                  </td>
+                {% empty %}
+
+                <tr>
+                  <td colspan="5">No hay solicitudes registradas.</td>
                 </tr>
-                {% endif %}
 
                 {% endfor %}
               </tbody>
             </table>
-          {% else %}
-            <div style="text-align:center; padding:40px 20px; color:#94a3b8;">
-              <span style="font-size:48px; display:block; margin-bottom:10px;">📝</span>
-              No hay tareas o evaluaciones asignadas en este momento.
-            </div>
-          {% endif %}
-        </div>
-
-        <!-- HORARIO -->
-        <div id="panel-horario" class="panel">
-          <p class="section-title">Horario semanal</p>
-
-          {% if hay_horarios %}
-            <div style="display: grid; gap: 15px;">
-              {% for dia, clases in horario_por_dia.items %}
-                {% if clases %}
-                  <div style="padding: 12px; background: #f0f9ff; border-left: 4px solid #1d66c2; border-radius: 4px;">
-                    <strong style="color: #1d66c2; text-transform: capitalize;">{{ dia }}:</strong>
-                    <div style="margin-top: 6px; color: #64748b;">
-                      {% for clase in clases %}
-                        <div>
-                          {% if clase.es_deporte %}
-                            <span class="badge" style="background:#dcfce7;color:#166534;margin-right:6px;">Deporte</span>
-                          {% endif %}
-                          {{ clase.materia }} - {{ clase.hora }}
-                        </div>
-                      {% endfor %}
-                    </div>
-                  </div>
-                {% endif %}
-              {% endfor %}
-            </div>
-          {% else %}
-            <p style="color: #94a3b8;">No hay horarios registrados.</p>
-          {% endif %}
-        </div>
-
-        <!-- SERVICIOS -->
-        <div id="panel-servicios" class="panel">
-          <p class="section-title">Transporte y comedor</p>
-          {% if messages and panel_activo == 'servicios' %}{% for message in messages %}<div class="{% if message.tags == 'success' or message.tags == 'info' %}mensaje-exito{% else %}mensaje-error{% endif %}" style="margin-bottom:12px;">{{ message }}</div>{% endfor %}{% endif %}
-          <div class="stat-card" style="margin-bottom:18px;">
-            <div class="stat-label">Transporte</div>
-            {% if inscripcion_transporte_alumno %}<div class="stat-sub">Inscripto en: <strong>{{ inscripcion_transporte_alumno.id_recorrido.nombre }}</strong> · {{ inscripcion_transporte_alumno.id_recorrido.turno }}</div><form method="post" action="{% url 'baja-inscripcion-transporte' %}" style="margin-top:10px;">{% csrf_token %}<button type="submit" class="btn-small" style="background:#dc2626;margin:0;" onclick="return confirm('¿Querés darte de baja del transporte?');">Darme de baja</button></form>
-            {% else %}<div class="stat-sub">Elegí un recorrido para enviar una solicitud.</div>{% for recorrido in recorridos_transporte %}<div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid #e2e8f0;padding:10px 0;"><span><strong>{{ recorrido.nombre }}</strong> · {{ recorrido.turno }}{% if recorrido.hora_salida %} · sale {{ recorrido.hora_salida|time:'H:i' }}{% endif %}<br><small>{{ recorrido.cupos_disponibles }} cupos disponibles</small></span>{% if recorrido.solicitud_pendiente %}<span><span class="badge" style="background:#fef3c7;color:#92400e;">Solicitud pendiente</span><form method="post" action="{% url 'cancelar-solicitud-servicio' recorrido.solicitud_pendiente.id_solicitud %}" style="display:inline;margin-left:6px;">{% csrf_token %}<button class="btn-small" style="background:#64748b;margin:0;">Cancelar</button></form></span>{% elif recorrido.cupos_disponibles > 0 %}<form method="post">{% csrf_token %}<input type="hidden" name="accion" value="solicitar_transporte"><input type="hidden" name="id_recorrido" value="{{ recorrido.id_recorrido }}"><button class="btn-small" style="background:#1d66c2;margin:0;">Solicitar</button></form>{% else %}<span class="badge" style="background:#fee2e2;color:#991b1b;">Completo</span>{% endif %}</div>{% empty %}<p>No hay recorridos disponibles.</p>{% endfor %}{% endif %}
           </div>
-          <div class="stat-card"><div class="stat-label">Comedor escolar</div>{% if inscripcion_comedor_alumno %}<div class="stat-sub">Estás inscripto al comedor.</div><form method="post" action="{% url 'baja-inscripcion-comedor' %}" style="margin-top:10px;">{% csrf_token %}<button type="submit" class="btn-small" style="background:#dc2626;margin:0;" onclick="return confirm('¿Querés darte de baja del comedor?');">Darme de baja</button></form>{% elif solicitud_comedor_alumno %}<div class="stat-sub"><span class="badge" style="background:#fef3c7;color:#92400e;">Solicitud pendiente</span></div><form method="post" action="{% url 'cancelar-solicitud-servicio' solicitud_comedor_alumno.id_solicitud %}" style="margin-top:10px;">{% csrf_token %}<button type="submit" class="btn-small" style="background:#64748b;margin:0;">Cancelar solicitud</button></form>{% elif servicio_comedor.estado != 'Activo' %}<div class="stat-sub" style="color:#991b1b;">El servicio está temporalmente inactivo.</div>{% else %}<div class="stat-sub">{{ comedor_cupos_disponibles }} cupos disponibles.</div>{% if comedor_cupos_disponibles > 0 %}<form method="post">{% csrf_token %}<input type="hidden" name="accion" value="solicitar_comedor"><button type="submit" class="btn-small" style="background:#1d66c2;margin-top:10px;">Solicitar inscripción</button></form>{% else %}<span class="badge" style="background:#fee2e2;color:#991b1b;">Cupo completo</span>{% endif %}{% endif %}</div>
-          {% if solicitudes_servicio_alumno %}<div class="stat-card" style="margin-top:18px;"><div class="stat-label">Solicitudes pendientes</div>{% for solicitud in solicitudes_servicio_alumno %}<div class="stat-sub">{% if solicitud.tipo == 'transporte' %}Transporte: {{ solicitud.id_recorrido.nombre }}{% else %}Comedor{% endif %} · Pendiente de aprobación</div>{% endfor %}</div>{% endif %}
-          {% if solicitudes_rechazadas_servicio %}<div class="stat-card" style="margin-top:18px;border-left:4px solid #dc2626;"><div class="stat-label" style="color:#991b1b;">Solicitudes rechazadas</div>{% for solicitud in solicitudes_rechazadas_servicio %}<div class="stat-sub" style="color:#991b1b;">{% if solicitud.tipo == 'transporte' %}Transporte: {{ solicitud.id_recorrido.nombre }}{% else %}Comedor{% endif %} · {{ solicitud.observaciones|default:'La solicitud fue rechazada por el administrativo.' }}</div>{% endfor %}</div>{% endif %}
-          {% if solicitudes_aprobadas_servicio %}<div class="stat-card" style="margin-top:18px;border-left:4px solid #16a34a;"><div class="stat-label" style="color:#166534;">Solicitudes aprobadas</div>{% for solicitud in solicitudes_aprobadas_servicio %}<div class="stat-sub" style="color:#166534;">{% if solicitud.tipo == 'transporte' %}Transporte: {{ solicitud.id_recorrido.nombre }}{% else %}Comedor{% endif %} · Tu solicitud fue aprobada.</div>{% endfor %}</div>{% endif %}
-        </div>
 
-        <!-- DEPORTES -->
-        <div id="panel-deportes" class="panel">
-          <p class="section-title">Inscripción deportiva</p>
+          <div id="panel-pagos" class="panel">
+            <p class="section-title">Control de pagos</p>
 
-          {% if inscripciones_deportivas %}
-          <div class="stat-card" style="margin-bottom: 24px;">
-            <div class="stat-label">Tus deportes ({{ inscripciones_deportivas|length }}/2)</div>
-            {% for inscripcion in inscripciones_deportivas %}
-              <div class="stat-value" style="font-size: 20px; color: #16a34a;">{{ inscripcion.id_grupo.id_disciplina.nombre }}</div>
-              <div class="stat-sub">{{ inscripcion.id_grupo.nivel_educativo.nombre }} · Turno {{ inscripcion.id_grupo.turno }} · {{ inscripcion.id_grupo.dia_semana|capfirst }} · {{ inscripcion.id_grupo.hora_inicio|time:"H:i" }} a {{ inscripcion.id_grupo.hora_fin|time:"H:i" }} · Prof. {{ inscripcion.id_grupo.profesor_responsable.id_persona.apellido }}</div>
-              <form method="post" action="{% url 'baja-inscripcion-deportiva' inscripcion.id_inscripcion %}" style="display:inline;">
-                {% csrf_token %}<button type="submit" class="btn-small" style="background:#dc2626; margin-top:6px;" onclick="return confirm('¿Querés desinscribirte de este deporte?');">Desinscribirme</button>
-              </form>
-            {% endfor %}
-          </div>
-          {% else %}
-          <div class="stat-card" style="margin-bottom: 24px;">
-            <div class="stat-label">Estado</div>
-            <div class="stat-sub">Todavía no estás inscripto en ninguna disciplina deportiva.</div>
-          </div>
-          {% endif %}
+            <table class="tabla">
+              <thead>
+                <tr>
+                  <th>Alumno</th>
+                  <th>DNI</th>
+                  <th>Tutor</th>
+                  <th>Mes</th>
+                  <th>Importe</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
 
-          {% if panel_activo == 'deportes' %}
-            {% if messages %}
-              {% for message in messages %}
-                <div
-                  class="{% if message.tags == 'success' %}mensaje-exito{% elif message.tags == 'info' %}mensaje-exito{% else %}mensaje-error{% endif %}"
-                  style="margin-bottom: 16px;"
-                >
-                  {{ message }}
-                </div>
-              {% endfor %}
-            {% endif %}
-          {% endif %}
+              <tbody>
+                {% for pago in pagos_pendientes %}
+                <tr>
+                  <td>
+                    {{ pago.legajo_alumno.id_persona.nombre }} {{pago.legajo_alumno.id_persona.apellido }}
+                  </td>
 
-          <p class="section-title">Disciplinas disponibles</p>
+                  <td>{{ pago.legajo_alumno.id_persona.dni }}</td>
 
-          <table class="tabla">
-            <thead>
-              <tr>
-                <th>Disciplina</th>
-                <th>Nivel</th>
-                <th>Instalación</th>
-                <th>Profesor</th>
-                <th>Horario</th>
-                <th>Acción</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for dep in disciplinas_disponibles %}
-              <tr>
-                <td>{{ dep.nombre }}</td>
-                <td>{{ dep.nivel_educativo.nombre }}</td>
-                <td>{{ dep.id_instalacion.nombre }}</td>
-                <td>{{ dep.profesor_responsable.id_persona.apellido }}, {{ dep.profesor_responsable.id_persona.nombre }}</td>
-                <td>{{ dep.turno }} · {{ dep.horario_formateado }}</td>
-                <td>
-                  {% if dep.esta_inscripto %}
-                    <span class="badge badge-green">Inscripto</span>
-                  {% else %}
-                    <form method="post" style="display: inline;">
+                  <td>
+                    {{ pago.id_tutor.id_persona.nombre }} {{pago.id_tutor.id_persona.apellido }}
+                  </td>
+
+                  <td>{{ pago.mes }}</td>
+
+                  <td>${{ pago.importe }}</td>
+
+                  <td>
+                    {% if pago.estado == 'Pendiente' %}
+                    <span class="badge badge-yellow">Pendiente</span>
+                    {% else %}
+                    <span class="badge badge-green">{{ pago.estado }}</span>
+                    {% endif %}
+                  </td>
+
+                  <td>
+                    {% if pago.estado == 'Pendiente' %}
+
+                    <form
+                      method="POST"
+                      action="{% url 'aprobar-pago' pago.id_pago %}"
+                      style="display: inline"
+                    >
                       {% csrf_token %}
-                      <input type="hidden" name="accion" value="inscribir_deporte">
-                      <input type="hidden" name="id_grupo" value="{{ dep.id_grupo }}">
-                      <button
-                        type="submit"
-                        class="btn-form"
-                        style="margin-top: 0; padding: 8px 16px; font-size: 14px;"
-                      >
-                        Inscribirme
+
+                      <button type="submit" class="btn-aprobar">Aprobar</button>
+                    </form>
+
+                    <form
+                      method="POST"
+                      action="{% url 'rechazar-pago' pago.id_pago %}"
+                      style="display: inline"
+                    >
+                      {% csrf_token %}
+
+                      <button type="submit" class="btn-rechazar">
+                        Rechazar
                       </button>
                     </form>
-                  {% endif %}
-                </td>
-              </tr>
-              {% empty %}
-              <tr>
-                <td colspan="6">No hay grupos deportivos disponibles.</td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
 
-        <!-- ASISTENCIA -->
-        <div id="panel-asistencia" class="panel">
-          <p class="section-title">Asistencia</p>
-          <div class="stat-grid">
-            <div class="stat-card">
-              <div class="stat-label">Días presentes</div>
-              <div class="stat-value" style="color:#16a34a">{{ presentes }}</div>
-              <div class="stat-sub">Días de clase cursados</div>
+                    {% endif %}
+                  </td>
+                </tr>
+
+                {% empty %}
+                <tr>
+                  <td colspan="6">No hay pagos pendientes.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+          <!-- DOCUMENTACION -->
+          <div id="panel-documentacion" class="panel">
+            <p class="section-title">Documentación de alumnos</p>
+
+            {% for doc in documentaciones %}
+
+            <div class="tarea-card">
+              <div class="tarea-info">
+                <strong>
+                  {{ doc.legajo_alumno.id_persona.nombre }} {{doc.legajo_alumno.id_persona.apellido }}
+                </strong>
+
+                <span> Enviado el {{ doc.fecha_envio|date:"d/m/Y H:i" }} </span>
+
+                <div class="documentos-links">
+                  <a href="/media/{{ doc.dni_frente }}" target="_blank">
+                    DNI Frente
+                  </a>
+
+                  <a href="/media/{{ doc.dni_dorso }}" target="_blank">
+                    DNI Dorso
+                  </a>
+
+                  <a href="/media/{{ doc.partida_nacimiento }}" target="_blank">
+                    Partida
+                  </a>
+
+                  <a href="/media/{{ doc.certificado_salud }}" target="_blank">
+                    Certificado
+                  </a>
+                </div>
+              </div>
+
+              <div class="acciones-documentacion">
+                <form
+                  method="POST"
+                  action="{% url 'aprobar_documentacion' doc.id_documentacion %}"
+                >
+                  {% csrf_token %}
+                  <button type="submit" class="btn-aprobar">Aprobar</button>
+                </form>
+
+                <button
+                  type="button"
+                  class="btn-rechazar"
+                  onclick="mostrarRechazo('{{ doc.id_documentacion }}')"
+                >
+                  Rechazar
+                </button>
+
+                <form
+                  id="rechazo-{{ doc.id_documentacion }}"
+                  method="POST"
+                  action="{% url 'rechazar_documentacion' doc.id_documentacion %}"
+                  style="display: none; margin-top: 10px"
+                >
+                  {% csrf_token %}
+
+                  <textarea
+                    name="observaciones"
+                    placeholder="Escriba el motivo del rechazo..."
+                    required
+                  ></textarea>
+
+                  <button type="submit" class="btn-rechazar">
+                    Confirmar rechazo
+                  </button>
+                </form>
+              </div>
             </div>
-            <div class="stat-card">
-              <div class="stat-label">Inasistencias</div>
-              <div class="stat-value" style="color:#dc2626">{{ ausencias }}</div>
-              <div class="stat-sub">En este ciclo lectivo</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-label">Llegadas tarde</div>
-              <div class="stat-value" style="color:#d97706">{{ tardanzas }}</div>
-              <div class="stat-sub">Este ciclo lectivo</div>
+
+            {% empty %}
+
+            <p>No hay documentación pendiente.</p>
+
+            {% endfor %}
+          </div>
+
+          <div id="panel-reservas" class="panel">
+            <p class="section-title">Reserva de espacios</p>
+
+            <table class="tabla">
+              <thead>
+                <tr>
+                  <th>Espacio</th>
+                  <th>Solicitante</th>
+                  <th>Fecha</th>
+                  <th>Horario</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {% for reserva in reservas %}
+                <tr>
+                  <td>{{ reserva.id_instalacion.nombre }}</td>
+
+                  <td>
+                    {{ reserva.id_persona_solicitante.nombre }} {{reserva.id_persona_solicitante.apellido }}
+                  </td>
+
+                  <td>{{ reserva.fecha|date:"d/m/Y" }}</td>
+
+                  <td>
+                    {{ reserva.hora_inicio|time:"H:i" }} - {{reserva.hora_fin|time:"H:i" }}
+                  </td>
+
+                  <td>
+                    <span class="badge badge-green"> Registrada </span>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="5">No hay reservas registradas.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+
+            <div class="form-section" style="margin-top: 30px">
+              {% if messages %}
+                {% for message in messages %}
+                  {% if 'reservas' in message.tags %}
+                    <div class="mensaje {{ message.level_tag }}">
+                      {{ message }}
+                    </div>
+                  {% endif %}
+                {% endfor %}
+              {% endif %}
+
+              <form method="POST" action="{% url 'crear-reserva' %}">
+                {% csrf_token %}
+                <h2>Nueva reserva</h2>
+
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label for="espacio">Espacio</label>
+                    <select id="espacio" name="espacio" required>
+                      <option value="">Seleccione un espacio</option>
+                      {% for instalacion in instalaciones %}
+                        <option value="{{ instalacion.id }}">{{ instalacion.nombre }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="fecha">Fecha</label>
+                    <input type="date" id="fecha" name="fecha" />
+                  </div>
+
+                  <div class="form-group">
+                    <label for="horario">Horario</label>
+                    <input type="text" id="horario" name="horario" placeholder="Ej: 10:00 - 12:00" />
+                  </div>
+
+                  <div class="form-group">
+                    <label for="responsable">Responsable</label>
+                    <input type="text" id="responsable" name="responsable" placeholder="Nombre completo del solicitante" />
+                  </div>
+                </div>
+
+                <button type="submit" class="btn-form">Registrar reserva</button>
+              </form>
             </div>
           </div>
-          {% if panel_activo == 'asistencia' %}
+
+          <div id="panel-opiniones" class="panel">
+            <p class="section-title">Opiniones anónimas</p>
+
+            {% for opinion in opiniones %}
+            <div class="notif-item">
+              <div class="notif-icon" style="background: #dbeafe">💬</div>
+
+              <div class="notif-text">
+                <strong>{{ opinion.nombre }}</strong>
+                <span>{{ opinion.texto }}</span>
+                <br />
+                <small>{{ opinion.fecha }}</small>
+              </div>
+
+              <form
+                method="POST"
+                action="{% url 'eliminar-opinion' forloop.counter0 %}"
+                style="margin-top: 10px"
+              >
+                {% csrf_token %}
+
+                <button type="submit" class="btn-form">Eliminar</button>
+              </form>
+            </div>
+            {% empty %}
+            <p>No hay opiniones registradas.</p>
+            {% endfor %}
+          </div>
+
+          <div id="panel-usuarios" class="panel">
+            <p class="section-title">Gestión de usuarios del sistema</p>
+
             {% if messages %}
               {% for message in messages %}
-                <div
-                  class="{% if message.tags == 'success' %}mensaje-exito{% else %}mensaje-error{% endif %}"
-                  id="mensaje-{{ forloop.counter }}"
-                >
+                {% if 'usuarios' in message.tags %}
+                  <div class="mensaje {{ message.level_tag }}">{{ message }}</div>
+                {% endif %}
+              {% endfor %}
+            {% endif %}
+
+            <div class="form-section">
+              <form
+                method="POST"
+                action="{% url 'crear-usuario' %}"
+                class="form-card"
+              >
+                {% csrf_token %}
+                <input type="hidden" name="usuario_busqueda" value="{{ usuario_busqueda }}">
+                <input type="hidden" name="usuario_rol_filtro" value="{{ usuario_rol_filtro }}">
+                <input type="hidden" name="usuario_estado_filtro" value="{{ usuario_estado_filtro }}">
+
+                <h2>Habilitar acceso</h2>
+
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label>DNI</label>
+                    <input type="text" name="dni" />
+                  </div>
+
+                  <div class="form-group">
+                    <label>Nombre de usuario</label>
+                    <input type="text" name="nombre_usuario" />
+                  </div>
+
+                  <div class="form-group">
+                    <label>Contraseña provisoria</label>
+                    <input type="password" name="contrasenia" />
+                  </div>
+
+                  <div class="form-group">
+                    <label>Correo institucional</label>
+                    <input
+                      type="email"
+                      name="correo"
+                      placeholder="ejemplo@colegio.edu.ar"
+                    />
+                  </div>
+
+                  <div class="form-group">
+                    <label>Rol</label>
+                    <select name="rol" required>
+                      <option value="">Seleccione un rol</option>
+                      <option value="administrativo">Administrador</option>
+                      <option value="padre">Padre</option>
+                      <option value="alumno">Alumno</option>
+                      <option value="docente">Docente</option>
+                      <option value="preceptor">Preceptor</option>
+                      <option value="directivo">Directivo</option>
+                    </select>
+                  </div>
+                </div>
+
+                <button type="submit" class="btn-form">Crear usuario</button>
+              </form>
+            </div>
+
+            <div style="margin-top: 28px; overflow-x: auto;">
+              <h2>Usuarios registrados</h2>
+              <form method="GET" action="{% url 'dashboard-administrativo' %}" style="display:grid; grid-template-columns: minmax(220px, 2fr) minmax(160px, 1fr) minmax(140px, 1fr) auto auto; gap:10px; align-items:end; margin:14px 0 18px;">
+                <input type="hidden" name="panel" value="usuarios">
+                <div class="form-group"><label>Buscar por DNI, nombre o apellido</label><input type="search" name="usuario_busqueda" value="{{ usuario_busqueda }}" placeholder="Ej.: 35000012 o Acosta"></div>
+                <div class="form-group"><label>Rol</label><select name="usuario_rol"><option value="">Todos</option><option value="administrativo" {% if usuario_rol_filtro == 'administrativo' %}selected{% endif %}>Administrador</option><option value="padre" {% if usuario_rol_filtro == 'padre' %}selected{% endif %}>Padre</option><option value="alumno" {% if usuario_rol_filtro == 'alumno' %}selected{% endif %}>Alumno</option><option value="docente" {% if usuario_rol_filtro == 'docente' %}selected{% endif %}>Docente</option><option value="preceptor" {% if usuario_rol_filtro == 'preceptor' %}selected{% endif %}>Preceptor</option><option value="directivo" {% if usuario_rol_filtro == 'directivo' %}selected{% endif %}>Directivo</option></select></div>
+                <div class="form-group"><label>Estado</label><select name="usuario_estado"><option value="">Todos</option><option value="Activo" {% if usuario_estado_filtro == 'Activo' %}selected{% endif %}>Activo</option><option value="Inactivo" {% if usuario_estado_filtro == 'Inactivo' %}selected{% endif %}>Inactivo</option></select></div>
+                <button type="submit" class="btn-form" style="margin:0;">Buscar</button>
+                <a href="{% url 'dashboard-administrativo' %}?panel=usuarios" class="btn-small" style="background:#64748b; margin:0; text-align:center;">Limpiar</a>
+              </form>
+              <table class="tabla">
+                <thead>
+                  <tr>
+                    <th>Usuario</th>
+                    <th>Persona</th>
+                    <th>Correo</th>
+                    <th>Rol</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for usuario in usuarios_sistema %}
+                  <tr>
+                    <td>{{ usuario.nombre_usuario }}</td>
+                    <td>
+                      {% if usuario.persona_asociada %}
+                        {{ usuario.persona_asociada.apellido }}, {{ usuario.persona_asociada.nombre }}
+                      {% else %}
+                        Sin persona asociada
+                      {% endif %}
+                    </td>
+                    <td>{{ usuario.correo|default:'-' }}</td>
+                    <td>{{ usuario.rol_visible }}</td>
+                    <td>
+                      <span class="badge {% if usuario.estado == 'Activo' %}badge-green{% else %}badge-red{% endif %}">
+                        {{ usuario.estado }}
+                      </span>
+                    </td>
+                    <td>
+                      <button type="button" class="btn-small" style="background:#d97706; margin-top:0;" onclick="toggleDisplay('editar-usuario-{{ usuario.id }}')">Editar</button>
+                      {% if usuario.estado == 'Activo' %}
+                      <form method="POST" action="{% url 'baja-usuario-admin' usuario.id %}" style="display:inline;" onsubmit="return confirm('¿Dar de baja este usuario?');">
+                        {% csrf_token %}
+                        <input type="hidden" name="usuario_busqueda" value="{{ usuario_busqueda }}">
+                        <input type="hidden" name="usuario_rol_filtro" value="{{ usuario_rol_filtro }}">
+                        <input type="hidden" name="usuario_estado_filtro" value="{{ usuario_estado_filtro }}">
+                        <button type="submit" class="btn-small" style="background:#dc2626; margin-top:0;">Baja</button>
+                      </form>
+                      {% endif %}
+                    </td>
+                  </tr>
+                  <tr id="editar-usuario-{{ usuario.id }}" style="display:none; background:#f8fafc;">
+                    <td colspan="6">
+                      <form method="POST" action="{% url 'modificar-usuario-admin' usuario.id %}" class="form-grid" style="padding:14px;">
+                        {% csrf_token %}
+                        <input type="hidden" name="usuario_busqueda" value="{{ usuario_busqueda }}">
+                        <input type="hidden" name="usuario_rol_filtro" value="{{ usuario_rol_filtro }}">
+                        <input type="hidden" name="usuario_estado_filtro" value="{{ usuario_estado_filtro }}">
+                        <div class="form-group"><label>Nombre de usuario</label><input type="text" name="nombre_usuario" value="{{ usuario.nombre_usuario }}" maxlength="60" required></div>
+                        <div class="form-group"><label>Correo</label><input type="email" name="correo" value="{{ usuario.correo|default:'' }}"></div>
+                        <div class="form-group"><label>Nueva contraseña</label><input type="password" name="contrasenia" placeholder="Dejar vacío para conservarla"></div>
+                        <div class="form-group"><label>Rol</label><select name="rol"><option value="administrativo" {% if usuario.rol == 'administrativo' %}selected{% endif %}>Administrador</option><option value="padre" {% if usuario.rol == 'padre' %}selected{% endif %}>Padre</option><option value="alumno" {% if usuario.rol == 'alumno' %}selected{% endif %}>Alumno</option><option value="docente" {% if usuario.rol == 'docente' %}selected{% endif %}>Docente</option><option value="preceptor" {% if usuario.rol == 'preceptor' %}selected{% endif %}>Preceptor</option><option value="directivo" {% if usuario.rol == 'directivo' %}selected{% endif %}>Directivo</option></select></div>
+                        <div class="form-group"><label>Estado</label><select name="estado"><option value="Activo" {% if usuario.estado == 'Activo' %}selected{% endif %}>Activo</option><option value="Inactivo" {% if usuario.estado == 'Inactivo' %}selected{% endif %}>Inactivo</option></select></div>
+                        <div><button type="submit" class="btn-small" style="background:#16a34a; margin-top:22px;">Guardar cambios</button></div>
+                      </form>
+                    </td>
+                  </tr>
+                  {% empty %}
+                  <tr><td colspan="6">No hay usuarios registrados.</td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+
+            <div style="margin-top: 40px"></div>
+          </div>
+
+          <div id="panel-padres-admin" class="panel {% if panel_activo == 'padres-admin' %}active{% endif %}">
+            <p class="section-title">👨‍👩‍👧 Gestión de padres y tutores</p>
+
+            {% if messages and panel_activo == 'padres-admin' %}
+              {% for message in messages %}
+                <div class="{% if message.level_tag == 'success' %}mensaje-exito{% else %}mensaje-error{% endif %}" style="margin:12px 0;">
                   {{ message }}
                 </div>
               {% endfor %}
             {% endif %}
-          {% endif %}
-          <table class="tabla">
-            <thead>
-              <tr>
-                <th>Fecha</th>
-                <th>Estado</th>
-                <th>Justificación</th>
-                <th>Observación</th>
-              </tr>
-            </thead>
 
-            <tbody>
-              {% for asistencia in asistencias %}
-              <tr>
-                <td>{{ asistencia.fecha|date:"d/m/Y" }}</td>
-
-                <td>
-                  {% if asistencia.tipo_asistencia == 'Presente' %}
-                    <span class="badge badge-green">
-                      Presente
-                    </span>
-
-                  {% elif asistencia.tipo_asistencia == 'Ausente' %}
-                    <span class="badge badge-red">
-                      Ausente
-                    </span>
-
-                  {% elif asistencia.tipo_asistencia == 'Tardanza' %}
-                    <span class="badge badge-yellow">
-                      Tardanza
-                    </span>
-                  {% endif %}
-                </td>
-
-                <td>
-                  {% if asistencia.tipo_asistencia == 'Presente' %}
-
-                    <span class="badge badge-green">
-                      No requiere
-                    </span>
-
-                  {% elif asistencia.archivo_justificacion %}
-
-                    <span class="badge badge-green">
-                      Justificada
-                    </span>
-
-                  {% else %}
-
-                    <form method="post"
-                          enctype="multipart/form-data">
-                      {% csrf_token %}
-
-                      <input
-                        type="hidden"
-                        name="asistencia_id"
-                        value="{{ asistencia.id_asistencia }}"
-                      >
-
-                      <label for="archivo-{{ asistencia.id_asistencia }}"
-                            class="btn-archivo">
-                          📎 Subir justificativo
-                      </label>
-
-                      <input
-                        id="archivo-{{ asistencia.id_asistencia }}"
-                        type="file"
-                        name="justificacion"
-                        accept=".pdf,.jpg,.jpeg,.png"
-                        required
-                        onchange="this.form.submit()"
-                        style="display:none;"
-                      >
-                    </form>
-
-                  {% endif %}
-                </td>
-
-                <td>{{ asistencia.observacion|default:"-" }}</td>
-              </tr>
-              {% empty %}
-              <tr>
-                <td colspan="4">No hay registros de asistencia.</td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-
-       <!-- COMUNICADOS -->
-        <div id="panel-comunicados" class="panel">
-            <p class="section-title">Comunicados institucionales</p>
-
-            {% for comunicado in comunicados %}
-            <div class="notif-item">
-                <div class="notif-icon" style="background:#dbeafe">
-                    📢
+            <div class="form-section">
+              <form method="POST" action="{% url 'alta-padre-admin' %}" class="form-card">
+                {% csrf_token %}
+                <h2>Registrar padre/tutor y asociar hijos</h2>
+                <div class="form-grid">
+                  <div class="form-group"><label for="padre-nombre">Nombre</label><input id="padre-nombre" type="text" name="nombre" maxlength="50" required></div>
+                  <div class="form-group"><label for="padre-apellido">Apellido</label><input id="padre-apellido" type="text" name="apellido" maxlength="50" required></div>
+                  <div class="form-group"><label for="padre-dni">DNI</label><input id="padre-dni" type="text" name="dni" pattern="[0-9]{7,8}" maxlength="8" required></div>
+                  <div class="form-group"><label for="padre-fecha">Fecha de nacimiento</label><input id="padre-fecha" type="date" name="fecha_nacimiento" required></div>
+                  <div class="form-group"><label for="padre-direccion">Dirección</label><input id="padre-direccion" type="text" name="direccion" maxlength="100"></div>
+                  <div class="form-group"><label for="padre-telefono">Teléfono</label><input id="padre-telefono" type="tel" name="telefono" pattern="[0-9]{8,15}" maxlength="15"></div>
+                  <div class="form-group"><label for="padre-email">Correo</label><input id="padre-email" type="email" name="email" maxlength="100"></div>
+                  <div class="form-group"><label for="padre-usuario">Nombre de usuario</label><input id="padre-usuario" type="text" name="nombre_usuario" maxlength="60" required></div>
+                  <div class="form-group"><label for="padre-contrasenia">Contraseña provisoria</label><input id="padre-contrasenia" type="password" name="contrasenia" maxlength="20" required></div>
+                  <div class="form-group"><label for="padre-parentesco">Parentesco</label><input id="padre-parentesco" type="text" name="parentesco" maxlength="30" placeholder="Madre, padre, tutor..."></div>
                 </div>
-
-                <div class="notif-text">
-                    <strong>{{ comunicado.titulo }}</strong>
-                    <span>{{ comunicado.contenido }}</span>
-                    <br>
-                    <small>{{ comunicado.fecha }}</small>
+                <div class="form-group" style="margin-top:16px;">
+                  <label for="padre-hijos">Hijos asociados (Ctrl/Cmd + clic para seleccionar varios)</label>
+                  <select id="padre-hijos" name="hijos" multiple required size="6">
+                    {% for alumno in alumnos_tutores_admin %}
+                      <option value="{{ alumno.legajo }}">{{ alumno.id_persona.apellido }}, {{ alumno.id_persona.nombre }} · DNI {{ alumno.id_persona.dni }} · {% if alumno.id_curso %}{{ alumno.id_curso.nivel_educativo.nombre }} {{ alumno.id_curso.anio }}° {{ alumno.id_curso.comision }}{% else %}Sin curso{% endif %}</option>
+                    {% empty %}
+                      <option disabled>No hay alumnos disponibles para asociar.</option>
+                    {% endfor %}
+                  </select>
                 </div>
-            </div>
-            {% empty %}
-            <p>No hay comunicados disponibles.</p>
-            {% endfor %}
-
-        </div>
-        <!-- CONTACTO -->
-        <div id="panel-contacto" class="panel">
-
-          <p class="section-title">
-            Contacto con Administración
-          </p>
-
-          <div class="stat-grid">
-
-            <div class="stat-card">
-              <div class="stat-label">WhatsApp</div>
-
-              <div class="stat-sub">
-                +54 9 362 4000000
-              </div>
-
-              <a
-                href="https://wa.me/5493624000000"
-                target="_blank"
-                class="btn-form"
-                style="margin-left:0; margin-top:10px; text-decoration:none; display:inline-block;">
-                Enviar mensaje
-              </a>
+                <button type="submit" class="btn-form">Registrar y asociar hijos</button>
+              </form>
             </div>
 
-            <div class="stat-card">
-              <div class="stat-label">Correo electrónico</div>
-
-              <div class="stat-sub">
-                educarparatransformarcolegio@gmail.com
-              </div>
+            <div style="margin-top:28px; overflow-x:auto;">
+              <h2>Padres/tutores registrados</h2>
+              <table class="tabla">
+                <thead><tr><th>Padre/tutor</th><th>Usuario</th><th>Contacto</th><th>Hijos asociados</th></tr></thead>
+                <tbody>
+                  {% for tutor in tutores_admin %}
+                    <tr>
+                      <td>{{ tutor.id_persona.apellido }}, {{ tutor.id_persona.nombre }}<br><small>DNI {{ tutor.id_persona.dni }}</small></td>
+                      <td>{{ tutor.id_persona.id_usuario.nombre_usuario|default:'-' }}</td>
+                      <td>{{ tutor.id_persona.email|default:'-' }}<br>{{ tutor.id_persona.telefono|default:'-' }}</td>
+                      <td>
+                        {% for relacion in tutor.hijos_admin %}
+                          <div>{{ relacion.id_alumno.id_persona.apellido }}, {{ relacion.id_alumno.id_persona.nombre }}{% if relacion.tipo_parentesco %} ({{ relacion.tipo_parentesco }}){% endif %}</div>
+                        {% empty %}-{% endfor %}
+                      </td>
+                    </tr>
+                  {% empty %}
+                    <tr><td colspan="4">No hay padres/tutores registrados.</td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
             </div>
-
-            <div class="stat-card">
-              <div class="stat-label">Redes Sociales</div>
-
-              <div class="stat-sub">
-                Instagram y Facebook:
-                @educarparatransformar
-              </div>
-            </div>
-
           </div>
 
-          <br>
+          <!-- Panel de Niveles y Cursos -->
+          <div id="niveles-cursos" class="panel {% if panel_activo == 'niveles-cursos' %}active{% endif %}">
+            <h2 class="section-title">🏫 Gestión de Niveles Educativos y Cursos</h2>
 
-          <div class="stat-card">
-
-            <h3 style="margin-bottom:20px;">
-              Formulario de consulta
-            </h3>
-
-            {% if messages %}
+            {% if messages and panel_activo == 'niveles-cursos' %}
+            <div style="margin-bottom: 16px;">
               {% for message in messages %}
-                <div style="
-                  background:#dcfce7;
-                  color:#166534;
-                  padding:12px;
-                  border-radius:8px;
-                  margin-bottom:15px;
-                  font-weight:600;
-                ">
-                  ✅ {{ message }}
-                </div>
+              <div style="padding: 12px 16px; border-radius: 8px; margin-bottom: 8px; {% if message.tags == 'error' %}background: #fee2e2; color: #991b1b;{% elif message.tags == 'success' %}background: #dcfce7; color: #166534;{% else %}background: #fef3c7; color: #92400e;{% endif %}">{{ message }}</div>
               {% endfor %}
+            </div>
             {% endif %}
 
-            <form action="{% url 'enviar-consulta' %}" method="POST">
+            <div style="display: grid; grid-template-columns: minmax(280px, 1fr) minmax(420px, 2fr); gap: 24px; align-items: start;">
+              <section style="background: white; border-radius: 16px; padding: 24px; box-shadow: 0 4px 12px rgba(0,0,0,.05);">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
+                  <h3 style="margin:0; color:#0f172a;">Niveles educativos</h3>
+                  <button type="button" class="btn-small" style="background:#1d66c4; margin-top:0;" onclick="toggleDisplay('form-nuevo-nivel')">+ Nuevo</button>
+                </div>
+                <div id="form-nuevo-nivel" style="display:none; background:#f8fafc; border-radius:10px; padding:16px; margin-bottom:18px;">
+                  <form method="POST" action="{% url 'alta-nivel-admin' %}">{% csrf_token %}
+                    <div class="form-group"><label>Nombre</label><input type="text" name="nombre" maxlength="50" required></div>
+                    <div class="form-group" style="margin-top:10px;"><label>Descripción</label><textarea name="descripcion" rows="2"></textarea></div>
+                    <button type="submit" class="btn-form" style="margin-top:12px; padding:10px 18px;">Guardar nivel</button>
+                  </form>
+                </div>
+                {% for nivel in niveles_educativos %}
+                <div style="border:1px solid #e2e8f0; border-radius:10px; padding:14px; margin-bottom:10px;">
+                  <div style="display:flex; justify-content:space-between; gap:8px; align-items:center;"><strong>{{ nivel.nombre }}</strong><span class="badge {% if nivel.estado == 'Activo' %}badge-green{% else %}badge-red{% endif %}">{{ nivel.estado }}</span></div>
+                  <small style="color:#64748b;">{{ nivel.cursos.all|length }} cursos{% if nivel.descripcion %} · {{ nivel.descripcion }}{% endif %}</small>
+                  <div style="display:flex; gap:8px; margin-top:10px;"><button type="button" class="btn-small" style="background:#d97706; margin-top:0;" onclick="toggleDisplay('editar-nivel-{{ nivel.id_nivel }}')">Editar</button><form method="POST" action="{% url 'baja-nivel-admin' nivel.id_nivel %}" style="display:inline;" onsubmit="return confirm('¿Dar de baja este nivel?');">{% csrf_token %}<button type="submit" class="btn-small" style="background:#dc2626; margin-top:0;">Baja</button></form></div>
+                  <div id="editar-nivel-{{ nivel.id_nivel }}" style="display:none; margin-top:12px; background:#f8fafc; padding:12px; border-radius:8px;"><form method="POST" action="{% url 'modificar-nivel-admin' nivel.id_nivel %}">{% csrf_token %}<div class="form-group"><label>Nombre</label><input type="text" name="nombre" value="{{ nivel.nombre }}" required></div><div class="form-group" style="margin-top:8px;"><label>Descripción</label><textarea name="descripcion" rows="2">{{ nivel.descripcion|default:'' }}</textarea></div><div class="form-group" style="margin-top:8px;"><label>Estado</label><select name="estado"><option value="Activo" {% if nivel.estado == 'Activo' %}selected{% endif %}>Activo</option><option value="Inactivo" {% if nivel.estado == 'Inactivo' %}selected{% endif %}>Inactivo</option></select></div><button type="submit" class="btn-small" style="background:#16a34a; margin-top:10px;">Guardar</button></form></div>
+                </div>
+                {% empty %}<p style="color:#64748b;">No hay niveles registrados.</p>{% endfor %}
+              </section>
 
-              {% csrf_token %}
-              <input type="hidden" name="origen" value="dashboard">
+              <section style="background: white; border-radius: 16px; padding: 24px; box-shadow: 0 4px 12px rgba(0,0,0,.05);">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;"><h3 style="margin:0; color:#0f172a;">Cursos</h3><button type="button" class="btn-small" style="background:#1d66c4; margin-top:0;" onclick="toggleDisplay('form-nuevo-curso')">+ Nuevo</button></div>
+                <div id="form-nuevo-curso" style="display:none; background:#f8fafc; border-radius:10px; padding:16px; margin-bottom:18px;"><form method="POST" action="{% url 'alta-curso-admin' %}">{% csrf_token %}<div class="form-grid"><div class="form-group"><label>Nivel</label><select name="nivel_educativo" required><option value="">Seleccione</option>{% for nivel in niveles_educativos %}{% if nivel.estado == 'Activo' %}<option value="{{ nivel.id_nivel }}">{{ nivel.nombre }}</option>{% endif %}{% endfor %}</select></div><div class="form-group"><label>Año</label><input type="number" name="anio" min="1" required></div><div class="form-group"><label>Comisión</label><input type="text" name="comision" maxlength="20" required></div><div class="form-group"><label>Turno</label><select name="turno" required><option value="">Seleccione</option><option>Mañana</option><option>Tarde</option><option>Noche</option></select></div><div class="form-group"><label>Cupo máximo</label><input type="number" name="cupo_maximo" min="1"></div></div><button type="submit" class="btn-form" style="margin-top:12px; padding:10px 18px;">Guardar curso</button></form></div>
+                <div style="overflow-x:auto;"><table class="tabla"><thead><tr><th>Nivel</th><th>Año</th><th>Comisión</th><th>Turno</th><th>Cupo</th><th>Acciones</th></tr></thead><tbody>{% for curso in cursos_academicos %}<tr><td><span class="badge badge-blue">{{ curso.nivel_educativo.nombre }}</span></td><td>{{ curso.anio }}°</td><td>{{ curso.comision }}</td><td>{{ curso.turno }}</td><td>{{ curso.cupo_maximo|default:'-' }}</td><td><button type="button" class="btn-small" style="background:#d97706; margin-top:0;" onclick="toggleDisplay('editar-curso-{{ curso.id_curso }}')">Editar</button><form method="POST" action="{% url 'baja-curso-admin' curso.id_curso %}" style="display:inline;" onsubmit="return confirm('¿Eliminar este curso?');">{% csrf_token %}<button type="submit" class="btn-small" style="background:#dc2626; margin-top:0;">Baja</button></form></td></tr><tr id="editar-curso-{{ curso.id_curso }}" class="fila-edicion-abm" style="display:none; background:#f8fafc;"><td colspan="6" style="width:100%; padding:0;"><form method="POST" action="{% url 'modificar-curso-admin' curso.id_curso %}" style="width:100%; box-sizing:border-box; padding:16px;">{% csrf_token %}<div class="form-grid" style="width:100%;"><div class="form-group"><label>Nivel</label><select name="nivel_educativo" required>{% for nivel in niveles_educativos %}<option value="{{ nivel.id_nivel }}" {% if nivel.id_nivel == curso.nivel_educativo_id %}selected{% endif %}>{{ nivel.nombre }}</option>{% endfor %}</select></div><div class="form-group"><label>Año</label><input type="number" name="anio" value="{{ curso.anio }}" min="1" required></div><div class="form-group"><label>Comisión</label><input type="text" name="comision" value="{{ curso.comision }}" required></div><div class="form-group"><label>Turno</label><input type="text" name="turno" value="{{ curso.turno }}" required></div><div class="form-group"><label>Cupo máximo</label><input type="number" name="cupo_maximo" value="{{ curso.cupo_maximo|default:'' }}" min="1"></div></div><button type="submit" class="btn-small" style="background:#16a34a; margin-top:10px;">Guardar cambios</button></form></td></tr>{% empty %}<tr><td colspan="6" style="text-align:center;">No hay cursos registrados.</td></tr>{% endfor %}</tbody></table></div>
+              </section>
+            </div>
 
-              <input
-                type="hidden"
-                name="nombre"
-                value="{{ persona.nombre }} {{ persona.apellido }}">
-
-              <input
-                type="hidden"
-                name="email"
-                value="{{ persona.email }}">
-
-              <div class="form-group">
-
-                <label>Mensaje</label>
-
-                <textarea
-                  name="mensaje"
-                  rows="5"
-                  required
-                  placeholder="Escriba aquí su consulta..."></textarea>
-
-              </div>
-
-              <br>
-
-              <button type="submit" class="btn-form">
-                Enviar consulta
-              </button>
-
-            </form>
 
           </div>
 
-        </div>
-        <!-- PERFIL -->
-        <div id="panel-perfil" class="panel">
-          <p class="section-title">Mi perfil</p>
-          <table class="tabla">
-            <tbody>
-            <tr><td style="font-weight:600;color:#64748b">Nombre completo</td><td>{{ persona.nombre }} {{ persona.apellido }}</td></tr>
-            <tr><td style="font-weight:600;color:#64748b">DNI</td><td>{{ persona.dni }}</td></tr>
-            <tr><td style="font-weight:600;color:#64748b">Fecha de nacimiento</td><td>{{ persona.fecha_nacimiento }}</td></tr>
-            <tr><td style="font-weight:600;color:#64748b">Curso</td><td>{{ alumno.id_curso.comision }}</td></tr>
-            <tr><td style="font-weight:600;color:#64748b">Turno</td><td>{{ alumno.id_curso.turno }}</td></tr>
-            <tr><td style="font-weight:600;color:#64748b">Nivel</td><td>{{ alumno.id_curso.nivel_educativo.nombre }}</td></tr>
-            <tr><td style="font-weight:600;color:#64748b">Tutor responsable</td><td>{{ tutor_relacion.id_tutor.id_persona.nombre }} {{ tutor_relacion.id_tutor.id_persona.apellido }} ({{ tutor_relacion.tipo_parentesco }})</td></tr>
-            <tr><td style="font-weight:600;color:#64748b">Legajo</td><td>{{ alumno.legajo }}</td></tr>
-            <tr><td style="font-weight:600;color:#64748b">Fecha de ingreso</td><td>{{ alumno.fecha_ingreso }}</td></tr>
-            <tr><td style="font-weight:600;color:#64748b">Teléfono de contacto</td><td>{{ persona.telefono }}</td></tr>
-            <tr><td style="font-weight:600;color:#64748b">Correo electrónico</td><td>{{ persona.email }}</td></tr>
-            <tr><td style="font-weight:600;color:#64748b">Dirección</td><td>{{ persona.direccion }}</td></tr>
-            </tbody>
-          </table>
-          {% if messages and panel_activo == 'perfil' %}{% for message in messages %}<div class="{% if message.tags == 'success' %}mensaje-exito{% else %}mensaje-error{% endif %}" style="margin-top:14px;">{{ message }}</div>{% endfor %}{% endif %}
-          <form method="post" action="{% url 'actualizar-perfil' %}" style="margin-top:18px; max-width:560px;">
-            {% csrf_token %}
-            <h3>Actualizar datos de contacto</h3>
-            <div class="form-grid"><div class="form-group"><label for="perfil-telefono">Teléfono</label><input id="perfil-telefono" type="tel" name="telefono" value="{{ persona.telefono|default:'' }}" pattern="[0-9]{8,15}" maxlength="15" placeholder="Entre 8 y 15 números"></div><div class="form-group"><label for="perfil-email">Correo electrónico</label><input id="perfil-email" type="email" name="email" value="{{ persona.email|default:'' }}"></div></div>
-            <button type="submit" class="btn-form" style="margin-top:12px;">Guardar cambios</button>
-          </form>
-        </div>
+          <!-- Panel de Materias -->
+          <div id="materias" class="panel {% if panel_activo == 'materias' %}active{% endif %}" style="background:white; border-radius:16px; padding:24px; box-shadow:0 4px 12px rgba(0,0,0,.05);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
+              <div>
+                <h3 style="margin:0; color:#0f172a;">📚 Gestión de Materias</h3>
+                <small style="color:#64748b;">Asociá cada materia con los cursos donde se dicta. Luego podés asignar profesores desde su ABM.</small>
+              </div>
+              <button type="button" class="btn-small" style="background:#1d66c4; margin-top:0;" onclick="toggleDisplay('form-nueva-materia')">+ Nueva</button>
+            </div>
+            {% if messages %}
+            <div style="margin-bottom:16px;">
+              {% for message in messages %}
+              <div style="padding:12px 16px; border-radius:8px; margin-bottom:8px; {% if message.tags == 'error' %}background:#fee2e2; color:#991b1b;{% elif message.tags == 'success' %}background:#dcfce7; color:#166534;{% else %}background:#fef3c7; color:#92400e;{% endif %}">{{ message }}</div>
+              {% endfor %}
+            </div>
+            {% endif %}
+            <div id="form-nueva-materia" style="display:none; background:#f8fafc; border-radius:10px; padding:16px; margin-bottom:18px;">
+              <form method="POST" action="{% url 'alta-materia-admin' %}">{% csrf_token %}
+                <div class="form-grid">
+                  <div class="form-group"><label>Nombre</label><input type="text" name="nombre" maxlength="100" required></div>
+                  <div class="form-group"><label>Carga horaria</label><input type="number" name="carga_horaria" min="1" required></div>
+                  <div class="form-group"><label>Cantidad de clases</label><input type="number" name="cantidad_clases" min="1" required></div>
+                  <div class="form-group"><label>Descripción</label><input type="text" name="descripcion" maxlength="500"></div>
+                </div>
+                <label style="display:block; margin-top:14px; font-weight:600;">Cursos donde se dicta</label>
+                <div style="display:flex; flex-wrap:wrap; gap:8px 16px; max-height:180px; overflow-y:auto; padding:10px 0;">
+                  {% for curso in cursos_academicos %}<label style="font-weight:normal;"><input type="checkbox" name="cursos" value="{{ curso.id_curso }}"> {{ curso.nivel_educativo.nombre }} {{ curso.anio }}° {{ curso.comision }} ({{ curso.turno }})</label>{% empty %}<span style="color:#64748b;">Primero cargá un curso.</span>{% endfor %}
+                </div>
+                <button type="submit" class="btn-form" style="margin-top:12px; padding:10px 18px;">Guardar materia</button>
+              </form>
+            </div>
+            <div style="overflow-x:auto;"><table class="tabla"><thead><tr><th>Materia</th><th>Carga horaria</th><th>Clases</th><th>Cursos asociados</th><th>Acciones</th></tr></thead><tbody>
+              {% for materia in materias_academicas %}
+              <tr><td><strong>{{ materia.nombre }}</strong><br><small>{{ materia.descripcion }}</small></td><td>{{ materia.carga_horaria }}</td><td>{{ materia.cantidad_clases }}</td><td>{% for relacion in materia.cursocursamaterias_set.all %}<span class="badge badge-blue" style="margin:2px; display:inline-block;">{{ relacion.id_curso.nivel_educativo.nombre }} {{ relacion.id_curso.anio }}° {{ relacion.id_curso.comision }}</span>{% empty %}<span style="color:#64748b;">Sin cursos</span>{% endfor %}</td><td><button type="button" class="btn-small" style="background:#d97706; margin-top:0;" onclick="toggleDisplay('editar-materia-{{ materia.id_materia }}')">Editar</button><form method="POST" action="{% url 'baja-materia-admin' materia.id_materia %}" style="display:inline;" onsubmit="return confirm('¿Eliminar esta materia?');">{% csrf_token %}<button type="submit" class="btn-small" style="background:#dc2626; margin-top:0;">Baja</button></form></td></tr>
+              <tr id="editar-materia-{{ materia.id_materia }}" style="display:none; background:#f8fafc;"><td colspan="5" style="padding:0;"><form method="POST" action="{% url 'modificar-materia-admin' materia.id_materia %}" style="padding:16px;">{% csrf_token %}<div class="form-grid"><div class="form-group"><label>Nombre</label><input type="text" name="nombre" value="{{ materia.nombre }}" required></div><div class="form-group"><label>Carga horaria</label><input type="number" name="carga_horaria" value="{{ materia.carga_horaria }}" min="1" required></div><div class="form-group"><label>Cantidad de clases</label><input type="number" name="cantidad_clases" value="{{ materia.cantidad_clases }}" min="1" required></div><div class="form-group"><label>Descripción</label><input type="text" name="descripcion" value="{{ materia.descripcion }}"></div></div><label style="display:block; margin-top:14px; font-weight:600;">Cursos donde se dicta</label><div style="display:flex; flex-wrap:wrap; gap:8px 16px; max-height:180px; overflow-y:auto; padding:10px 0;">{% for curso in cursos_academicos %}<label style="font-weight:normal;"><input type="checkbox" name="cursos" value="{{ curso.id_curso }}" {% if curso.id_curso in materia.curso_ids %}checked{% endif %}> {{ curso.nivel_educativo.nombre }} {{ curso.anio }}° {{ curso.comision }} ({{ curso.turno }})</label>{% endfor %}</div><button type="submit" class="btn-small" style="background:#16a34a; margin-top:10px;">Guardar cambios</button></form></td></tr>
+              {% empty %}<tr><td colspan="5" style="text-align:center;">No hay materias registradas.</td></tr>{% endfor %}
+            </tbody></table></div>
+          </div>
 
-      </main>
+          <!-- Panel de Deportes -->
+          <div id="deportes-admin" class="panel {% if panel_activo == 'deportes-admin' %}active{% endif %}" style="background:white; border-radius:16px; padding:24px; box-shadow:0 4px 12px rgba(0,0,0,.05);">
+            <h2 class="section-title">⚽ Gestión de Deportes e Inscripciones</h2>
+            {% if messages %}<div style="margin-bottom:16px;">{% for message in messages %}<div style="padding:12px 16px; border-radius:8px; margin-bottom:8px; {% if message.tags == 'error' %}background:#fee2e2; color:#991b1b;{% elif message.tags == 'success' %}background:#dcfce7; color:#166534;{% else %}background:#fef3c7; color:#92400e;{% endif %}">{{ message }}</div>{% endfor %}</div>{% endif %}
+            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:24px; align-items:start;">
+              <section style="background:#f8fafc; border-radius:12px; padding:18px;"><h3>Deportes</h3><form method="POST" action="{% url 'alta-deporte-admin' %}">{% csrf_token %}<div class="form-group"><label>Nombre</label><input name="nombre" required maxlength="100"></div><div class="form-group" style="margin-top:8px;"><label>Instalación</label><select name="id_instalacion" required><option value="">Seleccione</option>{% for instalacion in instalaciones %}<option value="{{ instalacion.id }}">{{ instalacion.nombre }}</option>{% endfor %}</select></div><button class="btn-form" style="margin-top:10px;">Nuevo deporte</button></form>{% for deporte in deportes_academicos %}<div style="background:white; border:1px solid #e2e8f0; border-radius:8px; padding:10px; margin-top:10px;"><strong>{{ deporte.nombre }}</strong> · {{ deporte.id_instalacion.nombre }}<div style="margin-top:6px;"><button type="button" class="btn-small" style="background:#d97706; margin-top:0;" onclick="toggleDisplay('editar-deporte-{{ deporte.id_disciplina }}')">Editar</button><form method="POST" action="{% url 'baja-deporte-admin' deporte.id_disciplina %}" style="display:inline;" onsubmit="return confirm('¿Eliminar este deporte?');">{% csrf_token %}<button class="btn-small" style="background:#dc2626; margin-top:0;">Baja</button></form></div><div id="editar-deporte-{{ deporte.id_disciplina }}" style="display:none; margin-top:8px;"><form method="POST" action="{% url 'modificar-deporte-admin' deporte.id_disciplina %}">{% csrf_token %}<input name="nombre" value="{{ deporte.nombre }}" required><select name="id_instalacion" required>{% for instalacion in instalaciones %}<option value="{{ instalacion.id }}" {% if instalacion.id == deporte.id_instalacion_id %}selected{% endif %}>{{ instalacion.nombre }}</option>{% endfor %}</select><button class="btn-small" style="background:#16a34a; margin-top:6px;">Guardar</button></form></div></div>{% empty %}<p>No hay deportes registrados.</p>{% endfor %}</section>
+              <section style="background:#f8fafc; border-radius:12px; padding:18px;"><h3>Grupos deportivos</h3><form method="POST" action="{% url 'alta-grupo-deportivo-admin' %}">{% csrf_token %}<div class="form-group"><label>Deporte</label><select name="id_disciplina" required><option value="">Seleccione</option>{% for deporte in deportes_academicos %}<option value="{{ deporte.id_disciplina }}">{{ deporte.nombre }}</option>{% endfor %}</select></div><div class="form-group"><label>Nivel</label><select name="nivel_educativo" required><option value="">Seleccione</option>{% for nivel in niveles_educativos %}<option value="{{ nivel.id_nivel }}">{{ nivel.nombre }}</option>{% endfor %}</select></div><div class="form-group"><label>Profesor responsable</label><select name="profesor_responsable" required><option value="">Seleccione</option>{% for docente in docentes_deportivos %}<option value="{{ docente.legajo }}">{{ docente.id_persona.apellido }}, {{ docente.id_persona.nombre }}</option>{% endfor %}</select></div><div class="form-grid"><div class="form-group"><label>Día</label><select name="dia_semana" required><option value="lunes">Lunes</option><option value="martes">Martes</option><option value="miércoles">Miércoles</option><option value="jueves">Jueves</option><option value="viernes">Viernes</option></select></div><div class="form-group"><label>Turno</label><select name="turno" required><option value="Mañana">Mañana</option><option value="Tarde">Tarde</option></select></div><div class="form-group"><label>Inicio</label><input type="time" name="hora_inicio" required></div><div class="form-group"><label>Fin</label><input type="time" name="hora_fin" required></div><div class="form-group"><label>Cupo</label><input type="number" name="cupo_maximo" min="1"></div></div><button class="btn-form" style="margin-top:10px;">Crear grupo</button></form>{% for grupo in grupos_deportivos_admin %}<div style="background:white; border:1px solid #e2e8f0; border-radius:8px; padding:10px; margin-top:10px;"><strong>{{ grupo.id_disciplina.nombre }}</strong> · {{ grupo.nivel_educativo.nombre }} · {{ grupo.dia_semana|capfirst }} · {{ grupo.turno }} · {{ grupo.hora_inicio|time:'H:i' }}-{{ grupo.hora_fin|time:'H:i' }}<br><small>Responsable: {{ grupo.profesor_responsable.id_persona.apellido }}, {{ grupo.profesor_responsable.id_persona.nombre }} · {{ grupo.cantidad_inscriptos }} {% if grupo.cupo_maximo %}/{{ grupo.cupo_maximo }}{% endif %}</small><button type="button" class="btn-small" style="background:#1d66c4; margin:6px 0 0 8px;" onclick="toggleDisplay('inscriptos-grupo-{{ grupo.id_grupo }}')">Ver alumnos inscriptos</button><div id="inscriptos-grupo-{{ grupo.id_grupo }}" style="display:none; margin-top:8px; padding:8px; background:#f8fafc; border-radius:6px;">{% for inscripcion in grupo.inscriptos_activos %}<div>{{ inscripcion.id_alumno.id_persona.apellido }}, {{ inscripcion.id_alumno.id_persona.nombre }}</div>{% empty %}<div style="color:#64748b;">No hay alumnos inscriptos activos.</div>{% endfor %}</div><form method="POST" action="{% url 'baja-grupo-deportivo-admin' grupo.id_grupo %}" style="display:inline; margin-left:8px;" onsubmit="return confirm('¿Eliminar este grupo?');">{% csrf_token %}<button class="btn-small" style="background:#dc2626; margin-top:6px;">Baja</button></form></div>{% empty %}<p>No hay grupos registrados.</p>{% endfor %}</section>
+              <section style="background:#f8fafc; border-radius:12px; padding:18px;"><h3>Inscribir alumno</h3><form method="POST" action="{% url 'alta-inscripcion-deportiva-admin' %}">{% csrf_token %}<div class="form-group"><label>Alumno</label><select name="legajo_alumno" required><option value="">Seleccione</option>{% for alumno in alumnos_deportivos %}<option value="{{ alumno.legajo }}">{{ alumno.id_persona.apellido }}, {{ alumno.id_persona.nombre }}</option>{% endfor %}</select></div><div class="form-group" style="margin-top:8px;"><label>Grupo deportivo</label><select name="id_grupo" required><option value="">Seleccione</option>{% for grupo in grupos_deportivos_admin %}<option value="{{ grupo.id_grupo }}">{{ grupo.id_disciplina.nombre }} · {{ grupo.nivel_educativo.nombre }} · {{ grupo.dia_semana|capfirst }} · {{ grupo.turno }} · {{ grupo.hora_inicio|time:'H:i' }}-{{ grupo.hora_fin|time:'H:i' }}</option>{% endfor %}</select></div><button class="btn-form" style="margin-top:10px;">Inscribir alumno</button></form><p style="color:#64748b; margin-top:12px;">El sistema valida máximo dos deportes, cupo y conflictos de horarios.</p></section>
+            </div>
+          </div>
+
+          <!-- Panel de Servicios -->
+          <div id="servicios-admin" class="panel {% if panel_activo == 'servicios-admin' %}active{% endif %}">
+            <style>
+              #servicios-admin { background:#fff; border-radius:16px; padding:28px; box-shadow:0 4px 14px rgba(15,23,42,.06); font-family:inherit; color:#0f172a; }
+              #servicios-admin .service-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px; margin-top:20px; }
+              #servicios-admin .service-card { background:#f8fafc; border:1px solid #e2e8f0; border-radius:14px; padding:20px; }
+              #servicios-admin .service-card h3, #servicios-admin .service-block h3 { margin:0 0 14px; color:#0f172a; }
+              #servicios-admin .service-form { display:grid; gap:12px; }
+              #servicios-admin .service-form label { display:flex; flex-direction:column; gap:6px; color:#334155; font-size:14px; font-weight:600; }
+              #servicios-admin .service-form input, #servicios-admin .service-form select { width:100%; box-sizing:border-box; min-height:48px; padding:0 16px; font-family:inherit; font-size:16px; color:#0f172a; background:#f8fafc; border:1px solid #cbd5e1; border-radius:12px; outline:none; }
+              #servicios-admin .service-form input:focus, #servicios-admin .service-form select:focus { border-color:#2563eb; box-shadow:0 0 0 3px rgba(37,99,235,.12); }
+              #servicios-admin .resultado-alumno-servicio { min-height:42px; padding:10px 12px; border-radius:10px; background:#f1f5f9; color:#64748b; font-size:14px; }
+              #servicios-admin .resultado-alumno-servicio.encontrado { background:#dcfce7; color:#166534; }
+              #servicios-admin .resultado-alumno-servicio.error { background:#fee2e2; color:#991b1b; }
+              #servicios-admin .service-form .btn-form { width:max-content; margin-top:4px; }
+              #servicios-admin .service-block { margin-top:20px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:14px; padding:20px; }
+              #servicios-admin .manual-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:24px; }
+              #servicios-admin .manual-card { background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:18px; }
+              #servicios-admin .manual-card h4 { margin:0 0 14px; color:#1e3a8a; font-size:16px; }
+              #servicios-admin .service-list-item { background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:12px 14px; margin-top:9px; display:flex; justify-content:space-between; align-items:center; gap:12px; }
+              #servicios-admin .service-list-item form { flex-shrink:0; }
+              @media (max-width:760px) { #servicios-admin .service-grid, #servicios-admin .manual-grid { grid-template-columns:1fr; } #servicios-admin { padding:18px; } }
+            </style>
+            <h2 class="section-title">🚌 Gestión de transporte y comedor</h2>
+            {% if messages %}<div style="margin:14px 0 18px;">{% for message in messages %}<div style="padding:12px 16px;border-radius:10px;margin-bottom:8px;font-weight:600;{% if message.tags == 'error' %}background:#fee2e2;color:#991b1b;border:1px solid #fecaca;{% elif message.tags == 'success' %}background:#dcfce7;color:#166534;border:1px solid #bbf7d0;{% else %}background:#fef3c7;color:#92400e;border:1px solid #fde68a;{% endif %}">{{ message }}</div>{% endfor %}</div>{% endif %}
+            <p>Administrá recorridos, cupos e inscripciones. Las solicitudes enviadas por alumnos aparecen para aprobar o rechazar.</p>
+            <div class="service-grid">
+              <section class="service-card">
+                <h3>Nuevo recorrido</h3>
+                <form class="service-form" method="POST" action="{% url 'alta-recorrido-admin' %}">{% csrf_token %}
+                  <label>Nombre<input name="nombre" placeholder="Ej. Recorrido Norte" required maxlength="100"></label>
+                  <label>Descripción y paradas<input name="descripcion" placeholder="Ej. Barrio Norte - Escuela"></label>
+                  <label>Turno<select name="turno"><option>Mañana</option><option>Tarde</option></select></label>
+                  <label>Hora de salida<input type="time" name="hora_salida"></label>
+                  <label>Cupo máximo<input type="number" name="cupo_maximo" min="1" value="20" required></label>
+                  <button class="btn-form">Crear recorrido</button>
+                </form>
+              </section>
+              <section class="service-card">
+                <h3>Comedor escolar</h3>
+                <p style="margin:0 0 8px;color:#475569;">Cupo utilizado: <strong>{{ inscripciones_comedor_admin|length }} / {{ servicio_comedor_admin.cupo_maximo }}</strong></p>
+                <p style="margin:0 0 14px;color:#475569;">Estado: <strong style="color:{% if servicio_comedor_admin.estado == 'Activo' %}#166534{% else %}#991b1b{% endif %};">{{ servicio_comedor_admin.estado }}</strong></p>
+                <button type="button" class="btn-small" style="background:#d97706;margin:0;" onclick="toggleDisplay('editar-comedor')">Modificar</button>
+                <div id="editar-comedor" style="display:none;margin-top:16px;padding-top:16px;border-top:1px solid #e2e8f0;">
+                  <form class="service-form" method="POST" action="{% url 'modificar-comedor-admin' %}">{% csrf_token %}
+                    <label>Cupo máximo<input type="number" name="cupo_maximo" min="1" value="{{ servicio_comedor_admin.cupo_maximo }}" required></label>
+                    <label>Estado<select name="estado"><option value="Activo" {% if servicio_comedor_admin.estado == 'Activo' %}selected{% endif %}>Activo</option><option value="Inactivo" {% if servicio_comedor_admin.estado == 'Inactivo' %}selected{% endif %}>Inactivo</option></select></label>
+                    <button class="btn-form">Guardar cambios</button>
+                  </form>
+                </div>
+              </section>
+            </div>
+            <section class="service-block">
+              <h3>Inscripción manual</h3>
+              <div class="manual-grid">
+                <div class="manual-card"><h4>Inscribir al transporte</h4><form class="service-form service-enrollment-form" method="POST" action="{% url 'alta-inscripcion-transporte-admin' %}" data-lookup-url="{% url 'buscar-alumno-servicio' %}">{% csrf_token %}<label>DNI del alumno<input class="dni-alumno-servicio" name="dni_alumno" inputmode="numeric" maxlength="20" placeholder="Ej. 70000041" required></label><input type="hidden" name="legajo_alumno" class="legajo-alumno-servicio"><div class="resultado-alumno-servicio">Ingresá un DNI para verificar el alumno.</div><label>Recorrido<select name="id_recorrido" required><option value="">Seleccione un recorrido</option>{% for recorrido in recorridos_transporte_admin %}{% if recorrido.estado == 'Activo' %}<option value="{{ recorrido.id_recorrido }}">{{ recorrido.nombre }} ({{ recorrido.cupos_ocupados }}/{{ recorrido.cupo_maximo }})</option>{% endif %}{% endfor %}</select></label><button class="btn-form" disabled>Inscribir transporte</button></form></div>
+                <div class="manual-card"><h4>Inscribir al comedor</h4><form class="service-form service-enrollment-form" method="POST" action="{% url 'alta-inscripcion-comedor-admin' %}" data-lookup-url="{% url 'buscar-alumno-servicio' %}">{% csrf_token %}<label>DNI del alumno<input class="dni-alumno-servicio" name="dni_alumno" inputmode="numeric" maxlength="20" placeholder="Ej. 70000041" required></label><input type="hidden" name="legajo_alumno" class="legajo-alumno-servicio"><div class="resultado-alumno-servicio">Ingresá un DNI para verificar el alumno.</div><button class="btn-form" disabled>Inscribir comedor</button></form></div>
+              </div>
+            </section>
+            <section class="service-block"><h3>Solicitudes pendientes</h3>
+              {% for solicitud in solicitudes_servicio_admin %}<div style="background:white;border:1px solid #e2e8f0;border-radius:8px;padding:10px;margin-top:8px;"><strong>{{ solicitud.id_alumno.id_persona.apellido }}, {{ solicitud.id_alumno.id_persona.nombre }}</strong> · DNI {{ solicitud.id_alumno.id_persona.dni }} · {% if solicitud.tipo == 'transporte' %}{{ solicitud.id_recorrido.nombre }}{% else %}Comedor{% endif %}<form method="POST" action="{% url 'gestionar-solicitud-servicio-admin' solicitud.id_solicitud %}" style="display:inline;float:right;">{% csrf_token %}<button name="decision" value="aprobar" class="btn-small" style="background:#16a34a;margin:0;">Aceptar</button><button name="decision" value="rechazar" class="btn-small" style="background:#dc2626;margin:0;">Denegar</button></form></div>{% empty %}<p>No hay solicitudes pendientes.</p>{% endfor %}
+            </section>
+            <section class="service-block"><h3>Inscripciones activas</h3>
+              {% for recorrido in recorridos_transporte_admin %}
+                <div class="service-list-item"><div><strong>{{ recorrido.nombre }}</strong><br><small>{{ recorrido.cupos_ocupados }}/{{ recorrido.cupo_maximo }} inscriptos</small></div><button type="button" class="btn-small" style="background:#1d66c2;margin:0;" onclick="toggleDisplay('inscriptos-recorrido-{{ recorrido.id_recorrido }}')">Ver alumnos</button></div>
+                <div id="inscriptos-recorrido-{{ recorrido.id_recorrido }}" style="display:none;margin:0 0 10px;padding:10px 14px;background:#fff;border:1px solid #e2e8f0;border-radius:10px;">
+                  {% for inscripcion in inscripciones_transporte_admin %}{% if inscripcion.id_recorrido_id == recorrido.id_recorrido %}<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;"> <span>{{ inscripcion.id_alumno.id_persona.apellido }}, {{ inscripcion.id_alumno.id_persona.nombre }} · DNI {{ inscripcion.id_alumno.id_persona.dni }}</span><form method="POST" action="{% url 'baja-inscripcion-transporte-admin' inscripcion.id_inscripcion %}">{% csrf_token %}<button class="btn-small" style="background:#dc2626;margin:0;" onclick="return confirm('¿Dar de baja a este alumno del recorrido?');">Dar de baja</button></form></div>{% endif %}{% empty %}<span style="color:#64748b;">No hay alumnos inscriptos.</span>{% endfor %}
+                </div>
+              {% empty %}<p>No hay recorridos configurados.</p>{% endfor %}
+              <div class="service-list-item"><div><strong>Comedor escolar</strong><br><small>{{ inscripciones_comedor_admin|length }} / {{ servicio_comedor_admin.cupo_maximo }} inscriptos</small></div><button type="button" class="btn-small" style="background:#1d66c2;margin:0;" onclick="toggleDisplay('inscriptos-comedor')">Ver alumnos</button></div>
+              <div id="inscriptos-comedor" style="display:none;margin:0 0 10px;padding:10px 14px;background:#fff;border:1px solid #e2e8f0;border-radius:10px;">{% for inscripcion in inscripciones_comedor_admin %}<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;"><span>{{ inscripcion.id_alumno.id_persona.apellido }}, {{ inscripcion.id_alumno.id_persona.nombre }} · DNI {{ inscripcion.id_alumno.id_persona.dni }}</span><form method="POST" action="{% url 'baja-inscripcion-comedor-admin' inscripcion.id_inscripcion %}">{% csrf_token %}<button class="btn-small" style="background:#dc2626;margin:0;" onclick="return confirm('¿Dar de baja a este alumno del comedor?');">Dar de baja</button></form></div>{% empty %}<span style="color:#64748b;">No hay alumnos inscriptos.</span>{% endfor %}</div>
+            </section>
+            <section class="service-block"><h3>Recorridos configurados</h3>
+              {% for recorrido in recorridos_transporte_admin %}
+                <div class="service-list-item">
+                  <div><strong>{{ recorrido.nombre }}</strong><br><small>{{ recorrido.turno }} · {{ recorrido.cupos_ocupados }}/{{ recorrido.cupo_maximo }} · {{ recorrido.estado }}</small></div>
+                  <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end;">
+                    <button type="button" class="btn-small" style="background:#d97706;margin:0;" onclick="toggleDisplay('editar-recorrido-{{ recorrido.id_recorrido }}')">Editar</button>
+                    {% if recorrido.estado == 'Activo' %}
+                      <form method="POST" action="{% url 'baja-recorrido-admin' recorrido.id_recorrido %}" style="display:inline;">{% csrf_token %}<button class="btn-small" style="background:#dc2626;margin:0;" onclick="return confirm('¿Dar de baja este recorrido?');">Baja</button></form>
+                    {% else %}
+                      <form method="POST" action="{% url 'alta-recorrido-existente-admin' recorrido.id_recorrido %}" style="display:inline;">{% csrf_token %}<button class="btn-small" style="background:#16a34a;margin:0;">Alta</button></form>
+                      <form method="POST" action="{% url 'eliminar-recorrido-admin' recorrido.id_recorrido %}" style="display:inline;">{% csrf_token %}<button class="btn-small" style="background:#991b1b;margin:0;" onclick="return confirm('¿Eliminar definitivamente este recorrido?');">Eliminar</button></form>
+                    {% endif %}
+                  </div>
+                  <div id="editar-recorrido-{{ recorrido.id_recorrido }}" style="display:none;grid-column:1/-1;margin-top:10px;padding-top:12px;border-top:1px solid #e2e8f0;">
+                    <form class="service-form" method="POST" action="{% url 'modificar-recorrido-admin' recorrido.id_recorrido %}">{% csrf_token %}<label>Nombre<input name="nombre" value="{{ recorrido.nombre }}" required></label><label>Descripción<input name="descripcion" value="{{ recorrido.descripcion|default:'' }}"></label><label>Turno<select name="turno"><option {% if recorrido.turno == 'Mañana' %}selected{% endif %}>Mañana</option><option {% if recorrido.turno == 'Tarde' %}selected{% endif %}>Tarde</option></select></label><label>Hora de salida<input type="time" name="hora_salida" value="{{ recorrido.hora_salida|time:'H:i' }}"></label><label>Cupo máximo<input type="number" name="cupo_maximo" min="1" value="{{ recorrido.cupo_maximo }}" required></label><input type="hidden" name="estado" value="{{ recorrido.estado }}"><button class="btn-form">Guardar cambios</button></form>
+                  </div>
+                </div>
+              {% empty %}<p>No hay recorridos configurados.</p>{% endfor %}
+            </section>
+          </div>
+
+          <!-- Panel de Horarios -->
+          <div id="horarios-admin" class="panel {% if panel_activo == 'horarios-admin' %}active{% endif %}" style="background:white; border-radius:16px; padding:24px; box-shadow:0 4px 12px rgba(0,0,0,.05);">
+            <h2 class="section-title">🕒 Gestión de Horarios</h2>
+            {% if messages %}<div style="margin-bottom:16px;">{% for message in messages %}<div style="padding:12px 16px; border-radius:8px; margin-bottom:8px; {% if message.tags == 'error' %}background:#fee2e2; color:#991b1b;{% elif message.tags == 'success' %}background:#dcfce7; color:#166534;{% else %}background:#fef3c7; color:#92400e;{% endif %}">{{ message }}</div>{% endfor %}</div>{% endif %}
+            <form method="GET" action="{% url 'dashboard-administrativo' %}" style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:12px; padding:14px 18px; margin-bottom:20px; display:flex; gap:12px; align-items:end; flex-wrap:wrap;">
+              <input type="hidden" name="panel" value="horarios-admin">
+              <div class="form-group" style="min-width:280px; flex:1; margin:0;"><label for="filtro-curso-horario">Filtrar por curso</label><select id="filtro-curso-horario" name="curso_horario"><option value="">Todos los cursos</option>{% for curso in cursos_academicos %}<option value="{{ curso.id_curso }}" {% if curso_horario_seleccionado and curso.id_curso == curso_horario_seleccionado.id_curso %}selected{% endif %}>{{ curso.nivel_educativo.nombre }} {{ curso.anio }}° {{ curso.comision }} — {{ curso.turno }}</option>{% endfor %}</select></div>
+              <button type="submit" class="btn-form" style="margin:0;">Aplicar filtro</button>
+              {% if curso_horario_seleccionado %}<a href="{% url 'dashboard-administrativo' %}?panel=horarios-admin" class="btn-small" style="background:#64748b; margin:0; text-decoration:none;">Limpiar</a>{% endif %}
+            </form>
+            {% if curso_horario_seleccionado %}<p style="color:#475569; margin:-8px 0 14px;">Mostrando materias de <strong>{{ curso_horario_seleccionado.nivel_educativo.nombre }} {{ curso_horario_seleccionado.anio }}° {{ curso_horario_seleccionado.comision }}</strong> y deportes de su nivel.</p>{% endif %}
+            <div style="background:#f8fafc; border-radius:12px; padding:18px; margin-bottom:20px;"><h3>Nuevo horario</h3><form method="POST" action="{% url 'alta-horario-admin' %}">{% csrf_token %}<div class="form-grid"><div class="form-group"><label>Tipo</label><select name="tipo" id="tipo-horario" onchange="cambiarTipoHorario()" required><option value="academico">Materia</option><option value="deportivo">Deporte</option></select></div><div class="form-group" id="campo-curso"><label for="curso-horario">Curso</label><select name="curso_horario" id="curso-horario" onchange="filtrarMateriasPorCurso()"><option value="">Seleccione un curso</option>{% for curso in cursos_academicos %}<option value="{{ curso.id_curso }}">{{ curso.nivel_educativo.nombre }} {{ curso.anio }}° {{ curso.comision }} — {{ curso.turno }}</option>{% endfor %}</select></div><div class="form-group" id="campo-materia"><label for="materia-horario">Materia</label><select name="curso_materia" id="materia-horario" disabled required><option value="">Seleccione primero un curso</option>{% for relacion in cursos_materias_admin %}<option value="{{ relacion.id }}" data-curso="{{ relacion.id_curso_id }}" hidden>{{ relacion.id_materia.nombre }}</option>{% endfor %}</select></div><div class="form-group" id="campo-grupo-deportivo" style="display:none;"><label>Grupo deportivo</label><select name="grupo_deportivo"><option value="">Seleccione un grupo</option>{% for grupo in grupos_deportivos_admin %}<option value="{{ grupo.id_grupo }}">{{ grupo.id_disciplina.nombre }} — {{ grupo.nivel_educativo.nombre }} — {{ grupo.dia_semana|capfirst }} {{ grupo.turno }}</option>{% endfor %}</select></div><div class="form-group"><label>Día</label><select name="dia_semana" required><option value="lunes">Lunes</option><option value="martes">Martes</option><option value="miércoles">Miércoles</option><option value="jueves">Jueves</option><option value="viernes">Viernes</option></select></div><div class="form-group"><label>Inicio</label><input type="time" name="hora_inicio" required></div><div class="form-group"><label>Fin</label><input type="time" name="hora_fin" required></div></div><button class="btn-form" style="margin-top:10px;">Guardar horario</button></form></div>
+            <div style="overflow-x:auto;"><table class="tabla"><thead><tr><th>Tipo</th><th>Actividad</th><th>Día</th><th>Horario</th><th>Acciones</th></tr></thead><tbody>{% for horario in horarios_admin %}<tr><td>{% if horario.curso_materia %}Materia{% else %}Deporte{% endif %}</td><td>{% if horario.curso_materia %}{{ horario.curso_materia.id_curso.nivel_educativo.nombre }} {{ horario.curso_materia.id_curso.anio }}° {{ horario.curso_materia.id_curso.comision }} — {{ horario.curso_materia.id_materia.nombre }}{% else %}{{ horario.grupo_deportivo.id_disciplina.nombre }} — {{ horario.grupo_deportivo.nivel_educativo.nombre }}{% endif %}</td><td>{{ horario.dia_semana|capfirst }}</td><td>{{ horario.hora_inicio|time:'H:i' }} - {{ horario.hora_fin|time:'H:i' }}</td><td><form method="POST" action="{% url 'baja-horario-admin' horario.id_horario %}" style="display:inline;" onsubmit="return confirm('¿Eliminar este horario?');">{% csrf_token %}<input type="hidden" name="curso_horario" value="{{ curso_horario_filtro }}"><button class="btn-small" style="background:#dc2626; margin-top:0;">Baja</button></form><button type="button" class="btn-small" style="background:#d97706; margin-top:0;" onclick="toggleDisplay('editar-horario-{{ horario.id_horario }}')">Editar</button><div id="editar-horario-{{ horario.id_horario }}" style="display:none; margin-top:8px;"><form method="POST" action="{% url 'modificar-horario-admin' horario.id_horario %}">{% csrf_token %}<input type="hidden" name="curso_horario" value="{{ curso_horario_filtro }}"><input type="hidden" name="tipo" value="{% if horario.curso_materia %}academico{% else %}deportivo{% endif %}">{% if horario.curso_materia %}<input type="hidden" name="curso_materia" value="{{ horario.curso_materia.id }}">{% else %}<input type="hidden" name="grupo_deportivo" value="{{ horario.grupo_deportivo.id_grupo }}">{% endif %}<select name="dia_semana"><option value="lunes" {% if horario.dia_semana == 'lunes' %}selected{% endif %}>Lunes</option><option value="martes" {% if horario.dia_semana == 'martes' %}selected{% endif %}>Martes</option><option value="miércoles" {% if horario.dia_semana == 'miércoles' %}selected{% endif %}>Miércoles</option><option value="jueves" {% if horario.dia_semana == 'jueves' %}selected{% endif %}>Jueves</option><option value="viernes" {% if horario.dia_semana == 'viernes' %}selected{% endif %}>Viernes</option></select><input type="time" name="hora_inicio" value="{{ horario.hora_inicio|time:'H:i' }}" required><input type="time" name="hora_fin" value="{{ horario.hora_fin|time:'H:i' }}" required><button class="btn-small" style="background:#16a34a; margin-top:0;">Guardar</button></form></div></td></tr>{% empty %}<tr><td colspan="5">No hay horarios cargados.</td></tr>{% endfor %}</tbody></table></div>
+          </div>
+
+          <!-- Panel de Alumnos -->
+          <div
+            id="alumnos"
+            class="panel {% if panel_activo == 'alumnos' %}active{% endif %}"
+          >
+            <h2 class="section-title">📚 Gestión de Alumnos</h2>
+
+            <!-- Estadísticas -->
+            <div class="stat-grid">
+              <div class="stat-card">
+                <div class="stat-label">Total de Alumnos</div>
+                <div class="stat-value">{{ alumnos.count }}</div>
+                <div class="stat-sub">Registrados en el sistema</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Niveles Educativos</div>
+                <div class="stat-value" style="color: #e61c92">3</div>
+                <div class="stat-sub">Inicial, Primario, Secundario</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Cursos Activos</div>
+                <div class="stat-value" style="color: #76c640">
+                  {{ alumnos|length }}
+                </div>
+                <div class="stat-sub">Alumnos con inscripción activa</div>
+              </div>
+            </div>
+
+            {% if alumno_detalle %}
+            <!-- VISTA DE DETALLE DEL ALUMNO -->
+            <div
+              style="
+                background: white;
+                border-radius: 16px;
+                padding: 24px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+                margin-bottom: 24px;
+              "
+            >
+              <div
+                style="
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: center;
+                  margin-bottom: 20px;
+                "
+              >
+                <h3 style="margin: 0; color: #0f172a; font-size: 20px">
+                  📋 Ficha del Alumno: {{ alumno_detalle.id_persona.apellido }},{{ alumno_detalle.id_persona.nombre }}
+                </h3>
+                <a
+                  href="{% url 'lista-alumnos-admin' %}"
+                  class="btn-small"
+                  style="background: #1d66c4"
+                >
+                  ← Volver a la lista
+                </a>
+              </div>
+
+              <div
+                style="
+                  display: grid;
+                  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+                  gap: 24px;
+                "
+              >
+                <!-- Datos Personales -->
+                <div
+                  style="
+                    background: #f8fafc;
+                    border-radius: 12px;
+                    padding: 20px;
+                  "
+                >
+                  <h4
+                    style="color: #1d66c4; margin-bottom: 16px; font-size: 16px"
+                  >
+                    Datos Personales
+                  </h4>
+                  <div style="display: flex; flex-direction: column; gap: 12px">
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        padding: 8px 0;
+                        border-bottom: 1px solid #e2e8f0;
+                      "
+                    >
+                      <span style="color: #64748b; font-weight: 600"
+                        >Legajo:</span
+                      >
+                      <span style="color: #0f172a; font-weight: bold"
+                        >{{ alumno_detalle.legajo }}</span
+                      >
+                    </div>
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        padding: 8px 0;
+                        border-bottom: 1px solid #e2e8f0;
+                      "
+                    >
+                      <span style="color: #64748b; font-weight: 600">DNI:</span>
+                      <span style="color: #0f172a"
+                        >{{ alumno_detalle.id_persona.dni }}</span
+                      >
+                    </div>
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        padding: 8px 0;
+                        border-bottom: 1px solid #e2e8f0;
+                      "
+                    >
+                      <span style="color: #64748b; font-weight: 600"
+                        >Nombre:</span
+                      >
+                      <span style="color: #0f172a"
+                        >{{ alumno_detalle.id_persona.nombre }}</span
+                      >
+                    </div>
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        padding: 8px 0;
+                        border-bottom: 1px solid #e2e8f0;
+                      "
+                    >
+                      <span style="color: #64748b; font-weight: 600"
+                        >Apellido:</span
+                      >
+                      <span style="color: #0f172a"
+                        >{{ alumno_detalle.id_persona.apellido }}</span
+                      >
+                    </div>
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        padding: 8px 0;
+                        border-bottom: 1px solid #e2e8f0;
+                      "
+                    >
+                      <span style="color: #64748b; font-weight: 600"
+                        >Fecha de Nacimiento:</span
+                      >
+                      <span style="color: #0f172a"
+                        >{{alumno_detalle.id_persona.fecha_nacimiento|date:"d/m/Y"}}
+                      </span
+                      >
+                    </div>
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        padding: 8px 0;
+                        border-bottom: 1px solid #e2e8f0;
+                      "
+                    >
+                      <span style="color: #64748b; font-weight: 600"
+                        >Domicilio:</span
+                      >
+                      <span style="color: #0f172a"
+                        >{{ alumno_detalle.id_persona.direccion|default:"No registrado" }}
+                      </span
+                      >
+                    </div>
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        padding: 8px 0;
+                        border-bottom: 1px solid #e2e8f0;
+                      "
+                    >
+                      <span style="color: #64748b; font-weight: 600"
+                        >Teléfono:</span
+                      >
+                      <span style="color: #0f172a"
+                        >{{ alumno_detalle.id_persona.telefono|default:"No registrado" }}
+                      </span
+                      >
+                    </div>
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        padding: 8px 0;
+                      "
+                    >
+                      <span style="color: #64748b; font-weight: 600"
+                        >Correo Electrónico:</span
+                      >
+                      <span style="color: #0f172a"
+                        >{{ alumno_detalle.id_persona.email|default:"No registrado" }}
+                      </span
+                      >
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Datos Académicos -->
+                <div
+                  style="
+                    background: #f8fafc;
+                    border-radius: 12px;
+                    padding: 20px;
+                  "
+                >
+                  <h4
+                    style="color: #1d66c4; margin-bottom: 16px; font-size: 16px"
+                  >
+                    📚 Datos Académicos
+                  </h4>
+                  <div style="display: flex; flex-direction: column; gap: 12px">
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        padding: 8px 0;
+                        border-bottom: 1px solid #e2e8f0;
+                      "
+                    >
+                      <span style="color: #64748b; font-weight: 600"
+                        >Nivel Educativo:</span
+                      >
+                      <span class="badge badge-blue"
+                        >{{ alumno_detalle.id_curso.nivel_educativo.nombre }}</span
+                      >
+                    </div>
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        padding: 8px 0;
+                        border-bottom: 1px solid #e2e8f0;
+                      "
+                    >
+                      <span style="color: #64748b; font-weight: 600"
+                        >Curso:</span
+                      >
+                      <span style="color: #0f172a; font-weight: bold"
+                        >{{ alumno_detalle.id_curso.anio }}° {{alumno_detalle.id_curso.comision }}
+                      </span
+                      >
+                    </div>
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        padding: 8px 0;
+                        border-bottom: 1px solid #e2e8f0;
+                      "
+                    >
+                      <span style="color: #64748b; font-weight: 600"
+                        >Turno:</span
+                      >
+                      <span style="color: #0f172a"
+                        >{{ alumno_detalle.id_curso.turno }}</span
+                      >
+                    </div>
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        padding: 8px 0;
+                        border-bottom: 1px solid #e2e8f0;
+                      "
+                    >
+                      <span style="color: #64748b; font-weight: 600"
+                        >Fecha de Ingreso:</span
+                      >
+                      <span style="color: #0f172a"
+                        >{{ alumno_detalle.fecha_ingreso|date:"d/m/Y" }}</span
+                      >
+                    </div>
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        padding: 8px 0;
+                      "
+                    >
+                      <span style="color: #64748b; font-weight: 600"
+                        >Estado:</span
+                      >
+                      <span class="badge badge-green">Activo</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+              {% else %}
+              <!-- LISTA DE ALUMNOS CON ABM -->
+              <div style="background: white; border-radius: 16px; padding: 24px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                      <h3 style="margin: 0; color: #0f172a; font-size: 20px;">Listado de Alumnos</h3>
+                      <button type="button" class="btn-small" style="background: #1D66C4; margin-top: 0;" onclick="toggleDisplay('form-nuevo-alumno')">
+                          + Nuevo Alumno
+                      </button>
+                  </div>
+
+                  {% if messages %}
+                  <div style="margin-bottom: 16px;">
+                      {% for message in messages %}
+                      <div style="padding: 12px 16px; border-radius: 8px; margin-bottom: 8px;
+                                  {% if message.tags == 'error' %}background: #fee2e2; color: #991b1b; border: 1px solid #fecaca;
+                                  {% elif message.tags == 'success' %}background: #dcfce7; color: #166534; border: 1px solid #bbf7d0;
+                                  {% endif %}">
+                          {{ message }}
+                      </div>
+                      {% endfor %}
+                  </div>
+                  {% endif %}
+
+                  <!-- Formulario de Alta (Oculto por defecto) -->
+                  <div id="form-nuevo-alumno" style="display: none; margin-bottom: 24px; background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0;">
+                      <h4 style="margin-bottom: 16px; color: #0f172a;">Registrar Nuevo Alumno</h4>
+                      <form method="POST" action="{% url 'alta-alumno-admin' %}">
+                        {% csrf_token %}
+
+                        <div class="form-grid">
+
+                            <!-- DATOS DE ACCESO -->
+                            <div class="form-group">
+                                <label>Nombre de Usuario</label>
+                                <input
+                                    type="text"
+                                    name="nombre_usuario"
+                                    maxlength="60"
+                                    required
+                                />
+                            </div>
+
+                            <div class="form-group">
+                                <label>Contraseña Provisoria</label>
+                                <input
+                                    type="password"
+                                    name="contrasenia"
+                                    maxlength="20"
+                                    required
+                                />
+                            </div>
+
+                            <!-- DATOS DEL ALUMNO -->
+                            <div class="form-group">
+                                <label>Legajo</label>
+                                <input
+                                    type="text"
+                                    name="legajo"
+                                    required
+                                />
+                            </div>
+
+                            <div class="form-group">
+                                <label>DNI</label>
+                                <input
+                                    type="text"
+                                    name="dni"
+                                    maxlength="8"
+                                    required
+                                />
+                            </div>
+
+                            <div class="form-group">
+                                <label>Nombre</label>
+                                <input
+                                    type="text"
+                                    name="nombre"
+                                    required
+                                />
+                            </div>
+
+                            <div class="form-group">
+                                <label>Apellido</label>
+                                <input
+                                    type="text"
+                                    name="apellido"
+                                    required
+                                />
+                            </div>
+
+                            <div class="form-group">
+                                <label>Fecha de Nacimiento</label>
+                                <input
+                                    type="date"
+                                    name="fecha_nacimiento"
+                                    required
+                                />
+                            </div>
+
+                            <div class="form-group">
+                                <label>Teléfono</label>
+                                <input
+                                    type="text"
+                                    name="telefono"
+                                />
+                            </div>
+
+                            <div class="form-group">
+                                <label>Correo Electrónico</label>
+                                <input
+                                    type="email"
+                                    name="email"
+                                />
+                            </div>
+
+                            <div class="form-group">
+                                <label>Domicilio</label>
+                                <input
+                                    type="text"
+                                    name="direccion"
+                                />
+                            </div>
+
+                            <!-- CURSO -->
+                            <div class="form-group">
+                                <label>Curso</label>
+
+                                <select name="id_curso" required>
+                                    <option value="">Seleccione un curso</option>
+
+                                    {% for curso in cursos_disponibles %}
+                                        <option value="{{ curso.id_curso }}">
+                                            {{ curso.nivel_educativo.nombre }} - {{ curso.anio }}° {{ curso.comision }} ({{ curso.turno }})
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                        </div>
+
+                        <button
+                            type="submit"
+                            class="btn-form"
+                            style="margin-top: 16px;"
+                        >
+                            Guardar Alumno
+                        </button>
+                      </form>
+                  </div>
+
+                  {% if alumnos %}
+                  <table class="tabla">
+                      <thead>
+                          <tr>
+                              <th>Legajo</th>
+                              <th>Apellido y Nombre</th>
+                              <th>DNI</th>
+                              <th>Curso</th>
+                              <th>Nivel</th>
+                              <th>Estado</th>
+                              <th>Acciones</th>
+                          </tr>
+                      </thead>
+                      <tbody>
+                          {% for alumno in alumnos %}
+                          <tr>
+                            <td><strong>{{ alumno.legajo }}</strong></td>
+                            <td>{{ alumno.id_persona.apellido }}, {{ alumno.id_persona.nombre }}</td>
+                            <td>{{ alumno.id_persona.dni }}</td>
+                            <td>{{ alumno.id_curso.anio }}° {{ alumno.id_curso.comision }}</td>
+                            <td><span class="badge badge-blue">{{ alumno.id_curso.nivel_educativo.nombre }}</span></td>
+                            <td>
+                                {% if alumno.estado == 'Inactivo' %}
+                                    <span class="badge badge-red">{{ alumno.estado }}</span>
+                                {% else %}
+                                    <span class="badge badge-green">{{ alumno.estado|default:"Activo" }}</span>
+                                {% endif %}
+                            </td>
+                            <td style="display: flex; gap: 8px;">
+                                <a href="{% url 'detalle-alumno-admin' alumno.legajo %}" class="btn-small" style="background: #1D66C4; margin-top: 0; padding: 6px 12px; font-size: 12px;">Ver</a>
+                                 <button type="button" class="btn-small" style="background: #d97706; margin-top: 0; padding: 6px 12px; font-size: 12px;" onclick="toggleDisplay('editar-{{ alumno.legajo }}')">Editar</button>
+                                <form method="POST" action="{% url 'baja-alumno-admin' alumno.legajo %}" style="display: inline;" onsubmit="return confirm('¿Está seguro de dar de baja a este alumno? Esta acción no se puede deshacer.');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn-small" style="background: #dc2626; margin-top: 0; padding: 6px 12px; font-size: 12px;">Baja</button>
+                                </form>
+                            </td>
+                          </tr>
+
+                          <!-- Fila de Edición Inline (Oculta por defecto) -->
+                          <tr id="editar-{{ alumno.legajo }}" class="fila-edicion-abm" style="display: none;">
+                              <td colspan="7" style="padding: 0 !important; width: 100% !important;">
+                                  <div style="background: #f8fafc; padding: 24px; width: 100%; box-sizing: border-box;">
+                                      <form method="POST" action="{% url 'modificar-alumno-admin' alumno.legajo %}" style="width: 100%;">
+                                          {% csrf_token %}
+                                          <div class="form-grid" style="grid-template-columns: repeat(2, 1fr) !important; width: 100% !important;">
+                                              <div class="form-group"><label>Legajo</label><input type="text" value="{{ alumno.legajo }}" readonly style="background: #e2e8f0; width: 100%;" /></div>
+                                              <div class="form-group"><label>DNI</label><input type="text" name="dni" value="{{ alumno.id_persona.dni }}" required style="width: 100%;" /></div>
+                                              <div class="form-group"><label>Nombre</label><input type="text" name="nombre" value="{{ alumno.id_persona.nombre }}" required style="width: 100%;" /></div>
+                                              <div class="form-group"><label>Apellido</label><input type="text" name="apellido" value="{{ alumno.id_persona.apellido }}" required style="width: 100%;" /></div>
+                                              <div class="form-group"><label>Fecha de Nacimiento</label><input type="date" name="fecha_nacimiento" value="{{ alumno.id_persona.fecha_nacimiento|date:'Y-m-d' }}" required style="width: 100%;" /></div>
+                                              <div class="form-group"><label>Teléfono</label><input type="text" name="telefono" value="{{ alumno.id_persona.telefono|default:'' }}" style="width: 100%;" /></div>
+                                              <div class="form-group"><label>Correo Electrónico</label><input type="email" name="email" value="{{ alumno.id_persona.email|default:'' }}" style="width: 100%;" /></div>
+                                              <div class="form-group"><label>Domicilio</label><input type="text" name="direccion" value="{{ alumno.id_persona.direccion|default:'' }}" style="width: 100%;" /></div>
+                                              <div class="form-group">
+                                                  <label>Curso</label>
+                                                  <select name="id_curso" required style="width: 100%;">
+                                                      {% for curso in cursos_disponibles %}
+                                                      <option value="{{ curso.id_curso }}" {% if curso.id_curso == alumno.id_curso.id_curso %}selected{% endif %}>{{ curso.nivel_educativo.nombre }} - {{ curso.anio }}° {{ curso.comision }} ({{ curso.turno }})</option>
+                                                      {% endfor %}
+                                                  </select>
+                                              </div>
+                                              <div class="form-group">
+                                                  <label>Estado</label>
+                                                  <select name="estado" style="width: 100%;">
+                                                      <option value="Activo" {% if alumno.estado == 'Activo' %}selected{% endif %}>Activo</option>
+                                                      <option value="Inactivo" {% if alumno.estado == 'Inactivo' %}selected{% endif %}>Inactivo</option>
+                                                  </select>
+                                              </div>
+                                          </div>
+                                          <div style="margin-top: 16px; display: flex; gap: 8px;">
+                                              <button type="submit" class="btn-small" style="background: #16a34a; margin-top: 0;">Guardar Cambios</button>
+                                              <button type="button" class="btn-small" style="background: #64748b; margin-top: 0;" onclick="toggleDisplay('editar-{{ alumno.legajo }}')">Cancelar</button>
+                                          </div>
+                                      </form>
+                                  </div>
+                              </td>
+                          </tr>
+                          {% endfor %}
+                      </tbody>
+                  </table>
+                  {% else %}
+                  <div style="text-align: center; padding: 60px 20px; background: #f8fafc; border-radius: 12px;">
+                      <div style="font-size: 48px; margin-bottom: 16px;">📋</div>
+                      <h3 style="color: #0f172a; margin-bottom: 8px;">No hay alumnos registrados</h3>
+                      <p style="color: #64748b;">Utiliza el botón "Nuevo Alumno" para comenzar a cargar la institución.</p>
+                  </div>
+                  {% endif %}
+              </div>
+              {% endif %}
+            </div>
+          <!-- Panel de Profesores -->
+          <div
+            id="profesores"
+            class="panel {% if panel_activo == 'profesores' %}active{% endif %}"
+          >
+            <h2 class="section-title">‍🏫 Gestión de Profesores</h2>
+
+            <!-- Estadísticas -->
+            <div class="stat-grid">
+              <div class="stat-card">
+                <div class="stat-label">Total de Profesores</div>
+                <div class="stat-value">{{ profesores.count }}</div>
+                <div class="stat-sub">Registrados en el sistema</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Materias Dictadas</div>
+                <div class="stat-value" style="color: #e61c92">
+                  {{ materias_count|default:"0" }}
+                </div>
+                <div class="stat-sub">Activas este ciclo</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Profesores Activos</div>
+                <div class="stat-value" style="color: #76c640">
+                  {{ profesores|length }}
+                </div>
+                <div class="stat-sub">Con carga horaria</div>
+              </div>
+            </div>
+
+            {% if profesor_detalle %}
+            <!-- VISTA DE DETALLE DEL PROFESOR -->
+            <div
+              style="
+                background: white;
+                border-radius: 16px;
+                padding: 24px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+                margin-bottom: 24px;
+              "
+            >
+              <div
+                style="
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: center;
+                  margin-bottom: 20px;
+                "
+              >
+                <h3 style="margin: 0; color: #0f172a; font-size: 20px">
+                  Ficha del Profesor: {{ profesor_detalle.id_persona.apellido}}, {{ profesor_detalle.id_persona.nombre }}
+                </h3>
+                <a
+                  href="{% url 'lista-profesores-admin' %}"
+                  class="btn-small"
+                  style="background: #1d66c4"
+                >
+                  ← Volver a la lista
+                </a>
+              </div>
+
+              <div
+                style="
+                  display: grid;
+                  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+                  gap: 24px;
+                "
+              >
+                <!-- Datos Personales -->
+                <div
+                  style="
+                    background: #f8fafc;
+                    border-radius: 12px;
+                    padding: 20px;
+                  "
+                >
+                  <h4
+                    style="color: #1d66c4; margin-bottom: 16px; font-size: 16px"
+                  >
+                    👤 Datos Personales
+                  </h4>
+                  <div style="display: flex; flex-direction: column; gap: 12px">
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        padding: 8px 0;
+                        border-bottom: 1px solid #e2e8f0;
+                      "
+                    >
+                      <span style="color: #64748b; font-weight: 600"
+                        >Legajo:</span
+                      >
+                      <span style="color: #0f172a; font-weight: bold"
+                        >{{ profesor_detalle.legajo }}</span
+                      >
+                    </div>
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        padding: 8px 0;
+                        border-bottom: 1px solid #e2e8f0;
+                      "
+                    >
+                      <span style="color: #64748b; font-weight: 600">DNI:</span>
+                      <span style="color: #0f172a"
+                        >{{ profesor_detalle.id_persona.dni }}</span
+                      >
+                    </div>
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        padding: 8px 0;
+                        border-bottom: 1px solid #e2e8f0;
+                      "
+                    >
+                      <span style="color: #64748b; font-weight: 600"
+                        >Nombre:</span
+                      >
+                      <span style="color: #0f172a"
+                        >{{ profesor_detalle.id_persona.nombre }}</span
+                      >
+                    </div>
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        padding: 8px 0;
+                        border-bottom: 1px solid #e2e8f0;
+                      "
+                    >
+                      <span style="color: #64748b; font-weight: 600"
+                        >Apellido:</span
+                      >
+                      <span style="color: #0f172a"
+                        >{{ profesor_detalle.id_persona.apellido }}</span
+                      >
+                    </div>
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        padding: 8px 0;
+                        border-bottom: 1px solid #e2e8f0;
+                      "
+                    >
+                      <span style="color: #64748b; font-weight: 600"
+                        >Correo Electrónico:</span
+                      >
+                      <span style="color: #0f172a"
+                        >{{ profesor_detalle.id_persona.email|default:"No registrado" }}
+                      </span
+                      >
+                    </div>
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        padding: 8px 0;
+                      "
+                    >
+                      <span style="color: #64748b; font-weight: 600"
+                        >Teléfono:</span
+                      >
+                      <span style="color: #0f172a"
+                        >{{ profesor_detalle.id_persona.telefono|default:"No registrado" }}
+                      </span
+                      >
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Datos Laborales -->
+                <div
+                  style="
+                    background: #f8fafc;
+                    border-radius: 12px;
+                    padding: 20px;
+                  "
+                >
+                  <h4
+                    style="color: #1d66c4; margin-bottom: 16px; font-size: 16px"
+                  >
+                    📚 Datos Laborales
+                  </h4>
+                  <div style="display: flex; flex-direction: column; gap: 12px">
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        padding: 8px 0;
+                        border-bottom: 1px solid #e2e8f0;
+                      "
+                    >
+                      <span style="color: #64748b; font-weight: 600"
+                        >Especialidad:</span
+                      >
+                      <span style="color: #0f172a; font-weight: bold"
+                        >{{ profesor_detalle.especialidad|default:"No especificada" }}
+                      </span
+                      >
+                    </div>
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        padding: 8px 0;
+                        border-bottom: 1px solid #e2e8f0;
+                      "
+                    >
+                      <span style="color: #64748b; font-weight: 600"
+                        >Estado:</span
+                      >
+                      <span class="badge badge-green">Activo</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div style="background: #f8fafc; border-radius: 12px; padding: 20px; margin-top: 20px;">
+                <h4 style="color: #1d66c4; margin-bottom: 16px; font-size: 16px">Asignaciones de cursos y materias</h4>
+                {% if profesor_detalle.asignaciones %}
+                <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                  {% for asignacion in profesor_detalle.asignaciones %}
+                  <span class="badge badge-blue">{{ asignacion.id_curso.nivel_educativo.nombre }} {{ asignacion.id_curso.anio }}° {{ asignacion.id_curso.comision }} — {{ asignacion.id_materia.nombre }}</span>
+                  {% endfor %}
+                </div>
+                {% else %}
+                <span style="color: #64748b">No tiene asignaciones específicas de curso y materia.</span>
+                {% endif %}
+              </div>
+            </div>
+
+            {% else %}
+            <!-- LISTA DE PROFESORES -->
+            <div
+              style="
+                background: white;
+                border-radius: 16px;
+                padding: 24px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+              "
+            >
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 style="margin: 0; color: #0f172a; font-size: 20px">Listado de Profesores</h3>
+                <button type="button" class="btn-small" style="background: #1D66C4; margin-top: 0;" onclick="toggleDisplay('form-nuevo-profesor')">+ Nuevo Profesor</button>
+              </div>
+
+              {% if messages %}
+              <div style="margin-bottom: 16px;">
+                {% for message in messages %}
+                <div style="padding: 12px 16px; border-radius: 8px; margin-bottom: 8px; {% if message.tags == 'error' %}background: #fee2e2; color: #991b1b; border: 1px solid #fecaca;{% elif message.tags == 'success' %}background: #dcfce7; color: #166534; border: 1px solid #bbf7d0;{% endif %}">{{ message }}</div>
+                {% endfor %}
+              </div>
+              {% endif %}
+
+              <div id="form-nuevo-profesor" style="display: none; margin-bottom: 24px; background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0;">
+                <h4 style="margin-bottom: 16px; color: #0f172a;">Registrar Nuevo Profesor</h4>
+                <form method="POST" action="{% url 'alta-profesor-admin' %}">
+                  {% csrf_token %}
+                  <div class="form-grid">
+                    <div class="form-group"><label>Nombre de Usuario</label><input type="text" name="nombre_usuario" maxlength="60" required></div>
+                    <div class="form-group"><label>Contraseña Provisoria</label><input type="password" name="contrasenia" maxlength="20" required></div>
+                    <div class="form-group"><label>DNI</label><input type="text" name="dni" maxlength="8" required></div>
+                    <div class="form-group"><label>Nombre</label><input type="text" name="nombre" maxlength="50" required></div>
+                    <div class="form-group"><label>Apellido</label><input type="text" name="apellido" maxlength="50" required></div>
+                    <div class="form-group"><label>Fecha de Nacimiento</label><input type="date" name="fecha_nacimiento" required></div>
+                    <div class="form-group"><label>Teléfono</label><input type="text" name="telefono" maxlength="20"></div>
+                    <div class="form-group"><label>Correo Electrónico</label><input type="email" name="email" maxlength="100"></div>
+                    <div class="form-group"><label>Domicilio</label><input type="text" name="direccion" maxlength="100"></div>
+                    <div class="form-group"><label>Título Docente</label><input type="text" name="titulo" maxlength="100" required></div>
+                    <div class="form-group"><label>Especialidad</label><input type="text" name="especialidad" maxlength="100"></div>
+                    <div class="form-group"><label>Fecha de Ingreso</label><input type="date" name="fecha_ingreso"></div>
+                    <div class="form-group" style="grid-column: 1 / -1;"><label>Materia y cursos a cargo</label><div style="display: flex; flex-direction: column; gap: 8px; max-height: 260px; overflow-y: auto;">{% for materia in materia_curso_options %}<details style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 12px;"><summary style="cursor: pointer; font-weight: 600; color: #1e3a8a;">{{ materia.nombre }} <span style="color: #64748b; font-weight: normal;">({{ materia.cursos_disponibles|length }} cursos)</span></summary><div style="display: flex; flex-wrap: wrap; gap: 8px 16px; padding: 10px 0 2px 4px;">{% for curso in materia.cursos_disponibles %}<label style="font-weight: normal; display: flex; align-items: center; gap: 6px;"><input type="checkbox" name="asignaciones" value="{{ curso.id_curso }}:{{ materia.id_materia }}">{{ curso.nivel_educativo.nombre }} {{ curso.anio }}° {{ curso.comision }}</label>{% endfor %}</div></details>{% empty %}<span>No hay materias con cursos cargados.</span>{% endfor %}</div><small style="color: #64748b;">Elegí una materia para ver únicamente los cursos que la tienen. El horario se podrá definir después.</small></div>
+                  </div>
+                  <button type="submit" class="btn-form" style="margin-top: 16px;">Guardar Profesor</button>
+                </form>
+              </div>
+
+              {% if profesores %}
+              <table class="tabla">
+                <thead>
+                  <tr>
+                    <th>Legajo</th>
+                    <th>Apellido y Nombre</th>
+                    <th>DNI</th>
+                    <th>Especialidad</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for profesor in profesores %}
+                  <tr>
+                    <td><strong>{{ profesor.legajo }}</strong></td>
+                    <td>
+                      {{ profesor.id_persona.apellido }}, {{profesor.id_persona.nombre }}
+                    </td>
+                    <td>{{ profesor.id_persona.dni }}</td>
+                    <td>
+                      <span class="badge badge-blue"
+                        >{{ profesor.especialidad|default:"-" }}</span
+                      >
+                    </td>
+                    <td>
+                      <span class="badge badge-green">Activo</span>
+                    </td>
+                    <td>
+                      <div style="display: flex; gap: 8px;">
+                        <a href="{% url 'detalle-profesor-admin' profesor.legajo %}" class="btn-small" style="background: #1D66C4; margin-top: 0; padding: 6px 12px; font-size: 12px;">Ver</a>
+                        <button type="button" class="btn-small" style="background: #d97706; margin-top: 0; padding: 6px 12px; font-size: 12px;" onclick="toggleDisplay('editar-{{ profesor.legajo }}')">Editar</button>
+                        <form method="POST" action="{% url 'baja-profesor-admin' profesor.legajo %}" style="display: inline;" onsubmit="return confirm('¿Está seguro de dar de baja a este profesor?');">
+                          {% csrf_token %}<button type="submit" class="btn-small" style="background: #dc2626; margin-top: 0; padding: 6px 12px; font-size: 12px;">Baja</button>
+                        </form>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr id="editar-{{ profesor.legajo }}" class="fila-edicion-abm" style="display: none;">
+                      <td colspan="6" style="padding: 0 !important; width: 100% !important;">
+                          <div style="background: #f8fafc; padding: 24px; width: 100%; box-sizing: border-box;">
+                              <form method="POST" action="{% url 'modificar-profesor-admin' profesor.legajo %}" style="width: 100%;">
+                                  {% csrf_token %}
+                                  <div class="form-grid" style="grid-template-columns: repeat(2, 1fr) !important; width: 100% !important;">
+                                      <div class="form-group"><label>Legajo</label><input type="text" value="{{ profesor.legajo }}" readonly style="background: #e2e8f0; width: 100%;" /></div>
+                                      <div class="form-group"><label>DNI</label><input type="text" name="dni" value="{{ profesor.id_persona.dni }}" required style="width: 100%;" /></div>
+                                      <div class="form-group"><label>Nombre</label><input type="text" name="nombre" value="{{ profesor.id_persona.nombre }}" required style="width: 100%;" /></div>
+                                      <div class="form-group"><label>Apellido</label><input type="text" name="apellido" value="{{ profesor.id_persona.apellido }}" required style="width: 100%;" /></div>
+                                      <div class="form-group"><label>Fecha de Nacimiento</label><input type="date" name="fecha_nacimiento" value="{{ profesor.id_persona.fecha_nacimiento|date:'Y-m-d' }}" required style="width: 100%;" /></div>
+                                      <div class="form-group"><label>Teléfono</label><input type="text" name="telefono" value="{{ profesor.id_persona.telefono|default:'' }}" style="width: 100%;" /></div>
+                                      <div class="form-group"><label>Correo Electrónico</label><input type="email" name="email" value="{{ profesor.id_persona.email|default:'' }}" style="width: 100%;" /></div>
+                                      <div class="form-group"><label>Domicilio</label><input type="text" name="direccion" value="{{ profesor.id_persona.direccion|default:'' }}" style="width: 100%;" /></div>
+                                      <div class="form-group"><label>Título Docente</label><input type="text" name="titulo" value="{{ profesor.titulo }}" required style="width: 100%;" /></div>
+                                      <div class="form-group"><label>Especialidad</label><input type="text" name="especialidad" value="{{ profesor.especialidad|default:'' }}" style="width: 100%;" /></div>
+                                      <div class="form-group"><label>Fecha de Ingreso</label><input type="date" name="fecha_ingreso" value="{{ profesor.fecha_ingreso|date:'Y-m-d' }}" required style="width: 100%;" /></div>
+                                  </div>
+                                  <div style="margin-top: 16px; display: flex; gap: 8px;">
+                                      <button type="submit" class="btn-small" style="background: #16a34a; margin-top: 0;">Guardar Cambios</button>
+                                      <button type="button" class="btn-small" style="background: #64748b; margin-top: 0;" onclick="toggleDisplay('editar-{{ profesor.legajo }}')">Cancelar</button>
+                                  </div>
+                              </form>
+                          </div>
+                      </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+              {% else %}
+              <div
+                style="
+                  text-align: center;
+                  padding: 60px 20px;
+                  background: #f8fafc;
+                  border-radius: 12px;
+                "
+              >
+                <div style="font-size: 48px; margin-bottom: 16px">👨‍</div>
+                <h3 style="color: #0f172a; margin-bottom: 8px">
+                  No hay profesores registrados
+                </h3>
+                <p style="color: #64748b">
+                  Los profesores aparecerán aquí una vez que sean dados de alta
+                  en el sistema.
+                </p>
+              </div>
+              {% endif %}
+            </div>
+            {% endif %}
+          </div>
+
+          <!-- Panel de Noticias -->
+          <div id="panel-noticias" class="panel">
+            <p class="section-title">Publicar noticia institucional</p>
+
+            <div class="form-section">
+              <form
+                method="POST"
+                action="{% url 'crear-noticia' %}"
+                enctype="multipart/form-data"
+                class="form-card"
+              >
+                {% csrf_token %}
+
+                <div class="form-group">
+                  <label>Título</label>
+                  <input
+                    type="text"
+                    name="titulo"
+                    required
+                    placeholder="Título de la noticia"
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label>Contenido</label>
+                  <textarea
+                    name="contenido"
+                    rows="8"
+                    maxlength="350"
+                    required
+                    placeholder="Escriba la noticia... (máximo 350 caracteres)"
+                  ></textarea>
+                  <small id="contador-caracteres"> 0 / 350 caracteres </small>
+                </div>
+
+                <div class="form-group">
+                  <label>Imagen</label>
+                  <input
+                    type="file"
+                    name="imagen"
+                    accept=".jpg,.jpeg,.png,.webp"
+                  />
+                  <small> Formatos permitidos: JPG, PNG y WEBP </small>
+                </div>
+
+                <button type="submit" class="btn-form">Publicar noticia</button>
+              </form>
+            </div>
+          </div>
+
+          <div id="panel-perfil" class="panel">
+            <p class="section-title">Mi perfil</p>
+
+            <table class="tabla">
+              <tbody>
+                <tr>
+                  <td style="font-weight: 600; color: #64748b">Legajo</td>
+                  <td>{{ administrativo.legajo }}</td>
+                </tr>
+                <tr>
+                  <td style="font-weight: 600; color: #64748b">Cargo</td>
+                  <td>{{ administrativo.cargo }}</td>
+                </tr>
+                <tr>
+                  <td style="font-weight: 600; color: #64748b">Sector</td>
+                  <td>{{ administrativo.sector }}</td>
+                </tr>
+                <tr>
+                  <td style="font-weight: 600; color: #64748b">
+                    Fecha de ingreso
+                  </td>
+                  <td>{{ administrativo.fecha_ingreso }}</td>
+                </tr>
+                <tr>
+                  <td style="font-weight: 600; color: #64748b">
+                    Correo electrónico
+                  </td>
+                  <td>{{ persona.email }}</td>
+                </tr>
+                <tr>
+                  <td style="font-weight: 600; color: #64748b">Teléfono</td>
+                  <td>{{ persona.telefono }}</td>
+                </tr>
+                <tr>
+                  <td style="font-weight: 600; color: #64748b">Dirección</td>
+                  <td>{{ persona.direccion }}</td>
+                </tr>
+              </tbody>
+            </table>
+            {% if messages and panel_activo == 'perfil' %}{% for message in messages %}<div style="padding:12px 16px;border-radius:10px;margin-top:14px;{% if message.tags == 'success' %}background:#dcfce7;color:#166534;{% else %}background:#fee2e2;color:#991b1b;{% endif %}">{{ message }}</div>{% endfor %}{% endif %}
+            <form method="post" action="{% url 'actualizar-perfil' %}" style="margin-top:18px; max-width:560px;">
+              {% csrf_token %}
+              <h3>Actualizar datos de contacto</h3>
+              <div class="form-grid"><div class="form-group"><label for="perfil-telefono">Teléfono</label><input id="perfil-telefono" type="tel" name="telefono" value="{{ persona.telefono|default:'' }}" pattern="[0-9]{8,15}" maxlength="15" placeholder="Entre 8 y 15 números"></div><div class="form-group"><label for="perfil-email">Correo electrónico</label><input id="perfil-email" type="email" name="email" value="{{ persona.email|default:'' }}"></div></div>
+              <button type="submit" class="btn-form" style="margin-top:12px;">Guardar cambios</button>
+            </form>
+          </div>
+        </main>
+      </div>
     </div>
-  </div>
 
-  <script>
-
-    function showPanel(id, el) {
-      document.querySelectorAll('.panel').forEach(
-        p => p.classList.remove('active')
-      );
-
-      document.querySelectorAll('.sidebar-nav a').forEach(
-        a => a.classList.remove('active')
-      );
-
-      document.getElementById('panel-' + id).classList.add('active');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-
-      if (el) {
-        el.classList.add('active');
+    <!-- SCRIPTS MEJORADOS PARA QUE LOS PANELES FUNCIONEN SIEMPRE -->
+    <script>
+      function mostrarFiltroReporte() {
+        const tipo = document.getElementById("reporte-tipo")?.value || "";
+        document.querySelectorAll(".filtro-reporte").forEach((filtro) => {
+          filtro.style.display = filtro.id === "filtro-reporte-" + tipo ? "block" : "none";
+        });
       }
-      const url = new URL(window.location.href);
-      if (id === 'inicio') url.searchParams.delete('panel');
-      else url.searchParams.set('panel', id);
-      window.history.replaceState({}, '', url);
-    }
 
-    document.addEventListener("DOMContentLoaded", function () {
+      function mostrarFiltroReporteDocente() {
+        const tipo = document.getElementById("reporte-docente-tipo")?.value || "";
+        const filtros = {
+          nivel: "filtro-docente-nivel",
+          cursos: "filtro-docente-cursos",
+          horarios: "filtro-docente-horarios",
+        };
+        document.querySelectorAll(".filtro-docente").forEach((filtro) => {
+          const activo = filtros[tipo] === filtro.id;
+          filtro.style.display = activo ? "block" : "none";
+          const selector = filtro.querySelector("select");
+          if (selector) selector.disabled = !activo;
+        });
+      }
 
-      const panelActivo = new URLSearchParams(window.location.search).get('panel') || "{{ panel_activo|default:'inicio' }}";
+      function showPanel(id, el) {
+        document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
+        document.querySelectorAll(".sidebar-nav a").forEach((a) => a.classList.remove("active"));
 
-      document.querySelectorAll('.panel').forEach(
-        p => p.classList.remove('active')
-      );
-
-      document.querySelectorAll('.sidebar-nav a').forEach(
-        a => a.classList.remove('active')
-      );
-
-      document.getElementById('panel-' + panelActivo)?.classList.add('active');
-
-      document.querySelectorAll('.sidebar-nav a').forEach(link => {
-
-        if (
-          link.getAttribute("onclick") &&
-          link.getAttribute("onclick").includes("'" + panelActivo + "'")
-        ) {
-          link.classList.add("active");
+        const targetPanel = document.getElementById("panel-" + id) || document.getElementById(id);
+        if (targetPanel) {
+            targetPanel.classList.add("active");
+        }
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        if (el) {
+            el.classList.add("active");
         }
 
+        // Mantiene el panel seleccionado al recargar la página.
+        const url = new URL(window.location.href);
+        if (id === "inicio") {
+          url.searchParams.delete("panel");
+        } else {
+          url.searchParams.set("panel", id);
+        }
+        window.history.replaceState({}, "", url);
+      }
+
+      document.addEventListener("DOMContentLoaded", function () {
+        mostrarFiltroReporte();
+        mostrarFiltroReporteDocente();
+        const panel = "{{ panel_activo }}";
+        if (!panel || panel === "inicio") return;
+
+        // Caso especial para el panel de Alumnos
+        if (panel === "alumnos") {
+          document
+            .querySelectorAll(".panel")
+            .forEach((p) => p.classList.remove("active"));
+          document
+            .querySelectorAll(".sidebar-nav a")
+            .forEach((a) => a.classList.remove("active"));
+
+          const panelAlumnos = document.getElementById("alumnos");
+          if (panelAlumnos) panelAlumnos.classList.add("active");
+
+          const enlaceAlumnos = document.getElementById("enlace-alumnos");
+          if (enlaceAlumnos) enlaceAlumnos.classList.add("active");
+          return;
+        }
+
+        // Caso especial para el panel de Profesores
+        if (panel === "profesores") {
+          document
+            .querySelectorAll(".panel")
+            .forEach((p) => p.classList.remove("active"));
+          document
+            .querySelectorAll(".sidebar-nav a")
+            .forEach((a) => a.classList.remove("active"));
+
+          const panelProfesores = document.getElementById("profesores");
+          if (panelProfesores) panelProfesores.classList.add("active");
+
+          const enlaceProfesores = document.getElementById("enlace-profesores");
+          if (enlaceProfesores) enlaceProfesores.classList.add("active");
+          return;
+        }
+
+        if (panel === "niveles-cursos") {
+          document
+            .querySelectorAll(".panel")
+            .forEach((p) => p.classList.remove("active"));
+          document
+            .querySelectorAll(".sidebar-nav a")
+            .forEach((a) => a.classList.remove("active"));
+
+          const panelNiveles = document.getElementById("niveles-cursos");
+          if (panelNiveles) panelNiveles.classList.add("active");
+
+          const enlaceNiveles = document.getElementById("enlace-niveles-cursos");
+          if (enlaceNiveles) enlaceNiveles.classList.add("active");
+          return;
+        }
+
+        if (panel === "materias") {
+          document
+            .querySelectorAll(".panel")
+            .forEach((p) => p.classList.remove("active"));
+          document
+            .querySelectorAll(".sidebar-nav a")
+            .forEach((a) => a.classList.remove("active"));
+
+          const panelMaterias = document.getElementById("materias");
+          if (panelMaterias) panelMaterias.classList.add("active");
+
+          const enlaceMaterias = document.getElementById("enlace-materias");
+          if (enlaceMaterias) enlaceMaterias.classList.add("active");
+          return;
+        }
+
+        if (panel === "deportes-admin") {
+          document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
+          document.querySelectorAll(".sidebar-nav a").forEach((a) => a.classList.remove("active"));
+          const panelDeportes = document.getElementById("deportes-admin");
+          if (panelDeportes) panelDeportes.classList.add("active");
+          const enlaceDeportes = document.getElementById("enlace-deportes-admin");
+          if (enlaceDeportes) enlaceDeportes.classList.add("active");
+          return;
+        }
+
+        if (panel === "horarios-admin") {
+          document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
+          document.querySelectorAll(".sidebar-nav a").forEach((a) => a.classList.remove("active"));
+          const panelHorarios = document.getElementById("horarios-admin");
+          if (panelHorarios) panelHorarios.classList.add("active");
+          const enlaceHorarios = document.getElementById("enlace-horarios-admin");
+          if (enlaceHorarios) enlaceHorarios.classList.add("active");
+          return;
+        }
+
+        if (panel === "servicios-admin") {
+          document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
+          document.querySelectorAll(".sidebar-nav a").forEach((a) => a.classList.remove("active"));
+          const panelServicios = document.getElementById("servicios-admin");
+          if (panelServicios) panelServicios.classList.add("active");
+          const enlaceServicios = document.getElementById("enlace-servicios-admin");
+          if (enlaceServicios) enlaceServicios.classList.add("active");
+          return;
+        }
+
+        // Para los demás paneles que usan onclick
+        const enlace = document.querySelector(
+          `.sidebar-nav a[onclick*="showPanel('${panel}'"]`,
+        );
+        if (enlace) {
+          showPanel(panel, enlace);
+        }
       });
 
-    });
+      function mostrarRechazo(id) {
+        const form = document.getElementById('rechazo-' + id);
+        if (form.style.display === 'none' || form.style.display === '') {
+            form.style.display = 'block';
+        } else {
+            form.style.display = 'none';
+        }
+      }
 
-  </script>
-  <script>
-    setTimeout(() => {
-        document.querySelectorAll('.mensaje-exito, .mensaje-error')
-            .forEach(msg => {
-                msg.style.opacity = '0';
-                setTimeout(() => msg.remove(), 500);
-            });
-    }, 3000);
-  </script>
-</body>
+      function cambiarTipoHorario() {
+        const esDeportivo = document.getElementById('tipo-horario').value === 'deportivo';
+        document.getElementById('campo-curso').style.display = esDeportivo ? 'none' : 'block';
+        document.getElementById('campo-materia').style.display = esDeportivo ? 'none' : 'block';
+        document.getElementById('campo-grupo-deportivo').style.display = esDeportivo ? 'block' : 'none';
+        document.getElementById('curso-horario').disabled = esDeportivo;
+        document.getElementById('materia-horario').disabled = esDeportivo || !document.getElementById('curso-horario').value;
+        if (!esDeportivo) filtrarMateriasPorCurso();
+      }
+
+      function filtrarMateriasPorCurso() {
+        const curso = document.getElementById('curso-horario').value;
+        const selector = document.getElementById('materia-horario');
+        const opciones = selector.querySelectorAll('option[data-curso]');
+        selector.value = '';
+        opciones.forEach((opcion) => {
+          const visible = curso && opcion.dataset.curso === curso;
+          opcion.hidden = !visible;
+          opcion.disabled = !visible;
+        });
+        selector.disabled = !curso || document.getElementById('tipo-horario').value === 'deportivo';
+      }
+
+      function toggleDisplay(id) {
+        const el = document.getElementById(id);
+        if (el.style.display === 'none') {
+            el.style.display = 'block';
+        } else {
+            el.style.display = 'none';
+        }
+      }
+
+      document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.service-enrollment-form').forEach(function (form) {
+          const dni = form.querySelector('.dni-alumno-servicio');
+          const legajo = form.querySelector('.legajo-alumno-servicio');
+          const resultado = form.querySelector('.resultado-alumno-servicio');
+          const boton = form.querySelector('button');
+          let timer;
+          dni.addEventListener('input', function () {
+            clearTimeout(timer);
+            legajo.value = '';
+            boton.disabled = true;
+            resultado.className = 'resultado-alumno-servicio';
+            resultado.textContent = 'Buscando alumno...';
+            if (!dni.value.trim()) { resultado.textContent = 'Ingresá un DNI para verificar el alumno.'; return; }
+            timer = setTimeout(function () {
+              fetch(form.dataset.lookupUrl + '?dni=' + encodeURIComponent(dni.value.trim()), {headers: {'X-Requested-With': 'XMLHttpRequest'}})
+                .then(function (response) { return response.json(); })
+                .then(function (data) {
+                  if (data.ok) {
+                    legajo.value = data.legajo;
+                    resultado.className = 'resultado-alumno-servicio encontrado';
+                    resultado.textContent = data.nombre + ' · ' + data.curso + ' · Legajo ' + data.legajo;
+                    boton.disabled = false;
+                  } else {
+                    resultado.className = 'resultado-alumno-servicio error';
+                    resultado.textContent = data.error || 'No se encontró el alumno.';
+                  }
+                })
+                .catch(function () { resultado.className = 'resultado-alumno-servicio error'; resultado.textContent = 'No se pudo consultar el DNI.'; });
+            }, 300);
+          });
+        });
+      });
+    </script>
+  </body>
 </html>
