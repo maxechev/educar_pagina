@@ -17,6 +17,8 @@ from django.db import transaction, IntegrityError
 from django.db.models.deletion import ProtectedError
 import json
 from django.core.mail import EmailMessage
+from django.core.exceptions import ValidationError
+from django.core.validators import validate_email
 from django.contrib import messages
 from django.contrib.messages import get_messages
 from django.utils import timezone
@@ -84,6 +86,52 @@ def obtener_persona(request):
 
     usuario = Usuario.objects.get(id=usuario_id)
     return Persona.objects.filter(id_usuario=usuario).first()
+
+
+@never_cache
+def actualizar_perfil(request):
+    """Actualiza únicamente los datos editables del perfil autenticado."""
+    persona, dashboard_url = obtener_datos_sesion(request)
+    if not persona or not dashboard_url:
+        return redirect('login')
+
+    if request.method != 'POST':
+        return redirect(dashboard_url)
+
+    telefono = (request.POST.get('telefono') or '').strip()
+    email = (request.POST.get('email') or '').strip().lower()
+    errores = []
+
+    if telefono and not _TELEFONO_REGEX.match(telefono):
+        errores.append(
+            'El teléfono debe contener solo números entre 8 y 15 dígitos.'
+        )
+    if email:
+        try:
+            validate_email(email)
+        except ValidationError:
+            errores.append('Ingresá un correo electrónico válido.')
+        if Usuario.objects.filter(correo__iexact=email).exclude(
+            id=persona.id_usuario_id
+        ).exists():
+            errores.append('El correo ya está asociado a otro usuario.')
+
+    for error in errores:
+        messages.error(request, error)
+
+    if not errores:
+        with transaction.atomic():
+            persona.telefono = telefono or None
+            persona.email = email or None
+            persona.save(update_fields=['telefono', 'email'])
+            if persona.id_usuario_id:
+                Usuario.objects.filter(id=persona.id_usuario_id).update(
+                    correo=email or None
+                )
+        messages.success(request, 'Tus datos de perfil fueron actualizados correctamente.')
+
+    request.session['panel_activo'] = 'perfil'
+    return redirect(reverse(dashboard_url) + '?panel=perfil')
 
 
 ROLES_USUARIO = {

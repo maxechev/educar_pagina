@@ -15,6 +15,7 @@ urlpatterns = [
     # Login
     path('login/', views.login, name='login'),
     path('logout/', views.logout, name='logout'),
+    path('perfil/actualizar/', views.actualizar_perfil, name='actualizar-perfil'),
     # Dashboards
     path('alumno/', views.dashboard_alumno, name='dashboard-alumno'),
     path('docente/', views.dashboard_docente, name='dashboard-docente'),

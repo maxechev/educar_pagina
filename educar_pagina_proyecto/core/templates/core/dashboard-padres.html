@@ -762,6 +762,13 @@
                 </tr>
               </tbody>
             </table>
+            {% if messages and panel_activo == 'perfil' %}{% for message in messages %}<div class="{% if message.tags == 'success' %}mensaje-exito{% else %}mensaje-error{% endif %}" style="margin-top:14px;">{{ message }}</div>{% endfor %}{% endif %}
+            <form method="post" action="{% url 'actualizar-perfil' %}" style="margin-top:18px; max-width:560px;">
+              {% csrf_token %}
+              <h3>Actualizar datos de contacto</h3>
+              <div class="form-grid"><div class="form-group"><label for="perfil-telefono">Teléfono</label><input id="perfil-telefono" type="tel" name="telefono" value="{{ persona.telefono|default:'' }}" pattern="[0-9]{8,15}" maxlength="15" placeholder="Entre 8 y 15 números"></div><div class="form-group"><label for="perfil-email">Correo electrónico</label><input id="perfil-email" type="email" name="email" value="{{ persona.email|default:'' }}"></div></div>
+              <button type="submit" class="btn-form" style="margin-top:12px;">Guardar cambios</button>
+            </form>
           </div>
         </main>
       </div>
