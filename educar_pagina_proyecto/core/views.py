@@ -2413,6 +2413,24 @@ def dashboard_administrativo(request):
                 Q(curso_materia__id_curso=curso_horario_seleccionado) |
                 Q(grupo_deportivo__nivel_educativo=curso_horario_seleccionado.nivel_educativo)
             )
+
+    tutores_admin = Tutor.objects.select_related(
+        'id_persona', 'id_persona__id_usuario'
+    ).prefetch_related(
+        Prefetch(
+            'tutortutoraalumno_set',
+            queryset=TutorTutoraAlumno.objects.select_related(
+                'id_alumno__id_persona', 'id_alumno__id_curso__nivel_educativo'
+            ).order_by(
+                'id_alumno__id_persona__apellido',
+                'id_alumno__id_persona__nombre',
+            ),
+            to_attr='hijos_admin',
+        )
+    ).order_by('id_persona__apellido', 'id_persona__nombre')
+    alumnos_tutores_admin = Alumno.objects.select_related(
+        'id_persona', 'id_curso__nivel_educativo'
+    ).order_by('id_persona__apellido', 'id_persona__nombre')
     
     # Se conserva el panel seleccionado para que una recarga no vuelva a
     # mostrar Inicio. Los paneles abiertos con JavaScript también envían su
@@ -2423,6 +2441,7 @@ def dashboard_administrativo(request):
         'profesores', 'niveles-cursos', 'materias', 'deportes-admin',
         'horarios-admin', 'servicios-admin', 'asistencia',
         'reportes', 'reportes-docentes', 'reportes-avanzados',
+        'padres-admin',
     }
     panel_activo = request.session.get("panel_activo", "inicio")
     panel_solicitado = request.GET.get('panel')
@@ -2480,6 +2499,8 @@ def dashboard_administrativo(request):
         'reporte_avanzado_filtros': reporte_avanzado_filtros,
         'horarios_deportivos_reporte': horarios_deportivos_reporte,
         'reportes_avanzados': reportes_avanzados,
+        'tutores_admin': tutores_admin,
+        'alumnos_tutores_admin': alumnos_tutores_admin,
     })
 
 
@@ -3658,6 +3679,112 @@ def baja_usuario_admin(request, id_usuario):
 
     request.session['panel_activo'] = 'usuarios'
     return redireccion_usuarios_con_filtro(request)
+
+
+@never_cache
+def alta_padre_admin(request):
+    persona_sesion, dashboard_url = obtener_datos_sesion(request)
+    if not persona_sesion or dashboard_url != 'dashboard-administrativo':
+        return redirect('login')
+
+    if request.method == 'POST':
+        nombre = (request.POST.get('nombre') or '').strip()
+        apellido = (request.POST.get('apellido') or '').strip()
+        dni = (request.POST.get('dni') or '').strip()
+        fecha_nacimiento = (request.POST.get('fecha_nacimiento') or '').strip()
+        direccion = (request.POST.get('direccion') or '').strip()
+        telefono = (request.POST.get('telefono') or '').strip()
+        email = (request.POST.get('email') or '').strip().lower()
+        nombre_usuario = (request.POST.get('nombre_usuario') or '').strip()
+        contrasenia = request.POST.get('contrasenia') or ''
+        parentesco = (request.POST.get('parentesco') or '').strip()
+        hijos_ids = list(dict.fromkeys(request.POST.getlist('hijos')))
+        errores = []
+
+        for valor, etiqueta in ((nombre, 'nombre'), (apellido, 'apellido')):
+            if not valor:
+                errores.append(f'El {etiqueta} del padre/tutor es obligatorio.')
+            elif not _NOMBRE_REGEX.match(valor):
+                errores.append(f'El {etiqueta} solo puede contener letras y espacios.')
+        if not _DNI_REGEX.match(dni):
+            errores.append('El DNI debe contener entre 7 y 8 números.')
+        elif Persona.objects.filter(dni=dni).exists():
+            errores.append('Ya existe una persona registrada con ese DNI.')
+        if not fecha_nacimiento:
+            errores.append('La fecha de nacimiento es obligatoria.')
+        else:
+            try:
+                fecha_nacimiento = datetime.strptime(
+                    fecha_nacimiento, '%Y-%m-%d'
+                ).date()
+            except ValueError:
+                errores.append('La fecha de nacimiento no es válida.')
+        if telefono and not _TELEFONO_REGEX.match(telefono):
+            errores.append('El teléfono debe contener solo números entre 8 y 15 dígitos.')
+        if email:
+            try:
+                validate_email(email)
+            except ValidationError:
+                errores.append('Ingresá un correo electrónico válido.')
+            if Usuario.objects.filter(correo__iexact=email).exists():
+                errores.append('Ese correo ya está asociado a otro usuario.')
+        if not nombre_usuario:
+            errores.append('El nombre de usuario es obligatorio.')
+        elif Usuario.objects.filter(nombre_usuario__iexact=nombre_usuario).exists():
+            errores.append('El nombre de usuario ya existe.')
+        if not contrasenia:
+            errores.append('La contraseña provisoria es obligatoria.')
+        elif len(contrasenia) > 20:
+            errores.append('La contraseña no puede superar los 20 caracteres.')
+        if not hijos_ids:
+            errores.append('Seleccioná al menos un hijo para asociar.')
+        else:
+            alumnos = list(Alumno.objects.filter(legajo__in=hijos_ids))
+            if len(alumnos) != len(hijos_ids):
+                errores.append('Una o más asociaciones seleccionadas no son válidas.')
+
+        if errores:
+            for error in errores:
+                messages.error(request, error, extra_tags='padres-admin')
+        else:
+            with transaction.atomic():
+                usuario = Usuario.objects.create(
+                    nombre_usuario=nombre_usuario,
+                    contrasenia=contrasenia,
+                    correo=email or None,
+                    rol='padre',
+                    estado='Activo',
+                )
+                persona_tutor = Persona.objects.create(
+                    id_usuario=usuario,
+                    dni=dni,
+                    nombre=nombre,
+                    apellido=apellido,
+                    fecha_nacimiento=fecha_nacimiento,
+                    direccion=direccion or None,
+                    telefono=telefono or None,
+                    email=email or None,
+                )
+                tutor = Tutor.objects.create(
+                    id_persona=persona_tutor,
+                    telefono_contacto=telefono or None,
+                    email_contacto=email or None,
+                )
+                for alumno in alumnos:
+                    TutorTutoraAlumno.objects.create(
+                        id_tutor=tutor,
+                        id_alumno=alumno,
+                        tipo_parentesco=parentesco or None,
+                    )
+            messages.success(
+                request,
+                f'Padre/tutor {nombre} {apellido} registrado y asociado a '
+                f'{len(alumnos)} hijo(s).',
+                extra_tags='padres-admin',
+            )
+
+    request.session['panel_activo'] = 'padres-admin'
+    return redirect(reverse('dashboard-administrativo') + '?panel=padres-admin')
 
 @never_cache
 def dashboard_padres(request):

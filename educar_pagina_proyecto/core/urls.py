@@ -84,6 +84,7 @@ urlpatterns = [
     path('crear-usuario/',views.crear_usuario,name='crear-usuario'),
     path('administrativo/usuarios/<int:id_usuario>/modificar/', views.modificar_usuario_admin, name='modificar-usuario-admin'),
     path('administrativo/usuarios/<int:id_usuario>/baja/', views.baja_usuario_admin, name='baja-usuario-admin'),
+    path('administrativo/padres/alta/', views.alta_padre_admin, name='alta-padre-admin'),
     path('rechazar-pago/<int:id_pago>/',views.rechazar_pago,name='rechazar-pago'),
     # Gestión de Alumnos (Administrativo)
     path('administrativo/alumnos/', views.lista_alumnos_admin, name='lista-alumnos-admin'),
