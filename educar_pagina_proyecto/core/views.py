@@ -2127,6 +2127,102 @@ def dashboard_administrativo(request):
                 'detalle': detalles.get(reporte_tipo, ''),
             })
 
+    # HU14: reportes de docentes. Se usan las asignaciones existentes de
+    # materias/cursos y los horarios académicos normalizados.
+    reporte_docente_tipo = (
+        request.GET.get('reporte_docente_tipo') or ''
+    ).strip().lower()
+    tipos_reporte_docentes = {
+        'nivel': 'Por nivel educativo',
+        'cursos': 'Cursos y materias a cargo',
+        'horarios': 'Horarios',
+    }
+    reporte_docente_nombre = tipos_reporte_docentes.get(
+        reporte_docente_tipo, ''
+    )
+    reportes_docentes = []
+    docentes_reporte = Docente.objects.select_related(
+        'id_persona'
+    ).prefetch_related(
+        Prefetch(
+            'docentedictamateria_set',
+            queryset=DocenteDictaMateria.objects.select_related(
+                'id_materia', 'id_curso__nivel_educativo'
+            ).order_by(
+                'id_curso__nivel_educativo__nombre',
+                'id_curso__anio',
+                'id_curso__comision',
+                'id_materia__nombre',
+            ),
+            to_attr='asignaciones_reporte',
+        ),
+    ).order_by('id_persona__apellido', 'id_persona__nombre')
+    horarios_reporte = []
+    if reporte_docente_tipo == 'horarios':
+        horarios_reporte = list(
+            Horario.objects.filter(
+                curso_materia__isnull=False
+            ).select_related(
+                'curso_materia__id_curso__nivel_educativo',
+                'curso_materia__id_curso',
+                'curso_materia__id_materia',
+            ).order_by('dia_semana', 'hora_inicio')
+        )
+
+    if reporte_docente_tipo in tipos_reporte_docentes:
+        for docente_reporte in docentes_reporte:
+            asignaciones = [
+                asignacion for asignacion in docente_reporte.asignaciones_reporte
+                if asignacion.id_curso_id
+            ]
+            niveles = sorted({
+                asignacion.id_curso.nivel_educativo.nombre
+                for asignacion in asignaciones
+            })
+            cursos = sorted({
+                f'{asignacion.id_curso.nivel_educativo.nombre} '
+                f'{asignacion.id_curso.anio}° '
+                f'{asignacion.id_curso.comision}'
+                for asignacion in asignaciones
+            })
+            materias = sorted({
+                asignacion.id_materia.nombre
+                for asignacion in asignaciones
+            })
+            claves_asignaciones = {
+                (asignacion.id_curso_id, asignacion.id_materia_id)
+                for asignacion in asignaciones
+            }
+            horarios = [
+                horario for horario in horarios_reporte
+                if (
+                    horario.curso_materia.id_curso_id,
+                    horario.curso_materia.id_materia_id,
+                ) in claves_asignaciones
+            ]
+            horarios_texto = [
+                f'{horario.dia_semana.capitalize()} '
+                f'{horario.hora_inicio.strftime("%H:%M")}-'
+                f'{horario.hora_fin.strftime("%H:%M")} — '
+                f'{horario.curso_materia.id_materia.nombre} — '
+                f'{horario.curso_materia.id_curso.nivel_educativo.nombre} '
+                f'{horario.curso_materia.id_curso.anio}° '
+                f'{horario.curso_materia.id_curso.comision}'
+                for horario in horarios
+            ]
+            detalles_docente = {
+                'nivel': ', '.join(niveles) or 'Sin nivel asignado',
+                'cursos': (
+                    f'Cursos: {", ".join(cursos) or "Sin cursos"} · '
+                    f'Materias: {", ".join(materias) or "Sin materias"}'
+                ),
+                'horarios': ' | '.join(horarios_texto) or 'Sin horarios cargados',
+            }
+            reportes_docentes.append({
+                'docente': docente_reporte,
+                'detalle': detalles_docente[reporte_docente_tipo],
+            })
+
     # Permite consultar únicamente los horarios de un curso desde el panel.
     # Los deportes se incluyen por nivel, ya que un grupo deportivo está
     # asociado al nivel educativo y no a un curso puntual.
@@ -2150,7 +2246,7 @@ def dashboard_administrativo(request):
         'opiniones', 'noticias', 'usuarios', 'perfil', 'alumnos',
         'profesores', 'niveles-cursos', 'materias', 'deportes-admin',
         'horarios-admin', 'servicios-admin', 'asistencia',
-        'reportes',
+        'reportes', 'reportes-docentes',
     }
     panel_activo = request.session.get("panel_activo", "inicio")
     panel_solicitado = request.GET.get('panel')
@@ -2199,6 +2295,10 @@ def dashboard_administrativo(request):
         'reporte_filtros': reporte_filtros,
         'reporte_nombre': reporte_nombre,
         'reportes_alumnos': reportes_alumnos,
+        'tipos_reporte_docentes': tipos_reporte_docentes,
+        'reporte_docente_tipo': reporte_docente_tipo,
+        'reportes_docentes': reportes_docentes,
+        'reporte_docente_nombre': reporte_docente_nombre,
     })
 
 

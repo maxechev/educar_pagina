@@ -102,6 +102,16 @@
             </a>
             <a
               href="#"
+              class="{% if panel_activo == 'reportes-docentes' %}active{% endif %}"
+              onclick="
+                showPanel('reportes-docentes', this);
+                return false;
+              "
+            >
+              <span class="nav-icon">👨‍🏫</span> Reportes de docentes
+            </a>
+            <a
+              href="#"
               onclick="
                 showPanel('inscripciones', this);
                 return false;
@@ -320,6 +330,51 @@
                       <td>{{ fila.detalle }}</td>
                     </tr>
                     {% empty %}<tr><td colspan="5">No hay alumnos para el reporte seleccionado.</td></tr>{% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            {% endif %}
+          </div>
+
+          <div id="panel-reportes-docentes" class="panel {% if panel_activo == 'reportes-docentes' %}active{% endif %}">
+            <p class="section-title">👨‍🏫 Reportes de docentes</p>
+            <p style="color:#64748b; margin-top:-8px;">
+              Consultá la carga académica por nivel educativo, cursos, materias y horarios.
+            </p>
+
+            <form method="get" action="{% url 'dashboard-administrativo' %}" class="form-section" style="margin:20px 0;">
+              <input type="hidden" name="panel" value="reportes-docentes">
+              <div class="form-grid">
+                <div class="form-group">
+                  <label for="reporte-docente-tipo">Tipo de reporte</label>
+                  <select id="reporte-docente-tipo" name="reporte_docente_tipo" required>
+                    <option value="">Seleccione un reporte</option>
+                    <option value="nivel" {% if reporte_docente_tipo == 'nivel' %}selected{% endif %}>Por nivel educativo</option>
+                    <option value="cursos" {% if reporte_docente_tipo == 'cursos' %}selected{% endif %}>Cursos y materias a cargo</option>
+                    <option value="horarios" {% if reporte_docente_tipo == 'horarios' %}selected{% endif %}>Horarios</option>
+                  </select>
+                </div>
+              </div>
+              <button type="submit" class="btn-form" style="margin-top:14px;">Generar reporte</button>
+            </form>
+
+            {% if reporte_docente_tipo %}
+            <div class="report-card" style="margin-top:20px;">
+              <h3>{{ reporte_docente_nombre }} — {{ reportes_docentes|length }} docente{{ reportes_docentes|length|pluralize }}</h3>
+              <div style="overflow-x:auto;">
+                <table class="tabla">
+                  <thead><tr><th>Docente</th><th>DNI</th><th>Título</th><th>Especialidad</th><th>Detalle</th></tr></thead>
+                  <tbody>
+                    {% for fila in reportes_docentes %}
+                    <tr>
+                      <td>{{ fila.docente.id_persona.apellido }}, {{ fila.docente.id_persona.nombre }}</td>
+                      <td>{{ fila.docente.id_persona.dni }}</td>
+                      <td>{{ fila.docente.titulo }}</td>
+                      <td>{{ fila.docente.especialidad|default:'-' }}</td>
+                      <td>{{ fila.detalle }}</td>
+                    </tr>
+                    {% empty %}<tr><td colspan="5">No hay docentes para el reporte seleccionado.</td></tr>{% endfor %}
                   </tbody>
                 </table>
               </div>
