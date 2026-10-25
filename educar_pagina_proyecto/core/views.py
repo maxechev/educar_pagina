@@ -12,7 +12,7 @@ import re
 import resend
 import os
 from django.shortcuts import render, redirect
-from django.db.models import Avg, Q, Case, When, Value, IntegerField
+from django.db.models import Avg, Q, Case, When, Value, IntegerField, Prefetch
 from django.db import transaction, IntegrityError
 from django.db.models.deletion import ProtectedError
 import json
@@ -2011,6 +2011,122 @@ def dashboard_administrativo(request):
         )
     ).order_by('dia_orden', 'hora_inicio')
 
+    # HU13: reportes de alumnos. Se reutilizan las relaciones de las HUs
+    # anteriores; esta funcionalidad no agrega modelos ni migraciones.
+    reporte_tipo = (request.GET.get('reporte_tipo') or '').strip().lower()
+    reporte_filtros = {
+        'curso': (request.GET.get('reporte_curso') or '').strip(),
+        'materia': (request.GET.get('reporte_materia') or '').strip(),
+        'deporte': (request.GET.get('reporte_deporte') or '').strip(),
+        'nivel': (request.GET.get('reporte_nivel') or '').strip(),
+        'transporte': (request.GET.get('reporte_transporte') or '').strip(),
+        'comedor': (request.GET.get('reporte_comedor') or '').strip(),
+    }
+    tipos_reporte = {
+        'curso': 'Curso',
+        'materia': 'Materia',
+        'deporte': 'Deporte',
+        'nivel': 'Nivel educativo',
+        'transporte': 'Recorrido de transporte',
+        'comedor': 'Comedor',
+    }
+    reporte_nombre = tipos_reporte.get(reporte_tipo, '')
+    reporte_filtro = reporte_filtros.get(reporte_tipo, '')
+    reportes_alumnos = []
+    alumnos_reporte = Alumno.objects.select_related(
+        'id_persona', 'id_curso__nivel_educativo'
+    ).prefetch_related(
+        Prefetch(
+            'inscripciones_deportivas',
+            queryset=InscripcionDeportiva.objects.filter(
+                estado='Activa'
+            ).select_related('id_grupo__id_disciplina'),
+            to_attr='deportes_reporte',
+        ),
+        Prefetch(
+            'inscripciones_transporte',
+            queryset=InscripcionTransporte.objects.filter(
+                estado='Activa'
+            ).select_related('id_recorrido'),
+            to_attr='transportes_reporte',
+        ),
+        Prefetch(
+            'inscripciones_comedor',
+            queryset=InscripcionComedor.objects.filter(
+                estado='Activa'
+            ).select_related('id_servicio'),
+            to_attr='comedores_reporte',
+        ),
+    ).order_by('id_persona__apellido', 'id_persona__nombre')
+
+    if reporte_tipo == 'curso' and reporte_filtro.isdigit():
+        alumnos_reporte = alumnos_reporte.filter(id_curso_id=int(reporte_filtro))
+    elif reporte_tipo == 'materia' and reporte_filtro.isdigit():
+        alumnos_reporte = alumnos_reporte.filter(
+            id_curso__cursocursamaterias__id_materia=int(reporte_filtro)
+        ).distinct()
+    elif reporte_tipo == 'deporte' and reporte_filtro.isdigit():
+        alumnos_reporte = alumnos_reporte.filter(
+            inscripciones_deportivas__id_grupo__id_disciplina_id=int(reporte_filtro),
+            inscripciones_deportivas__estado='Activa',
+        ).distinct()
+    elif reporte_tipo == 'nivel' and reporte_filtro.isdigit():
+        alumnos_reporte = alumnos_reporte.filter(
+            id_curso__nivel_educativo_id=int(reporte_filtro)
+        )
+    elif reporte_tipo == 'transporte' and reporte_filtro.isdigit():
+        alumnos_reporte = alumnos_reporte.filter(
+            inscripciones_transporte__id_recorrido_id=int(reporte_filtro),
+            inscripciones_transporte__estado='Activa',
+        ).distinct()
+    elif reporte_tipo == 'comedor' and reporte_filtro.isdigit():
+        alumnos_reporte = alumnos_reporte.filter(
+            inscripciones_comedor__id_servicio_id=int(reporte_filtro),
+            inscripciones_comedor__estado='Activa',
+        ).distinct()
+
+    if reporte_tipo in tipos_reporte:
+        for alumno_reporte in alumnos_reporte:
+            deportes = [
+                inscripcion.id_grupo.id_disciplina.nombre
+                for inscripcion in alumno_reporte.deportes_reporte
+            ]
+            transportes = [
+                inscripcion.id_recorrido.nombre
+                for inscripcion in alumno_reporte.transportes_reporte
+            ]
+            comedores = [
+                inscripcion.id_servicio.nombre
+                for inscripcion in alumno_reporte.comedores_reporte
+            ]
+            materias = list(
+                CursoCursaMaterias.objects.filter(
+                    id_curso=alumno_reporte.id_curso
+                ).select_related('id_materia').values_list(
+                    'id_materia__nombre', flat=True
+                )
+            ) if alumno_reporte.id_curso_id else []
+            detalles = {
+                'curso': (
+                    f'{alumno_reporte.id_curso.nivel_educativo.nombre} '
+                    f'{alumno_reporte.id_curso.anio}° '
+                    f'{alumno_reporte.id_curso.comision}'
+                    if alumno_reporte.id_curso else 'Sin curso'
+                ),
+                'materia': ', '.join(materias) or 'Sin materias',
+                'deporte': ', '.join(deportes) or 'Sin deportes',
+                'nivel': (
+                    alumno_reporte.id_curso.nivel_educativo.nombre
+                    if alumno_reporte.id_curso else 'Sin nivel'
+                ),
+                'transporte': ', '.join(transportes) or 'Sin transporte',
+                'comedor': ', '.join(comedores) or 'Sin comedor',
+            }
+            reportes_alumnos.append({
+                'alumno': alumno_reporte,
+                'detalle': detalles.get(reporte_tipo, ''),
+            })
+
     # Permite consultar únicamente los horarios de un curso desde el panel.
     # Los deportes se incluyen por nivel, ya que un grupo deportivo está
     # asociado al nivel educativo y no a un curso puntual.
@@ -2034,6 +2150,7 @@ def dashboard_administrativo(request):
         'opiniones', 'noticias', 'usuarios', 'perfil', 'alumnos',
         'profesores', 'niveles-cursos', 'materias', 'deportes-admin',
         'horarios-admin', 'servicios-admin', 'asistencia',
+        'reportes',
     }
     panel_activo = request.session.get("panel_activo", "inicio")
     panel_solicitado = request.GET.get('panel')
@@ -2077,6 +2194,11 @@ def dashboard_administrativo(request):
         'usuario_busqueda': usuario_busqueda,
         'usuario_rol_filtro': usuario_rol_filtro,
         'usuario_estado_filtro': usuario_estado_filtro,
+        'tipos_reporte': tipos_reporte,
+        'reporte_tipo': reporte_tipo,
+        'reporte_filtros': reporte_filtros,
+        'reporte_nombre': reporte_nombre,
+        'reportes_alumnos': reportes_alumnos,
     })
 
 

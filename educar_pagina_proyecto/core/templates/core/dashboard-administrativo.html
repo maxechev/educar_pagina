@@ -92,6 +92,16 @@
             </a>
             <a
               href="#"
+              class="{% if panel_activo == 'reportes' %}active{% endif %}"
+              onclick="
+                showPanel('reportes', this);
+                return false;
+              "
+            >
+              <span class="nav-icon">📊</span> Reportes de alumnos
+            </a>
+            <a
+              href="#"
               onclick="
                 showPanel('inscripciones', this);
                 return false;
@@ -244,6 +254,74 @@
                 <div class="stat-sub">Por validar</div>
               </div>
             </div>
+          </div>
+
+          <div id="panel-reportes" class="panel {% if panel_activo == 'reportes' %}active{% endif %}">
+            <p class="section-title">📊 Reportes de alumnos</p>
+            <p style="color:#64748b; margin-top:-8px;">
+              Generá listados por curso, materia, deporte, nivel educativo,
+              recorrido de transporte o comedor.
+            </p>
+
+            <form method="get" action="{% url 'dashboard-administrativo' %}" class="form-section" style="margin:20px 0;">
+              <input type="hidden" name="panel" value="reportes">
+              <div class="form-grid">
+                <div class="form-group">
+                  <label for="reporte-tipo">Tipo de reporte</label>
+                  <select id="reporte-tipo" name="reporte_tipo" onchange="mostrarFiltroReporte()" required>
+                    <option value="">Seleccione un reporte</option>
+                    {% for clave, nombre in tipos_reporte.items %}
+                    <option value="{{ clave }}" {% if reporte_tipo == clave %}selected{% endif %}>{{ nombre }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+
+                {% for clave, nombre in tipos_reporte.items %}
+                <div id="filtro-reporte-{{ clave }}" class="form-group filtro-reporte" style="display:none;">
+                  <label for="reporte-{{ clave }}">{{ nombre }}</label>
+                  <select id="reporte-{{ clave }}" name="reporte_{{ clave }}">
+                    <option value="">Todos</option>
+                    {% if clave == 'curso' %}
+                      {% for curso in cursos_academicos %}<option value="{{ curso.id_curso }}" {% if reporte_filtros.curso == curso.id_curso|stringformat:'s' %}selected{% endif %}>{{ curso.nivel_educativo.nombre }} {{ curso.anio }}° {{ curso.comision }} ({{ curso.turno }})</option>{% endfor %}
+                    {% elif clave == 'materia' %}
+                      {% for materia in materias_academicas %}<option value="{{ materia.id_materia }}" {% if reporte_filtros.materia == materia.id_materia|stringformat:'s' %}selected{% endif %}>{{ materia.nombre }}</option>{% endfor %}
+                    {% elif clave == 'deporte' %}
+                      {% for deporte in deportes_academicos %}<option value="{{ deporte.id_disciplina }}" {% if reporte_filtros.deporte == deporte.id_disciplina|stringformat:'s' %}selected{% endif %}>{{ deporte.nombre }}</option>{% endfor %}
+                    {% elif clave == 'nivel' %}
+                      {% for nivel in niveles_educativos %}<option value="{{ nivel.id_nivel }}" {% if reporte_filtros.nivel == nivel.id_nivel|stringformat:'s' %}selected{% endif %}>{{ nivel.nombre }}</option>{% endfor %}
+                    {% elif clave == 'transporte' %}
+                      {% for recorrido in recorridos_transporte_admin %}<option value="{{ recorrido.id_recorrido }}" {% if reporte_filtros.transporte == recorrido.id_recorrido|stringformat:'s' %}selected{% endif %}>{{ recorrido.nombre }}</option>{% endfor %}
+                    {% elif clave == 'comedor' %}
+                      <option value="{{ servicio_comedor_admin.id_servicio }}" {% if reporte_filtros.comedor == servicio_comedor_admin.id_servicio|stringformat:'s' %}selected{% endif %}>{{ servicio_comedor_admin.nombre }}</option>
+                    {% endif %}
+                  </select>
+                </div>
+                {% endfor %}
+              </div>
+              <button type="submit" class="btn-form" style="margin-top:14px;">Generar reporte</button>
+            </form>
+
+            {% if reporte_tipo %}
+            <div class="report-card" style="margin-top:20px;">
+              <h3>{{ reporte_nombre }} — {{ reportes_alumnos|length }} alumno{{ reportes_alumnos|length|pluralize }}</h3>
+              <div style="overflow-x:auto;">
+                <table class="tabla">
+                  <thead><tr><th>Alumno</th><th>DNI</th><th>Nivel</th><th>Curso</th><th>Detalle</th></tr></thead>
+                  <tbody>
+                    {% for fila in reportes_alumnos %}
+                    <tr>
+                      <td>{{ fila.alumno.id_persona.apellido }}, {{ fila.alumno.id_persona.nombre }}</td>
+                      <td>{{ fila.alumno.id_persona.dni }}</td>
+                      <td>{% if fila.alumno.id_curso %}{{ fila.alumno.id_curso.nivel_educativo.nombre }}{% else %}-{% endif %}</td>
+                      <td>{% if fila.alumno.id_curso %}{{ fila.alumno.id_curso.anio }}° {{ fila.alumno.id_curso.comision }}{% else %}Sin curso{% endif %}</td>
+                      <td>{{ fila.detalle }}</td>
+                    </tr>
+                    {% empty %}<tr><td colspan="5">No hay alumnos para el reporte seleccionado.</td></tr>{% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            {% endif %}
           </div>
 
           <div id="panel-inscripciones" class="panel">
@@ -1944,6 +2022,13 @@
 
     <!-- SCRIPTS MEJORADOS PARA QUE LOS PANELES FUNCIONEN SIEMPRE -->
     <script>
+      function mostrarFiltroReporte() {
+        const tipo = document.getElementById("reporte-tipo")?.value || "";
+        document.querySelectorAll(".filtro-reporte").forEach((filtro) => {
+          filtro.style.display = filtro.id === "filtro-reporte-" + tipo ? "block" : "none";
+        });
+      }
+
       function showPanel(id, el) {
         document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
         document.querySelectorAll(".sidebar-nav a").forEach((a) => a.classList.remove("active"));
@@ -1967,6 +2052,7 @@
       }
 
       document.addEventListener("DOMContentLoaded", function () {
+        mostrarFiltroReporte();
         const panel = "{{ panel_activo }}";
         if (!panel || panel === "inicio") return;
 
