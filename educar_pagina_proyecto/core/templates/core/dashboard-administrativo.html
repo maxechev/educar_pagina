@@ -270,9 +270,12 @@
                   <label for="reporte-tipo">Tipo de reporte</label>
                   <select id="reporte-tipo" name="reporte_tipo" onchange="mostrarFiltroReporte()" required>
                     <option value="">Seleccione un reporte</option>
-                    {% for clave, nombre in tipos_reporte.items %}
-                    <option value="{{ clave }}" {% if reporte_tipo == clave %}selected{% endif %}>{{ nombre }}</option>
-                    {% endfor %}
+                    <option value="curso" {% if reporte_tipo == 'curso' %}selected{% endif %}>Curso</option>
+                    <option value="materia" {% if reporte_tipo == 'materia' %}selected{% endif %}>Materia</option>
+                    <option value="deporte" {% if reporte_tipo == 'deporte' %}selected{% endif %}>Deporte</option>
+                    <option value="nivel" {% if reporte_tipo == 'nivel' %}selected{% endif %}>Nivel educativo</option>
+                    <option value="transporte" {% if reporte_tipo == 'transporte' %}selected{% endif %}>Recorrido de transporte</option>
+                    <option value="comedor" {% if reporte_tipo == 'comedor' %}selected{% endif %}>Comedor</option>
                   </select>
                 </div>
 
