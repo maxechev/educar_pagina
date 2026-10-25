@@ -492,6 +492,7 @@
       document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.remove('active'));
       
       document.getElementById('panel-' + panelName).classList.add('active');
+      if (panelName === 'perfil') window.scrollTo({ top: 0, behavior: 'smooth' });
       element.classList.add('active');
       
       // Guarda el panel activo en la URL para no perderlo al hacer submit o refresh
