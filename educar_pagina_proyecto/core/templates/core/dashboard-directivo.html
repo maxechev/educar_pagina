@@ -498,7 +498,7 @@
           .querySelectorAll(".sidebar-nav a")
           .forEach((a) => a.classList.remove("active"));
         document.getElementById("panel-" + id).classList.add("active");
-        if (id === "perfil") window.scrollTo({ top: 0, behavior: "smooth" });
+        window.scrollTo({ top: 0, behavior: "smooth" });
         el.classList.add("active");
         const url = new URL(window.location.href);
         if (id === "inicio") url.searchParams.delete("panel");
