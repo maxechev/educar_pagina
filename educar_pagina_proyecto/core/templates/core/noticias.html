@@ -1,4 +1,5 @@
 {% load static %}
+{% get_media_prefix as media_prefix %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -32,7 +33,7 @@
 
         {% if noticia.imagen %}
             <img
-                src="/media/{{ noticia.imagen }}"
+                src="{{ media_prefix }}{{ noticia.imagen }}"
                 alt="Noticia institucional"
                 class="card-image">
         {% endif %}
