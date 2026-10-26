@@ -1,0 +1,6 @@
+-r requirements.txt
+
+# Herramientas de calidad y pruebas para desarrollo
+pre-commit==4.7.0
+ruff==0.17.2
+selenium==4.51.0

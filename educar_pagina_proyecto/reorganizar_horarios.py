@@ -20,11 +20,11 @@ import django
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "educar_pagina_proyecto.settings")
 django.setup()
 
-from django.db import transaction
-from django.db.models import Count
-from django.utils import timezone
+from django.db import transaction  # noqa: E402
+from django.db.models import Count  # noqa: E402
+from django.utils import timezone  # noqa: E402
 
-from core.models import Curso, CursoCursaMaterias, GrupoDeportivo, Horario
+from core.models import Curso, CursoCursaMaterias, GrupoDeportivo, Horario  # noqa: E402
 
 
 # Dejar en True para revisar primero el informe sin guardar cambios.

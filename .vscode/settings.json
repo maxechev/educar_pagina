@@ -1,0 +1,6 @@
+{
+  "python.terminal.activateEnvironment": true,
+  "ruff.importStrategy": "fromEnvironment",
+  "ruff.lint.enable": true,
+  "ruff.configurationPreference": "filesystemFirst"
+}

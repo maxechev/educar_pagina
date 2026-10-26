@@ -8,6 +8,12 @@ __pycache__/
 *.py[cod]
 venv/
 env/
+.ruff_cache/
+.pytest_cache/
+.pre-commit-cache/
+.selenium-cache/
+.coverage
+htmlcov/
 
 # Local development data
 *.sqlite3
@@ -16,6 +22,14 @@ media/
 
 # Editors and operating systems
 .vscode/
+!.vscode/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
 .idea/
 Thumbs.db
 desktop.ini

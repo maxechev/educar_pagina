@@ -1,0 +1,33 @@
+name: Pruebas de regresión web
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  selenium:
+    name: Selenium en Chrome
+    runs-on: ubuntu-latest
+    env:
+      SECRET_KEY: ci-only-not-a-production-secret
+      DEBUG: "True"
+      ALLOWED_HOSTS: localhost,127.0.0.1,testserver
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+      - name: Instalar Google Chrome
+        uses: browser-actions/setup-chrome@v1
+      - name: Instalar dependencias del proyecto y QA
+        run: python -m pip install -r requirements-dev.txt
+      - name: Ejecutar pruebas de regresión del navegador
+        working-directory: educar_pagina_proyecto
+        run: python manage.py test core.selenium_tests --verbosity 2

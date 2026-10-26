@@ -1,4 +1,7 @@
 import requests
+import json
+import os
+from urllib.parse import urlencode
 from django.http import JsonResponse
 import re
 from django.core.files.storage import FileSystemStorage
@@ -84,12 +87,6 @@ COMUNICADOS_FILE = os.path.join(
     os.path.dirname(__file__),
     'comunicados.json'
 )
-import json
-import os
-from urllib.parse import urlencode
-from django.db.models import Avg
-from django.views.decorators.cache import never_cache
-
 OPINIONES_FILE = os.path.join(os.path.dirname(__file__), 'opiniones.json')
 
 def obtener_persona(request):
@@ -3938,7 +3935,7 @@ def dashboard_padres(request):
     def parse_fecha(c):
         try:
             return datetime.strptime(c.get("fecha", ""), '%d/%m/%Y %H:%M')
-        except:
+        except (ValueError, TypeError):
             return datetime.min
 
     if os.path.exists(COMUNICADOS_FILE):

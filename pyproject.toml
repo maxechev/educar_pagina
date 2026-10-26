@@ -1,0 +1,9 @@
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+src = ["educar_pagina_proyecto"]
+exclude = ["educar_pagina_proyecto/core/migrations"]
+
+[tool.ruff.lint]
+# Reglas iniciales para detectar errores básicos sin reformatear todo el código legado.
+select = ["E4", "E7", "E9"]
