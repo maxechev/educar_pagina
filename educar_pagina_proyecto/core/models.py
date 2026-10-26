@@ -731,7 +731,9 @@ class TutorTutoraAlumno(models.Model):
 class Usuario(models.Model):
     id = models.AutoField(primary_key=True)
     nombre_usuario = models.CharField(unique=True, max_length=60)
-    contrasenia = models.CharField(max_length=20)
+    # Se almacena el hash completo de Django (PBKDF2/Argon2), no la clave
+    # original. El tamaño permite cambiar el algoritmo sin otra migración.
+    contrasenia = models.CharField(max_length=128)
     correo = models.CharField(unique=True, max_length=100, blank=True, null=True)
     rol = models.CharField(max_length=30, blank=True, null=True)
     estado = models.CharField(max_length=20, default='Activo')

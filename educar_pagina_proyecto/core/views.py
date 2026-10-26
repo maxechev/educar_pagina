@@ -20,6 +20,7 @@ from django.core.mail import EmailMessage
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 from django.contrib import messages
+from django.contrib.auth.hashers import check_password, make_password
 from django.contrib.messages import get_messages
 from django.utils import timezone
 from datetime import date
@@ -641,16 +642,23 @@ def login(request):
                 'error': 'Debe seleccionar un tipo de usuario.'
             })
         try:
+            usuario = Usuario.objects.filter(
+                Q(nombre_usuario=usuario_input) | Q(correo=usuario_input)
+            ).first()
+            if not usuario:
+                raise Usuario.DoesNotExist
             try:
-                usuario = Usuario.objects.get(
-                    nombre_usuario=usuario_input,
-                    contrasenia=password
-                )
-            except Usuario.DoesNotExist:
-                usuario = Usuario.objects.get(
-                    correo=usuario_input,
-                    contrasenia=password
-                )
+                password_valida = check_password(password or '', usuario.contrasenia)
+            except (ValueError, TypeError):
+                password_valida = False
+            # Compatibilidad de transición: si todavía queda una contraseña
+            # antigua en texto plano, se actualiza a hash en el primer login.
+            if not password_valida and usuario.contrasenia == password:
+                usuario.contrasenia = make_password(password)
+                usuario.save(update_fields=['contrasenia'])
+                password_valida = True
+            if not password_valida:
+                raise Usuario.DoesNotExist
 
             if getattr(usuario, 'estado', 'Activo') != 'Activo':
                 return render(request, 'core/login.html', {
@@ -3242,7 +3250,7 @@ def alta_profesor_admin(request):
         with transaction.atomic():
             usuario = Usuario.objects.create(
                 nombre_usuario=nombre_usuario,
-                contrasenia=contrasenia,
+                contrasenia=make_password(contrasenia),
                 correo=email,
                 rol='docente',
                 estado='Activo',
@@ -3675,7 +3683,7 @@ def modificar_usuario_admin(request, id_usuario):
             usuario.rol = rol
             usuario.estado = estado if estado in ('Activo', 'Inactivo') else 'Activo'
             if contrasenia:
-                usuario.contrasenia = contrasenia
+                usuario.contrasenia = make_password(contrasenia)
             usuario.save()
             messages.success(request, 'Usuario modificado correctamente.', extra_tags='usuarios')
 
@@ -3771,7 +3779,7 @@ def alta_padre_admin(request):
             with transaction.atomic():
                 usuario = Usuario.objects.create(
                     nombre_usuario=nombre_usuario,
-                    contrasenia=contrasenia,
+                    contrasenia=make_password(contrasenia),
                     correo=email or None,
                     rol='padre',
                     estado='Activo',
@@ -5241,7 +5249,7 @@ def alta_alumno_admin(request):
         try:
             usuario = Usuario.objects.create(
                 nombre_usuario=nombre_usuario,
-                contrasenia=contrasenia,
+                contrasenia=make_password(contrasenia),
                 correo=email if email else None,
                 rol='alumno',
                 estado='Activo',

@@ -1,6 +1,7 @@
 """Patrones de diseño usados por los servicios de la aplicación."""
 
 from abc import ABC
+from django.contrib.auth.hashers import make_password
 
 
 class UsuarioFactory(ABC):
@@ -14,7 +15,7 @@ class UsuarioFactory(ABC):
     def crear(self, *, nombre_usuario, contrasenia, correo=None, estado='Activo'):
         return self.modelo_usuario.objects.create(
             nombre_usuario=nombre_usuario,
-            contrasenia=contrasenia,
+            contrasenia=make_password(contrasenia),
             correo=correo,
             rol=self.rol,
             estado=estado,

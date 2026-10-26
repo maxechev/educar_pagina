@@ -29,6 +29,25 @@ SECRET_KEY = os.environ["SECRET_KEY"]
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DEBUG", "False").lower() in ("true", "1", "yes", "on")
 
+# En desarrollo se permiten cookies y HTTP local. En producción, el valor
+# predeterminado es seguro y puede ajustarse mediante variables de entorno.
+SECURE_SSL_REDIRECT = os.getenv(
+    "SECURE_SSL_REDIRECT", "False" if DEBUG else "True"
+).lower() in ("true", "1", "yes", "on")
+SESSION_COOKIE_SECURE = os.getenv(
+    "SESSION_COOKIE_SECURE", "False" if DEBUG else "True"
+).lower() in ("true", "1", "yes", "on")
+CSRF_COOKIE_SECURE = os.getenv(
+    "CSRF_COOKIE_SECURE", "False" if DEBUG else "True"
+).lower() in ("true", "1", "yes", "on")
+SECURE_HSTS_SECONDS = int(os.getenv(
+    "SECURE_HSTS_SECONDS", "0" if DEBUG else "31536000"
+))
+SECURE_HSTS_INCLUDE_SUBDOMAINS = not DEBUG
+SECURE_HSTS_PRELOAD = not DEBUG
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = "DENY"
+
 ALLOWED_HOSTS = [host.strip() for host in os.getenv(
     "ALLOWED_HOSTS",
     "educarparatransformar.pythonanywhere.com,localhost,127.0.0.1",
