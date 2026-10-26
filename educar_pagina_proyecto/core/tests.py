@@ -2,6 +2,7 @@ from datetime import date
 
 from django.contrib.auth.hashers import check_password, make_password
 from django.test import Client, TestCase
+from django.utils.crypto import get_random_string
 
 from .models import Persona, PersonalAdministrativo, Tutor, Usuario
 from .patterns import GestionEscolarFacade
@@ -21,20 +22,22 @@ class SeguridadYPatronesTests(TestCase):
         )
 
     def test_factory_almacena_hash_y_no_texto_plano(self):
+        password_prueba = get_random_string(32)
         fachada = GestionEscolarFacade({'Usuario': Usuario})
         usuario = fachada.crear_usuario(
             'docente',
             nombre_usuario='docente_test',
-            contrasenia='clave-segura',
+            contrasenia=password_prueba,
         )
 
-        self.assertNotEqual(usuario.contrasenia, 'clave-segura')
-        self.assertTrue(check_password('clave-segura', usuario.contrasenia))
+        self.assertNotEqual(usuario.contrasenia, password_prueba)
+        self.assertTrue(check_password(password_prueba, usuario.contrasenia))
 
     def test_login_con_hash_redirige_al_dashboard_correcto(self):
+        password_prueba = get_random_string(32)
         usuario = Usuario.objects.create(
             nombre_usuario='admin_test',
-            contrasenia=make_password('clave-segura'),
+            contrasenia=make_password(password_prueba),
             rol='administrativo',
             estado='Activo',
         )
@@ -48,23 +51,25 @@ class SeguridadYPatronesTests(TestCase):
 
         respuesta = self.client.post('/login/', {
             'usuario': 'admin_test',
-            'password': 'clave-segura',
+            'password': password_prueba,
             'rol': 'administrativo',
         })
 
         self.assertRedirects(respuesta, '/administrativo/')
 
     def test_login_rechaza_clave_incorrecta(self):
+        password_correcta = get_random_string(32)
+        password_incorrecta = get_random_string(32)
         Usuario.objects.create(
             nombre_usuario='usuario_test',
-            contrasenia=make_password('clave-correcta'),
+            contrasenia=make_password(password_correcta),
             rol='administrativo',
             estado='Activo',
         )
 
         respuesta = self.client.post('/login/', {
             'usuario': 'usuario_test',
-            'password': 'otra-clave',
+            'password': password_incorrecta,
             'rol': 'administrativo',
         })
 
@@ -72,9 +77,10 @@ class SeguridadYPatronesTests(TestCase):
         self.assertContains(respuesta, 'Datos incorrectos')
 
     def test_padre_no_accede_al_dashboard_administrativo(self):
+        password_prueba = get_random_string(32)
         usuario = Usuario.objects.create(
             nombre_usuario='padre_test',
-            contrasenia=make_password('clave-segura'),
+            contrasenia=make_password(password_prueba),
             rol='padre',
             estado='Activo',
         )
