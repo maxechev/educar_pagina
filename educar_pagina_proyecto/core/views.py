@@ -2,7 +2,8 @@ import requests
 import json
 import os
 from urllib.parse import urlencode
-from django.http import JsonResponse
+from django.http import FileResponse, Http404, JsonResponse
+from django.views.decorators.http import require_POST
 import re
 from django.core.files.storage import FileSystemStorage
 from datetime import datetime, date, time
@@ -95,7 +96,10 @@ def obtener_persona(request):
     if not usuario_id:
         return None
 
-    usuario = Usuario.objects.get(id=usuario_id)
+    usuario = Usuario.objects.filter(id=usuario_id).first()
+    if not usuario or getattr(usuario, 'estado', 'Activo') != 'Activo':
+        request.session.flush()
+        return None
     return Persona.objects.filter(id_usuario=usuario).first()
 
 
@@ -210,6 +214,13 @@ def _admin_session(request):
     if not persona or dashboard_url != 'dashboard-administrativo':
         return None
     return persona
+
+
+def _tutor_session(request):
+    persona = obtener_persona(request)
+    if not persona:
+        return None
+    return Tutor.objects.filter(id_persona=persona).first()
 
 
 def _active_comedor():
@@ -700,6 +711,9 @@ def login(request):
                     'error': 'El tipo de usuario seleccionado no corresponde a esta cuenta.'
                 })
 
+            # Eliminar cualquier estado anónimo previo y rotar la clave de
+            # sesión evita reutilizar una sesión controlada antes del login.
+            request.session.flush()
             request.session['usuario_id'] = usuario.id
             # Cada nuevo inicio de sesión comienza en Inicio. El panel se
             # conserva solamente durante la sesión activa para las recargas.
@@ -3369,7 +3383,10 @@ def baja_profesor_admin(request, legajo):
     return redirect('lista-profesores-admin')
 
 @never_cache
+@require_POST
 def aprobar_inscripcion(request, id_solicitud):
+    if not _admin_session(request):
+        return redirect('login')
 
     solicitud = SolicitudInscripcion.objects.get(
         id_solicitud=id_solicitud
@@ -3466,7 +3483,10 @@ def aprobar_inscripcion(request, id_solicitud):
     return redirect('dashboard-administrativo')
 
 @never_cache
+@require_POST
 def rechazar_inscripcion(request, id_solicitud):
+    if not _admin_session(request):
+        return redirect('login')
 
     solicitud = get_object_or_404(
         SolicitudInscripcion,
@@ -3478,8 +3498,10 @@ def rechazar_inscripcion(request, id_solicitud):
     return redirect('dashboard-administrativo')
 
 @never_cache
+@require_POST
 def crear_reserva(request):
-    print(request.POST)
+    if not _admin_session(request):
+        return redirect('login')
 
     if request.method == "POST":
 
@@ -3578,7 +3600,10 @@ def crear_reserva(request):
         return redirect(reverse('dashboard-administrativo') + '#reservas')
 
 @never_cache
+@require_POST
 def eliminar_opinion(request, indice):
+    if not _admin_session(request):
+        return redirect('login')
 
     if request.method == "POST":
 
@@ -3689,6 +3714,7 @@ def modificar_usuario_admin(request, id_usuario):
 
 
 @never_cache
+@require_POST
 def baja_usuario_admin(request, id_usuario):
     persona_sesion, dashboard_url = obtener_datos_sesion(request)
     if not persona_sesion or dashboard_url != 'dashboard-administrativo':
@@ -4228,7 +4254,11 @@ def dashboard_preceptor(request):
         context
     )
 
+@require_POST
 def crear_noticia(request):
+
+    if not _admin_session(request):
+        return redirect('login')
 
     if request.method == 'POST':
 
@@ -4330,6 +4360,9 @@ def obtener_datos_sesion(request):
         return None, None
     try:
         usuario = Usuario.objects.get(id=usuario_id)
+        if getattr(usuario, 'estado', 'Activo') != 'Activo':
+            request.session.flush()
+            return None, None
         persona = Persona.objects.filter(id_usuario=usuario).first()
         if not persona:
             return None, None
@@ -4354,9 +4387,7 @@ def obtener_datos_sesion(request):
         return None, None
 
 def logout(request):
-    if 'usuario_id' in request.session:
-        del request.session['usuario_id']
-    request.session.pop('panel_activo', None)
+    request.session.flush()
     return redirect('index')
 
 def crear_comunicado(request):
@@ -4369,6 +4400,9 @@ def crear_comunicado(request):
 
         persona = obtener_persona(request)
 
+        if not persona:
+            return redirect('login')
+
         rol = "Desconocido"
 
         if Directivo.objects.filter(id_persona=persona.id).exists():
@@ -4379,6 +4413,9 @@ def crear_comunicado(request):
             rol = "Preceptor"
         elif PersonalAdministrativo.objects.filter(id_persona=persona.id).exists():
             rol = "Administrativo"
+
+        if rol == "Desconocido":
+            return redirect('login')
 
         if not titulo or not contenido_form:
             return redirect('dashboard-directivo')
@@ -4443,6 +4480,7 @@ def crear_comunicado(request):
             return redirect('dashboard-directivo')
         
 @never_cache
+@require_POST
 def registrar_pago(request):
 
     persona = obtener_persona(request)
@@ -4450,16 +4488,17 @@ def registrar_pago(request):
     if not persona:
         return redirect('login')
 
-    tutor = Tutor.objects.filter(
-        id_persona=persona
-    ).first()
+    tutor = Tutor.objects.filter(id_persona=persona).first()
+    if not tutor:
+        return redirect('login')
 
     if request.method == 'POST':
 
         try:
 
             alumno = Alumno.objects.get(
-                legajo=request.POST.get('alumno')
+                legajo=request.POST.get('alumno'),
+                tutortutoraalumno__id_tutor=tutor,
             )
 
             curso = alumno.id_curso
@@ -4544,7 +4583,10 @@ def registrar_pago(request):
     return redirect('dashboard-padres')
 
 @never_cache
+@require_POST
 def aprobar_pago(request, id_pago):
+    if not _admin_session(request):
+        return redirect('login')
 
     pago = PagoPendiente.objects.get(
         id_pago=id_pago
@@ -4564,7 +4606,10 @@ def aprobar_pago(request, id_pago):
 
     return redirect('dashboard-administrativo')
 
+@require_POST
 def rechazar_pago(request, id_pago):
+    if not _admin_session(request):
+        return redirect('login')
 
     pago = PagoPendiente.objects.get(
         id_pago=id_pago
@@ -4577,6 +4622,7 @@ def rechazar_pago(request, id_pago):
     )
 
 @never_cache
+@require_POST
 def enviar_documentacion(request):
 
     if request.method != 'POST':
@@ -4584,8 +4630,12 @@ def enviar_documentacion(request):
 
     try:
 
+        tutor = _tutor_session(request)
+        if not tutor:
+            return redirect('login')
         alumno = Alumno.objects.get(
-            legajo=request.POST.get('alumno')
+            legajo=request.POST.get('alumno'),
+            tutortutoraalumno__id_tutor=tutor,
         )
 
         doc_existente = DocumentacionAlumno.objects.filter(
@@ -4607,7 +4657,7 @@ def enviar_documentacion(request):
             doc_existente.delete()
 
         fs = FileSystemStorage(
-            location='media/documentacion'
+            location=os.path.join(settings.PRIVATE_DOCUMENT_ROOT, 'documentacion')
         )
 
         dni_frente = request.FILES.get('dni_frente')
@@ -4713,11 +4763,16 @@ def enviar_documentacion(request):
             extra_tags="documentacion"
         )
 
-    except Exception as e:
-
+    except Alumno.DoesNotExist:
         messages.error(
             request,
-            f'Error al enviar la documentación: {e}',
+            'No se pudo validar el alumno asociado a esta cuenta.',
+            extra_tags="documentacion",
+        )
+    except Exception:
+        messages.error(
+            request,
+            'Ocurrió un error al enviar la documentación.',
             extra_tags="documentacion"
         )
 
@@ -4726,17 +4781,19 @@ def enviar_documentacion(request):
     return redirect('dashboard-padres')
 
 @never_cache
+@require_POST
 def aprobar_documentacion(request, id_documentacion):
+    administrativo = _admin_session(request)
+    if not administrativo:
+        return redirect('login')
 
     doc = get_object_or_404(
         DocumentacionAlumno,
         id_documentacion=id_documentacion
     )
 
-    persona = obtener_persona(request)
-
     administrativo = PersonalAdministrativo.objects.filter(
-        id_persona=persona
+        id_persona=administrativo
     ).first()
 
     doc.estado = "Aprobada"
@@ -4749,13 +4806,60 @@ def aprobar_documentacion(request, id_documentacion):
     return redirect('dashboard-administrativo')
 
 
+@never_cache
+def ver_documentacion(request, id_documentacion, tipo):
+    """Entrega documentación privada solo a administración o al tutor asociado."""
+    doc = get_object_or_404(
+        DocumentacionAlumno.objects.select_related('legajo_alumno'),
+        id_documentacion=id_documentacion,
+    )
+    campos = {
+        'dni_frente': doc.dni_frente,
+        'dni_dorso': doc.dni_dorso,
+        'partida_nacimiento': doc.partida_nacimiento,
+        'certificado_salud': doc.certificado_salud,
+    }
+    archivo_relativo = campos.get(tipo)
+    if not archivo_relativo:
+        raise Http404
+
+    autorizado = bool(_admin_session(request))
+    if not autorizado:
+        tutor = _tutor_session(request)
+        autorizado = bool(tutor and TutorTutoraAlumno.objects.filter(
+            id_tutor=tutor,
+            id_alumno=doc.legajo_alumno,
+        ).exists())
+    if not autorizado:
+        raise Http404
+
+    raiz_privada = settings.PRIVATE_DOCUMENT_ROOT
+    ruta = (raiz_privada / archivo_relativo).resolve()
+    try:
+        ruta.relative_to(raiz_privada)
+    except ValueError:
+        raise Http404
+    if not ruta.is_file():
+        raise Http404
+
+    import mimetypes
+    return FileResponse(
+        ruta.open('rb'),
+        as_attachment=True,
+        filename=ruta.name,
+        content_type=mimetypes.guess_type(ruta.name)[0] or 'application/octet-stream',
+    )
+
+
+@require_POST
 def rechazar_documentacion(request, id_documentacion):
+    persona = _admin_session(request)
+    if not persona:
+        return redirect('login')
 
     doc = DocumentacionAlumno.objects.get(
         id_documentacion=id_documentacion
     )
-
-    persona = obtener_persona(request)
 
     administrativo = PersonalAdministrativo.objects.filter(
         id_persona=persona
@@ -4784,7 +4888,7 @@ def rechazar_documentacion(request, id_documentacion):
         if archivo:
 
             ruta = os.path.join(
-                settings.MEDIA_ROOT,
+                settings.PRIVATE_DOCUMENT_ROOT,
                 archivo
             )
 
@@ -4924,6 +5028,7 @@ def editar_tarea(request, tarea_id):
         
     return redirect('/docente/?panel=tareas')
 @never_cache
+@require_POST
 def borrar_tarea(request, tarea_id):
     persona = obtener_persona(request)
     if not persona:
@@ -5096,7 +5201,13 @@ def guardar_nota(request):
 
 
 @never_cache
+@require_POST
 def guardar_observacion_justificacion(request):
+
+    persona = obtener_persona(request)
+    preceptor = Preceptor.objects.filter(id_persona=persona).first() if persona else None
+    if not preceptor:
+        return redirect('login')
 
     if request.method == 'POST':
 
@@ -5104,7 +5215,8 @@ def guardar_observacion_justificacion(request):
         observacion = request.POST.get('observacion', '').strip()
 
         asistencia = Asistencia.objects.filter(
-            id_asistencia=id_asistencia
+            id_asistencia=id_asistencia,
+            legajo_alumno__id_curso__legajo_preceptor=preceptor,
         ).first()
 
         if asistencia:
@@ -5163,7 +5275,10 @@ def lista_alumnos_admin(request):
     })
 
 @never_cache
+@require_POST
 def alta_alumno_admin(request):
+    if not _admin_session(request):
+        return redirect('login')
     if request.method == 'POST':
         nombre_usuario = request.POST.get('nombre_usuario')
         contrasenia = request.POST.get('contrasenia')
@@ -5286,7 +5401,10 @@ def alta_alumno_admin(request):
     return redirect('lista-alumnos-admin')
 
 @never_cache
+@require_POST
 def modificar_alumno_admin(request, legajo):
+    if not _admin_session(request):
+        return redirect('login')
     alumno = get_object_or_404(Alumno, legajo=legajo)
     persona = alumno.id_persona
 
@@ -5368,7 +5486,10 @@ def modificar_alumno_admin(request, legajo):
     return redirect('lista-alumnos-admin')
 
 @never_cache
+@require_POST
 def baja_alumno_admin(request, legajo):
+    if not _admin_session(request):
+        return redirect('login')
     if request.method == 'POST':
         alumno = get_object_or_404(Alumno, legajo=legajo)
 

@@ -154,6 +154,12 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 # Media files
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+# La documentación de los alumnos contiene información personal y no debe
+# publicarse mediante el servidor estático de archivos multimedia.
+PRIVATE_DOCUMENT_ROOT = Path(os.getenv(
+    'PRIVATE_DOCUMENT_ROOT',
+    str(BASE_DIR.parent / 'private_documents'),
+)).resolve()
 
 
 EMAIL_BACKEND = os.getenv(

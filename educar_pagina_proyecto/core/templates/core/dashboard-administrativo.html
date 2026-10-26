@@ -660,19 +660,19 @@
                 <span> Enviado el {{ doc.fecha_envio|date:"d/m/Y H:i" }} </span>
 
                 <div class="documentos-links">
-                  <a href="/media/{{ doc.dni_frente }}" target="_blank">
+                  <a href="{% url 'ver-documentacion' doc.id_documentacion 'dni_frente' %}" target="_blank" rel="noopener">
                     DNI Frente
                   </a>
 
-                  <a href="/media/{{ doc.dni_dorso }}" target="_blank">
+                  <a href="{% url 'ver-documentacion' doc.id_documentacion 'dni_dorso' %}" target="_blank" rel="noopener">
                     DNI Dorso
                   </a>
 
-                  <a href="/media/{{ doc.partida_nacimiento }}" target="_blank">
+                  <a href="{% url 'ver-documentacion' doc.id_documentacion 'partida_nacimiento' %}" target="_blank" rel="noopener">
                     Partida
                   </a>
 
-                  <a href="/media/{{ doc.certificado_salud }}" target="_blank">
+                  <a href="{% url 'ver-documentacion' doc.id_documentacion 'certificado_salud' %}" target="_blank" rel="noopener">
                     Certificado
                   </a>
                 </div>
