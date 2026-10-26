@@ -81,6 +81,7 @@ urlpatterns = [
     path('enviar-documentacion/',views.enviar_documentacion,name='enviar_documentacion'),
     path('aprobar-documentacion/<int:id_documentacion>/',views.aprobar_documentacion,name='aprobar_documentacion'),
     path('rechazar-documentacion/<int:id_documentacion>/',views.rechazar_documentacion,name='rechazar_documentacion'),
+    path('documentacion/<int:id_documentacion>/<str:tipo>/', views.ver_documentacion, name='ver-documentacion'),
     path('crear-usuario/',views.crear_usuario,name='crear-usuario'),
     path('administrativo/usuarios/<int:id_usuario>/modificar/', views.modificar_usuario_admin, name='modificar-usuario-admin'),
     path('administrativo/usuarios/<int:id_usuario>/baja/', views.baja_usuario_admin, name='baja-usuario-admin'),
