@@ -66,6 +66,19 @@ from .models import (
     InscripcionComedor,
     SolicitudServicio,
 )
+from .patterns import GestionEscolarFacade
+
+MODELOS_FACHADA = {
+    'Alumno': Alumno,
+    'Usuario': Usuario,
+    'InscripcionTransporte': InscripcionTransporte,
+    'InscripcionComedor': InscripcionComedor,
+}
+
+
+def _fachada_escolar():
+    return GestionEscolarFacade(MODELOS_FACHADA)
+
 COMUNICADOS_FILE = os.path.join(
     os.path.dirname(__file__),
     'comunicados.json'
@@ -2089,8 +2102,8 @@ def dashboard_administrativo(request):
     reporte_nombre = tipos_reporte.get(reporte_tipo, '')
     reporte_filtro = reporte_filtros.get(reporte_tipo, '')
     reportes_alumnos = []
-    alumnos_reporte = Alumno.objects.select_related(
-        'id_persona', 'id_curso__nivel_educativo'
+    alumnos_reporte = _fachada_escolar().reporte_alumnos(
+        reporte_tipo, reporte_filtro
     ).prefetch_related(
         Prefetch(
             'inscripciones_deportivas',
@@ -3613,11 +3626,11 @@ def crear_usuario(request):
     if error:
         messages.error(request, error, extra_tags='usuarios')
     else:
-        usuario = Usuario.objects.create(
+        usuario = _fachada_escolar().crear_usuario(
+            rol,
             nombre_usuario=nombre_usuario,
             contrasenia=contrasenia,
             correo=correo,
-            rol=rol,
             estado='Activo',
         )
         persona.id_usuario = usuario
