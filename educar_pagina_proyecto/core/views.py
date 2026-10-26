@@ -1512,6 +1512,14 @@ def dashboard_docente(request):
         if isinstance(data, str):
             data = json.loads(data)
         for dia, rango in data.items():
+            # Algunos horarios legacy guardan el rango como lista JSON;
+            # convertirlo a texto evita usar una lista como clave de dict.
+            if isinstance(rango, (list, tuple)):
+                rango = ' - '.join(str(parte) for parte in rango)
+            elif isinstance(rango, dict):
+                rango = ' - '.join(str(valor) for valor in rango.values())
+            else:
+                rango = str(rango)
             if rango not in horario_dict:
                 horario_dict[rango] = {
                     'Lunes': '-',
