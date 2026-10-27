@@ -1038,7 +1038,7 @@
                       <td>{{ tutor.id_persona.email|default:'-' }}<br>{{ tutor.id_persona.telefono|default:'-' }}</td>
                       <td>
                         {% for relacion in tutor.hijos_admin %}
-                          <div>{{ relacion.id_alumno.id_persona.apellido }}, {{ relacion.id_alumno.id_persona.nombre }}{% if relacion.tipo_parentesco %} ({{ relacion.tipo_parentesco }}){% endif %}</div>
+                          <div>{{ relacion.id_alumno.id_persona.apellido }}, {{ relacion.id_alumno.id_persona.nombre }}</div>
                         {% empty %}-{% endfor %}
                       </td>
                     </tr>
