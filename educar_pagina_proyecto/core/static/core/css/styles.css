@@ -1345,16 +1345,19 @@
   flex-direction:column;
   gap:8px;
 }
-/* Forzar que las filas de edición ocupen TODO el ancho de la tabla */
-.tabla tr.fila-edicion-abm {
-    display: table-row !important;
-}
+/* Las filas de edición permanecen ocultas hasta pulsar "Editar".
+   El JavaScript cambia el display inline y esta regla solo ajusta el layout
+   cuando la fila está visible. */
 
 .tabla tr.fila-edicion-abm > td {
     padding: 0 !important;
     width: 100% !important;
     max-width: 100% !important;
     display: table-cell !important;
+}
+
+.tabla tr.fila-edicion-abm[style*="display: none"] {
+    display: none !important;
 }
 
 .tabla tr.fila-edicion-abm form {
