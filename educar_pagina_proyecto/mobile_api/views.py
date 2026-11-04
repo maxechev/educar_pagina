@@ -282,7 +282,7 @@ class ComprobantesView(APIView):
                 legajo_alumno=cuota.id_legajo_alumno,
                 mes=cuota.periodo,
                 importe=importe,
-                estado="Pendiente",
+                estado="En revisión",
                 fecha_solicitud=timezone.now(),
             )
             pago = PagoCuota.objects.create(
@@ -291,7 +291,7 @@ class ComprobantesView(APIView):
                 tutor=tutor,
                 importe=importe,
                 medio_pago=request.data.get("medio_pago") or "Transferencia",
-                estado="Pendiente",
+                estado="En revisión",
             )
             comprobante = ComprobantePago.objects.create(
                 cuota=cuota,
@@ -304,7 +304,7 @@ class ComprobantesView(APIView):
                 "id": comprobante.id_comprobante,
                 "cuota_id": cuota.id_cuota,
                 "pago_id": pago.id_pago,
-                "estado": "pendiente",
+                "estado": "en revisión",
                 "mensaje": "El comprobante fue enviado y queda pendiente de revisión administrativa.",
             },
             status=status.HTTP_201_CREATED,

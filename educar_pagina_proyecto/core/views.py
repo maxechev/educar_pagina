@@ -224,6 +224,19 @@ MESES_PERIODO_CUOTA = (
     'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
 )
 
+NIVELES_EQUIVALENTES_ARANCEL = {
+    'inicial': 'inicial',
+    'primaria': 'primario',
+    'primario': 'primario',
+    'secundaria': 'secundario',
+    'secundario': 'secundario',
+}
+
+
+def _clave_nivel_arancel(nombre):
+    nombre_normalizado = ' '.join((nombre or '').strip().casefold().split())
+    return NIVELES_EQUIVALENTES_ARANCEL.get(nombre_normalizado, nombre_normalizado)
+
 
 def _plan_generacion_cuotas(periodo):
     """Prepara cuotas para alumnos activos sin escribir en la base."""
@@ -249,7 +262,8 @@ def _plan_generacion_cuotas(periodo):
 
     aranceles_por_nivel = {}
     for arancel in Arancel.objects.all().order_by('id_arancel'):
-        aranceles_por_nivel.setdefault(arancel.nivel, []).append(arancel)
+        clave_nivel = _clave_nivel_arancel(arancel.nivel)
+        aranceles_por_nivel.setdefault(clave_nivel, []).append(arancel)
 
     cuotas_existentes = set(Cuota.objects.filter(
         periodo=periodo
@@ -282,7 +296,7 @@ def _plan_generacion_cuotas(periodo):
         aranceles = []
         if omitido is None:
             nivel = alumno.id_curso.nivel_educativo.nombre
-            aranceles = aranceles_por_nivel.get(nivel, [])
+            aranceles = aranceles_por_nivel.get(_clave_nivel_arancel(nivel), [])
             if len(aranceles) == 0:
                 omitido = f'No hay arancel configurado para {nivel}.'
             elif len(aranceles) > 1:
@@ -318,7 +332,7 @@ def _obtener_cuotas_con_saldo():
         pagado = sum(
             pago.importe
             for pago in cuota.pagos.all()
-            if pago.estado == 'Aprobado'
+            if pago.estado == 'Pagado'
         )
         saldo = max((cuota.total_obligacion or 0) - pagado, 0)
         if saldo <= 0:
@@ -335,6 +349,18 @@ def _obtener_cuotas_con_saldo():
             cuota.estado_panel = 'Vencida'
         abiertas.append(cuota)
     return abiertas
+
+
+def _pagos_admin(request):
+    """Historial completo; el filtro solo cambia la vista, nunca borra datos."""
+    estados = {'Pendiente', 'En revisión', 'Pagado', 'Rechazado'}
+    estado = (request.GET.get('pago_estado') or '').strip()
+    pagos = PagoPendiente.objects.select_related(
+        'id_tutor__id_persona', 'legajo_alumno__id_persona'
+    ).prefetch_related('pago_aplicado__comprobantes').order_by('-fecha_solicitud', '-id_pago')
+    if estado in estados:
+        pagos = pagos.filter(estado=estado)
+    return pagos
 
 
 def _datos_plan_cuotas(plan, fecha_vencimiento):
@@ -2258,7 +2284,7 @@ def dashboard_administrativo(request):
         estado="Pendiente"
     ).count()
     
-    pagos_pendientes = PagoPendiente.objects.filter(estado='Pendiente')
+    pagos_pendientes = _pagos_admin(request)
     documentacion_pendiente = DocumentacionAlumno.objects.filter(
         estado='Pendiente'
     ).count()
@@ -3348,7 +3374,7 @@ def lista_profesores_admin(request):
     cuotas_pendientes = len(cuotas_abiertas)
     solicitudes = SolicitudInscripcion.objects.all().order_by('-fecha_solicitud')
     inscripciones_pendientes = SolicitudInscripcion.objects.filter(estado="Pendiente").count()
-    pagos_pendientes = PagoPendiente.objects.filter(estado='Pendiente')
+    pagos_pendientes = _pagos_admin(request)
     documentacion_pendiente = DocumentacionAlumno.objects.filter(estado='Pendiente').count()
     documentaciones = DocumentacionAlumno.objects.filter(estado='Pendiente').order_by('-fecha_envio')
     
@@ -4751,7 +4777,7 @@ def registrar_pago(request):
             if PagoPendiente.objects.filter(
                 legajo_alumno=alumno,
                 mes=request.POST.get('mes'),
-                estado='Pendiente'
+                estado__in=['Pendiente', 'En revisión']
             ).exists():
 
                 messages.error(
@@ -4827,50 +4853,54 @@ def aprobar_pago(request, id_pago):
     if not _admin_session(request):
         return redirect('login')
 
-    pago = PagoPendiente.objects.get(
-        id_pago=id_pago
-    )
+    with transaction.atomic():
+        pago = PagoPendiente.objects.select_for_update().get(id_pago=id_pago)
+        if pago.estado == 'Pagado':
+            return redirect('dashboard-administrativo')
+        if pago.estado == 'Rechazado':
+            messages.error(request, 'No se puede aprobar un pago rechazado.')
+            return redirect('dashboard-administrativo')
 
-    cuota = Cuota.objects.filter(
-        id_tutor=pago.id_tutor,
-        id_legajo_alumno=pago.legajo_alumno,
-        periodo=pago.mes,
-    ).order_by('-id_cuota').first()
-    if cuota is None:
-        cuota = Cuota.objects.create(
-            periodo=pago.mes,
-            monto=pago.importe,
-            monto_total=pago.importe,
-            fecha_pago=date.today(),
-            medio_pago='Transferencia',
-            estado='Pendiente',
+        cuota = Cuota.objects.select_for_update().filter(
             id_tutor=pago.id_tutor,
             id_legajo_alumno=pago.legajo_alumno,
-        )
-    try:
-        pago_aplicado = pago.pago_aplicado
-    except PagoCuota.DoesNotExist:
-        pago_aplicado = None
-    if pago_aplicado is None:
-        pago_aplicado = PagoCuota.objects.create(
-            cuota=cuota,
-            solicitud=pago,
-            tutor=pago.id_tutor,
-            importe=pago.importe,
-            fecha_pago=date.today(),
-            medio_pago='Transferencia',
-            estado='Aprobado',
-        )
-    else:
-        pago_aplicado.estado = 'Aprobado'
-        pago_aplicado.fecha_pago = date.today()
-        pago_aplicado.save(update_fields=['estado', 'fecha_pago'])
-    ComprobantePago.objects.filter(pago=pago_aplicado).update(estado='Aprobado')
-    pago.estado = 'Aprobado'
-    pago.save(update_fields=['estado'])
-    cuota.fecha_pago = date.today()
-    cuota.save(update_fields=['fecha_pago'])
-    cuota.actualizar_estado()
+            periodo=pago.mes,
+        ).order_by('-id_cuota').first()
+        if cuota is None:
+            cuota = Cuota.objects.create(
+                periodo=pago.mes,
+                monto=pago.importe,
+                monto_total=pago.importe,
+                fecha_pago=date.today(),
+                medio_pago='Transferencia',
+                estado='Pendiente',
+                id_tutor=pago.id_tutor,
+                id_legajo_alumno=pago.legajo_alumno,
+            )
+        try:
+            pago_aplicado = pago.pago_aplicado
+        except PagoCuota.DoesNotExist:
+            pago_aplicado = None
+        if pago_aplicado is None:
+            pago_aplicado = PagoCuota.objects.create(
+                cuota=cuota,
+                solicitud=pago,
+                tutor=pago.id_tutor,
+                importe=pago.importe,
+                fecha_pago=date.today(),
+                medio_pago='Transferencia',
+                estado='Pagado',
+            )
+        elif pago_aplicado.estado != 'Pagado':
+            pago_aplicado.estado = 'Pagado'
+            pago_aplicado.fecha_pago = date.today()
+            pago_aplicado.save(update_fields=['estado', 'fecha_pago'])
+        ComprobantePago.objects.filter(pago=pago_aplicado).update(estado='Aprobado')
+        pago.estado = 'Pagado'
+        pago.save(update_fields=['estado'])
+        cuota.fecha_pago = date.today()
+        cuota.save(update_fields=['fecha_pago'])
+        cuota.actualizar_estado()
 
     return redirect('dashboard-administrativo')
 
@@ -4896,20 +4926,28 @@ def rechazar_pago(request, id_pago):
     if not _admin_session(request):
         return redirect('login')
 
-    pago = PagoPendiente.objects.get(
-        id_pago=id_pago
-    )
+    motivo = (request.POST.get('motivo_rechazo') or '').strip()
+    if not motivo:
+        messages.error(request, 'Debe indicar el motivo del rechazo.')
+        return redirect('dashboard-administrativo')
 
-    try:
-        pago_aplicado = pago.pago_aplicado
-    except PagoCuota.DoesNotExist:
-        pago_aplicado = None
-    if pago_aplicado:
-        pago_aplicado.estado = 'Rechazado'
-        pago_aplicado.save(update_fields=['estado'])
-        ComprobantePago.objects.filter(pago=pago_aplicado).update(estado='Rechazado')
-    pago.estado = 'Rechazado'
-    pago.save(update_fields=['estado'])
+    with transaction.atomic():
+        pago = PagoPendiente.objects.select_for_update().get(id_pago=id_pago)
+        if pago.estado == 'Pagado':
+            messages.error(request, 'No se puede rechazar un pago ya pagado.')
+            return redirect('dashboard-administrativo')
+
+        try:
+            pago_aplicado = pago.pago_aplicado
+        except PagoCuota.DoesNotExist:
+            pago_aplicado = None
+        if pago_aplicado:
+            pago_aplicado.estado = 'Rechazado'
+            pago_aplicado.save(update_fields=['estado'])
+            ComprobantePago.objects.filter(pago=pago_aplicado).update(estado='Rechazado')
+        pago.estado = 'Rechazado'
+        pago.motivo_rechazo = motivo
+        pago.save(update_fields=['estado', 'motivo_rechazo'])
 
     return redirect(
         'dashboard-administrativo'
@@ -5545,7 +5583,7 @@ def lista_alumnos_admin(request):
     cuotas_pendientes = len(cuotas_abiertas)
     solicitudes = SolicitudInscripcion.objects.all().order_by('-fecha_solicitud')
     inscripciones_pendientes = SolicitudInscripcion.objects.filter(estado="Pendiente").count()
-    pagos_pendientes = PagoPendiente.objects.filter(estado='Pendiente')
+    pagos_pendientes = _pagos_admin(request)
     documentacion_pendiente = DocumentacionAlumno.objects.filter(estado='Pendiente').count()
     documentaciones = DocumentacionAlumno.objects.filter(estado='Pendiente').order_by('-fecha_envio')
     

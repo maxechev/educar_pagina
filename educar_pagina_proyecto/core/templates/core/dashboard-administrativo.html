@@ -576,6 +576,20 @@
               {% endfor %}
             {% endif %}
 
+            <form method="GET" style="display:flex; gap:10px; align-items:end; flex-wrap:wrap; margin:12px 0 18px;">
+              <div class="form-group" style="margin:0;">
+                <label for="filtro-estado-pago">Filtrar estado</label>
+                <select id="filtro-estado-pago" name="pago_estado">
+                  <option value="">Todos</option>
+                  <option value="Pendiente" {% if request.GET.pago_estado == 'Pendiente' %}selected{% endif %}>Pendiente</option>
+                  <option value="En revisión" {% if request.GET.pago_estado == 'En revisión' %}selected{% endif %}>En revisión</option>
+                  <option value="Pagado" {% if request.GET.pago_estado == 'Pagado' %}selected{% endif %}>Pagado</option>
+                  <option value="Rechazado" {% if request.GET.pago_estado == 'Rechazado' %}selected{% endif %}>Rechazado</option>
+                </select>
+              </div>
+              <button type="submit" class="btn-aprobar">Aplicar filtro</button>
+            </form>
+
             <section style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:12px; padding:18px; margin:16px 0 24px;">
               <h3 style="margin:0 0 8px; color:#1e3a5f;">Generar cuotas del período</h3>
               <p style="color:#475569; margin:0 0 14px;">
@@ -630,6 +644,8 @@
                   <th>Importe</th>
                   <th>Comprobante</th>
                   <th>Estado</th>
+                  <th>Motivo de rechazo</th>
+                  <th>Acciones</th>
                 </tr>
               </thead>
 
@@ -663,15 +679,23 @@
                   </td>
 
                   <td>
-                    {% if pago.estado == 'Pendiente' %}
-                    <span class="badge badge-yellow">Pendiente</span>
+                    {% if pago.estado == 'Pagado' %}
+                    <span class="badge badge-green">Pagado</span>
+                    {% elif pago.estado == 'Rechazado' %}
+                    <span class="badge badge-red">Rechazado</span>
+                    {% elif pago.estado == 'En revisión' %}
+                    <span class="badge badge-yellow">En revisión</span>
                     {% else %}
-                    <span class="badge badge-green">{{ pago.estado }}</span>
+                    <span class="badge badge-yellow">Pendiente</span>
                     {% endif %}
                   </td>
 
                   <td>
-                    {% if pago.estado == 'Pendiente' %}
+                    {{ pago.motivo_rechazo|default:'—' }}
+                  </td>
+
+                  <td>
+                    {% if pago.estado == 'Pendiente' or pago.estado == 'En revisión' %}
 
                     <form
                       method="POST"
@@ -690,6 +714,8 @@
                     >
                       {% csrf_token %}
 
+                      <input type="text" name="motivo_rechazo" required minlength="3" placeholder="Motivo obligatorio" aria-label="Motivo del rechazo">
+
                       <button type="submit" class="btn-rechazar">
                         Rechazar
                       </button>
@@ -701,7 +727,7 @@
 
                 {% empty %}
                 <tr>
-                  <td colspan="8">No hay pagos pendientes.</td>
+                  <td colspan="10">No hay pagos registrados.</td>
                 </tr>
                 {% endfor %}
               </tbody>

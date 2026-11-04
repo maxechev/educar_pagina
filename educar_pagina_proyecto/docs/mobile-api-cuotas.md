@@ -46,7 +46,8 @@ En el panel administrativo, **Pagos → Generar cuotas del período** permite pr
 confirmar obligaciones para un mes y vencimiento elegidos. Se consideran alumnos activos con
 curso, un único tutor asociado con cuenta activa y exactamente un arancel configurado para el
 nivel. Los alumnos sin esas condiciones, con varios tutores o con una cuota ya existente para el
-período se muestran como omitidos.
+período se muestran como omitidos. La comparación reconoce `Primaria`/`Primario` y
+`Secundaria`/`Secundario` como nombres equivalentes; `Inicial` necesita su propio arancel.
 
 La confirmación crea una `Cuota` pendiente con el arancel del nivel. No crea un `PagoCuota` ni una
 solicitud de pago. El tutor podrá verla en la app si su relación con el alumno está vigente y
@@ -69,7 +70,7 @@ Respuesta `201`:
   "id": 4,
   "cuota_id": 12,
   "pago_id": 8,
-  "estado": "pendiente",
+  "estado": "en revisión",
   "mensaje": "El comprobante fue enviado y queda pendiente de revisión administrativa."
 }
 ```
