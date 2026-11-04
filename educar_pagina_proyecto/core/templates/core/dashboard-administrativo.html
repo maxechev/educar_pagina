@@ -270,7 +270,7 @@
                 <div class="stat-value" style="color: #dc2626">
                   {{ cuotas_pendientes }}
                 </div>
-                <div class="stat-sub">Este mes</div>
+                <div class="stat-sub">Con saldo pendiente</div>
               </div>
 
               <div class="stat-card">
@@ -570,6 +570,56 @@
           <div id="panel-pagos" class="panel">
             <p class="section-title">Control de pagos</p>
 
+            {% if messages and panel_activo == 'pagos' %}
+              {% for message in messages %}
+                <div style="padding:12px 16px; border-radius:8px; margin-bottom:10px; {% if message.tags == 'error' %}background:#fee2e2; color:#991b1b;{% elif message.tags == 'success' %}background:#dcfce7; color:#166534;{% else %}background:#fef3c7; color:#92400e;{% endif %}">{{ message }}</div>
+              {% endfor %}
+            {% endif %}
+
+            <section style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:12px; padding:18px; margin:16px 0 24px;">
+              <h3 style="margin:0 0 8px; color:#1e3a5f;">Generar cuotas del período</h3>
+              <p style="color:#475569; margin:0 0 14px;">
+                Se propone una cuota pendiente para cada alumno activo con un único tutor asociado y un arancel configurado para su nivel. Revisarás la lista y los importes antes de confirmar. Crear la cuota no registra ningún pago.
+              </p>
+              <form method="POST" action="{% url 'generar-cuotas-administrativo' %}" style="display:flex; gap:12px; align-items:end; flex-wrap:wrap;">
+                {% csrf_token %}
+                <div class="form-group" style="margin:0;">
+                  <label for="periodo-cuota">Período</label>
+                  <input id="periodo-cuota" type="month" name="periodo" value="{{ periodo_cuota_sugerido }}" required>
+                </div>
+                <div class="form-group" style="margin:0;">
+                  <label for="vencimiento-cuota">Vencimiento real</label>
+                  <input id="vencimiento-cuota" type="date" name="fecha_vencimiento" required>
+                </div>
+                <button type="submit" class="btn-aprobar">Previsualizar cuotas</button>
+              </form>
+            </section>
+
+            <h3 style="color:#1e3a5f;">Cuotas reales con saldo pendiente</h3>
+            <div style="overflow-x:auto; margin-bottom:24px;">
+              <table class="tabla">
+                <thead>
+                  <tr><th>Tutor</th><th>Alumno</th><th>Período</th><th>Total</th><th>Pagado</th><th>Saldo</th><th>Vencimiento</th><th>Estado</th></tr>
+                </thead>
+                <tbody>
+                  {% for cuota in cuotas_abiertas %}
+                    <tr>
+                      <td>{{ cuota.id_tutor.id_persona.nombre }} {{ cuota.id_tutor.id_persona.apellido }}</td>
+                      <td>{{ cuota.id_legajo_alumno.id_persona.nombre }} {{ cuota.id_legajo_alumno.id_persona.apellido }}</td>
+                      <td>{{ cuota.periodo }}</td>
+                      <td>${{ cuota.total_obligacion|floatformat:2 }}</td>
+                      <td>${{ cuota.monto_pagado_panel|floatformat:2 }}</td>
+                      <td><strong>${{ cuota.saldo_panel|floatformat:2 }}</strong></td>
+                      <td>{% if cuota.fecha_vencimiento %}{{ cuota.fecha_vencimiento|date:"d/m/Y" }}{% else %}Sin fecha{% endif %}</td>
+                      <td>{{ cuota.estado_panel }}</td>
+                    </tr>
+                  {% empty %}
+                    <tr><td colspan="8">No hay cuotas con saldo pendiente.</td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+
             <table class="tabla">
               <thead>
                 <tr>
@@ -651,7 +701,7 @@
 
                 {% empty %}
                 <tr>
-                  <td colspan="7">No hay pagos pendientes.</td>
+                  <td colspan="8">No hay pagos pendientes.</td>
                 </tr>
                 {% endfor %}
               </tbody>

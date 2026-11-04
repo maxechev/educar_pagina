@@ -6,6 +6,7 @@ from django.http import FileResponse, Http404, JsonResponse
 from django.views.decorators.http import require_POST
 import re
 from django.core.files.storage import FileSystemStorage
+from django.core import signing
 from datetime import datetime, date, time
 from django.conf import settings
 from datetime import date
@@ -216,6 +217,243 @@ def _admin_session(request):
     if not persona or dashboard_url != 'dashboard-administrativo':
         return None
     return persona
+
+
+MESES_PERIODO_CUOTA = (
+    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+)
+
+
+def _plan_generacion_cuotas(periodo):
+    """Prepara cuotas para alumnos activos sin escribir en la base."""
+    alumnos = Alumno.objects.filter(estado='Activo').select_related(
+        'id_persona', 'id_curso__nivel_educativo'
+    ).order_by('id_persona__apellido', 'id_persona__nombre')
+    alumno_ids = list(alumnos.values_list('legajo', flat=True))
+
+    tutores_por_alumno = {}
+    relaciones = TutorTutoraAlumno.objects.filter(
+        id_alumno_id__in=alumno_ids
+    ).values_list('id_alumno_id', 'id_tutor_id')
+    for alumno_id, tutor_id in relaciones:
+        tutores_por_alumno.setdefault(alumno_id, set()).add(tutor_id)
+
+    tutores = Tutor.objects.select_related(
+        'id_persona__id_usuario'
+    ).in_bulk({
+        tutor_id
+        for tutor_ids in tutores_por_alumno.values()
+        for tutor_id in tutor_ids
+    })
+
+    aranceles_por_nivel = {}
+    for arancel in Arancel.objects.all().order_by('id_arancel'):
+        aranceles_por_nivel.setdefault(arancel.nivel, []).append(arancel)
+
+    cuotas_existentes = set(Cuota.objects.filter(
+        periodo=periodo
+    ).values_list('id_legajo_alumno_id', flat=True))
+
+    plan = {'periodo': periodo, 'crear': [], 'omitidos': []}
+    for alumno in alumnos:
+        nombre_alumno = f'{alumno.id_persona.nombre} {alumno.id_persona.apellido}'
+        omitido = None
+
+        if not alumno.id_curso_id:
+            omitido = 'El alumno no tiene un curso asignado.'
+        elif alumno.id_curso.nivel_educativo.estado != 'Activo':
+            omitido = 'El nivel educativo está inactivo.'
+
+        tutor_ids = tutores_por_alumno.get(alumno.legajo, set())
+        if omitido is None and not tutor_ids:
+            omitido = 'El alumno no tiene un tutor asociado.'
+        elif omitido is None and len(tutor_ids) > 1:
+            omitido = 'Tiene más de un tutor asociado; falta definir el tutor de facturación.'
+
+        tutor = None
+        if omitido is None:
+            tutor = tutores.get(next(iter(tutor_ids)))
+            if not tutor or not tutor.id_persona_id or not tutor.id_persona.id_usuario_id:
+                omitido = 'El tutor no tiene una cuenta vinculada para acceder a la app.'
+            elif tutor.id_persona.id_usuario.estado != 'Activo':
+                omitido = 'La cuenta del tutor está inactiva.'
+
+        aranceles = []
+        if omitido is None:
+            nivel = alumno.id_curso.nivel_educativo.nombre
+            aranceles = aranceles_por_nivel.get(nivel, [])
+            if len(aranceles) == 0:
+                omitido = f'No hay arancel configurado para {nivel}.'
+            elif len(aranceles) > 1:
+                omitido = f'Hay más de un arancel configurado para {nivel}.'
+
+        if omitido is None and alumno.legajo in cuotas_existentes:
+            omitido = 'Ya existe una cuota de este período para el alumno.'
+
+        if omitido:
+            plan['omitidos'].append({
+                'alumno': nombre_alumno,
+                'legajo': alumno.legajo,
+                'motivo': omitido,
+            })
+            continue
+
+        plan['crear'].append({
+            'alumno': alumno,
+            'tutor': tutor,
+            'monto': aranceles[0].monto,
+            'nivel': alumno.id_curso.nivel_educativo.nombre,
+        })
+
+    return plan
+
+
+def _obtener_cuotas_con_saldo():
+    abiertas = []
+    for cuota in Cuota.objects.select_related(
+        'id_tutor__id_persona',
+        'id_legajo_alumno__id_persona',
+    ).prefetch_related('pagos').order_by('-fecha_vencimiento', '-id_cuota'):
+        pagado = sum(
+            pago.importe
+            for pago in cuota.pagos.all()
+            if pago.estado == 'Aprobado'
+        )
+        saldo = max((cuota.total_obligacion or 0) - pagado, 0)
+        if saldo <= 0:
+            continue
+
+        cuota.monto_pagado_panel = pagado
+        cuota.saldo_panel = saldo
+        cuota.estado_panel = cuota.estado or 'Pendiente'
+        if (
+            cuota.estado_panel not in {'Pagada', 'Parcial'}
+            and cuota.fecha_vencimiento
+            and cuota.fecha_vencimiento < timezone.localdate()
+        ):
+            cuota.estado_panel = 'Vencida'
+        abiertas.append(cuota)
+    return abiertas
+
+
+def _datos_plan_cuotas(plan, fecha_vencimiento):
+    cuotas = sorted(
+        [
+            fila['alumno'].legajo,
+            fila['tutor'].id,
+            str(fila['monto']),
+        ]
+        for fila in plan['crear']
+    )
+    return {
+        'periodo': plan['periodo'],
+        'fecha_vencimiento': fecha_vencimiento.isoformat(),
+        'cuotas': cuotas,
+    }
+
+
+def _render_previsualizacion_cuotas(request, periodo, fecha_vencimiento):
+    fecha_periodo = datetime.strptime(periodo, '%Y-%m').date()
+    periodo_label = f'{MESES_PERIODO_CUOTA[fecha_periodo.month - 1]} {fecha_periodo.year}'
+    plan = _plan_generacion_cuotas(periodo_label)
+    revision = signing.dumps(
+        _datos_plan_cuotas(plan, fecha_vencimiento),
+        salt='generar-cuotas-administrativo',
+    )
+    return render(request, 'core/confirmar-generacion-cuotas.html', {
+        'plan': plan,
+        'fecha_vencimiento': fecha_vencimiento,
+        'periodo_form': periodo,
+        'vencimiento_form': fecha_vencimiento.isoformat(),
+        'revision_plan': revision,
+        'mensajes': list(get_messages(request)),
+    })
+
+
+@never_cache
+@require_POST
+def generar_cuotas_administrativo(request):
+    if not _admin_session(request):
+        return redirect('login')
+
+    periodo_form = (request.POST.get('periodo') or '').strip()
+    vencimiento_form = (request.POST.get('fecha_vencimiento') or '').strip()
+    try:
+        fecha_periodo = datetime.strptime(periodo_form, '%Y-%m').date()
+        fecha_vencimiento = date.fromisoformat(vencimiento_form)
+        periodo = f'{MESES_PERIODO_CUOTA[fecha_periodo.month - 1]} {fecha_periodo.year}'
+        if (fecha_vencimiento.year, fecha_vencimiento.month) != (
+            fecha_periodo.year, fecha_periodo.month
+        ):
+            raise ValueError
+    except (TypeError, ValueError):
+        messages.error(
+            request,
+            'Elegí un período válido y una fecha de vencimiento dentro de ese mismo mes.',
+        )
+        return redirect(f"{reverse('dashboard-administrativo')}?panel=pagos")
+
+    if request.POST.get('accion') != 'confirmar':
+        return _render_previsualizacion_cuotas(
+            request, periodo_form, fecha_vencimiento
+        )
+
+    if request.POST.get('confirmar') != 'si':
+        messages.error(request, 'Marcá la confirmación para generar las cuotas revisadas.')
+        return redirect(f"{reverse('dashboard-administrativo')}?panel=pagos")
+
+    with transaction.atomic():
+        plan = _plan_generacion_cuotas(periodo)
+        try:
+            revision_previa = signing.loads(
+                request.POST.get('revision_plan', ''),
+                salt='generar-cuotas-administrativo',
+                max_age=900,
+            )
+        except signing.BadSignature:
+            messages.error(
+                request,
+                'La previsualización venció o no es válida. Revisá nuevamente las cuotas.',
+            )
+            return redirect(f"{reverse('dashboard-administrativo')}?panel=pagos")
+
+        if revision_previa != _datos_plan_cuotas(plan, fecha_vencimiento):
+            messages.warning(
+                request,
+                'Los alumnos, aranceles o vencimientos cambiaron desde la previsualización. '
+                'Revisá la lista actualizada antes de confirmar.',
+            )
+            return _render_previsualizacion_cuotas(
+                request, periodo_form, fecha_vencimiento
+            )
+
+        if not plan['crear']:
+            messages.warning(
+                request,
+                'No se generaron cuotas: no hay alumnos elegibles nuevos para ese período.',
+            )
+            return redirect(f"{reverse('dashboard-administrativo')}?panel=pagos")
+
+        for fila in plan['crear']:
+            Cuota.objects.create(
+                periodo=periodo,
+                monto=fila['monto'],
+                monto_total=fila['monto'],
+                fecha_vencimiento=fecha_vencimiento,
+                fecha_pago=None,
+                medio_pago=None,
+                estado='Pendiente',
+                id_tutor=fila['tutor'],
+                id_legajo_alumno=fila['alumno'],
+            )
+
+    messages.success(
+        request,
+        f"Se generaron {len(plan['crear'])} cuotas pendientes para {periodo}. "
+        'No se registraron pagos.',
+    )
+    return redirect(f"{reverse('dashboard-administrativo')}?panel=pagos")
 
 
 def _tutor_session(request):
@@ -2011,12 +2249,8 @@ def dashboard_administrativo(request):
     else:
         opiniones = []
     
-    cuotas = Cuota.objects.select_related(
-        'id_tutor__id_persona',
-        'id_legajo_alumno__id_persona'
-    )
-    
-    cuotas_pendientes = PagoPendiente.objects.filter(estado='Pendiente').count()
+    cuotas_abiertas = _obtener_cuotas_con_saldo()
+    cuotas_pendientes = len(cuotas_abiertas)
 
     solicitudes = SolicitudInscripcion.objects.all().order_by('-fecha_solicitud')
 
@@ -2489,6 +2723,7 @@ def dashboard_administrativo(request):
         panel_activo = panel_solicitado
         request.session['panel_activo'] = panel_activo
     mensajes = list(get_messages(request))
+    periodo_cuota_sugerido = timezone.localdate().strftime('%Y-%m')
     
     return render(request, 'core/dashboard-administrativo.html', {
         'persona': persona,
@@ -2496,8 +2731,9 @@ def dashboard_administrativo(request):
         'instalaciones': instalaciones,
         'reservas': reservas,
         'opiniones': opiniones,
-        'cuotas': cuotas,
+        'cuotas_abiertas': cuotas_abiertas,
         'cuotas_pendientes': cuotas_pendientes,
+        'periodo_cuota_sugerido': periodo_cuota_sugerido,
         'solicitudes': solicitudes,
         'inscripciones_pendientes': inscripciones_pendientes,
         'pagos_pendientes': pagos_pendientes,
@@ -3108,7 +3344,8 @@ def lista_profesores_admin(request):
     else:
         opiniones = []
     
-    cuotas_pendientes = PagoPendiente.objects.filter(estado='Pendiente').count()
+    cuotas_abiertas = _obtener_cuotas_con_saldo()
+    cuotas_pendientes = len(cuotas_abiertas)
     solicitudes = SolicitudInscripcion.objects.all().order_by('-fecha_solicitud')
     inscripciones_pendientes = SolicitudInscripcion.objects.filter(estado="Pendiente").count()
     pagos_pendientes = PagoPendiente.objects.filter(estado='Pendiente')
@@ -3170,6 +3407,8 @@ def lista_profesores_admin(request):
         'reservas': reservas,
         'opiniones': opiniones,
         'cuotas_pendientes': cuotas_pendientes,
+        'cuotas_abiertas': cuotas_abiertas,
+        'periodo_cuota_sugerido': timezone.localdate().strftime('%Y-%m'),
         'solicitudes': solicitudes,
         'inscripciones_pendientes': inscripciones_pendientes,
         'pagos_pendientes': pagos_pendientes,
@@ -5302,7 +5541,8 @@ def lista_alumnos_admin(request):
         opiniones = []
     
     cuotas = Cuota.objects.select_related('id_tutor__id_persona', 'id_legajo_alumno__id_persona')
-    cuotas_pendientes = PagoPendiente.objects.filter(estado='Pendiente').count()
+    cuotas_abiertas = _obtener_cuotas_con_saldo()
+    cuotas_pendientes = len(cuotas_abiertas)
     solicitudes = SolicitudInscripcion.objects.all().order_by('-fecha_solicitud')
     inscripciones_pendientes = SolicitudInscripcion.objects.filter(estado="Pendiente").count()
     pagos_pendientes = PagoPendiente.objects.filter(estado='Pendiente')
@@ -5323,6 +5563,8 @@ def lista_alumnos_admin(request):
         'persona': persona, 'administrativo': administrativo, 'instalaciones': instalaciones,
         'reservas': reservas, 'opiniones': opiniones, 'cuotas': cuotas,
         'cuotas_pendientes': cuotas_pendientes, 'solicitudes': solicitudes,
+        'cuotas_abiertas': cuotas_abiertas,
+        'periodo_cuota_sugerido': timezone.localdate().strftime('%Y-%m'),
         'inscripciones_pendientes': inscripciones_pendientes, 'pagos_pendientes': pagos_pendientes,
         'documentaciones': documentaciones, 'documentacion_pendiente': documentacion_pendiente,
         'panel_activo': 'alumnos', 'alumnos': alumnos, 'alumno_detalle': alumno_detalle,

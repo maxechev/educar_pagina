@@ -5,7 +5,7 @@ Todas las rutas requieren `Authorization: Bearer <token>` obtenido en `POST /api
 ## `GET /api/cuotas/`
 
 Devuelve únicamente las cuotas de alumnos asociados al tutor autenticado. Filtros opcionales:
-`?periodo=Octubre` y `?estado=pendiente|parcial|pagada|vencida`.
+`?periodo=Octubre%202026` y `?estado=pendiente|parcial|pagada|vencida`.
 
 Respuesta `200`:
 
@@ -39,6 +39,19 @@ Respuesta `200`:
 
 Los estados de cuota son `pendiente`, `parcial`, `pagada` y `vencida`. Son independientes del
 estado del comprobante, que puede ser `pendiente`, `aprobado` o `rechazado`.
+
+## Generación administrativa de cuotas
+
+En el panel administrativo, **Pagos → Generar cuotas del período** permite previsualizar y
+confirmar obligaciones para un mes y vencimiento elegidos. Se consideran alumnos activos con
+curso, un único tutor asociado con cuenta activa y exactamente un arancel configurado para el
+nivel. Los alumnos sin esas condiciones, con varios tutores o con una cuota ya existente para el
+período se muestran como omitidos.
+
+La confirmación crea una `Cuota` pendiente con el arancel del nivel. No crea un `PagoCuota` ni una
+solicitud de pago. El tutor podrá verla en la app si su relación con el alumno está vigente y
+enviar un comprobante; ese envío queda pendiente de revisión administrativa. Este generador usa
+el arancel base existente y no agrega importes de deportes, transporte o comedor.
 
 ## `POST /api/comprobantes/`
 
