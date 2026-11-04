@@ -24,7 +24,10 @@ Respuesta `200`:
       {
         "id": 4,
         "estado": "pendiente",
+        "estado_pago": "en revisión",
         "fecha_envio": "2026-10-05T18:30:00-03:00",
+        "importe": "15000.00",
+        "motivo_rechazo": null,
         "nombre_archivo": "comprobantes/2026/10/transferencia.pdf"
       }
     ],
@@ -37,8 +40,10 @@ Respuesta `200`:
 ]
 ```
 
-Los estados de cuota son `pendiente`, `parcial`, `pagada` y `vencida`. Son independientes del
-estado del comprobante, que puede ser `pendiente`, `aprobado` o `rechazado`.
+Los estados de cuota son `pendiente`, `parcial`, `pagada` y `vencida`. `estado` conserva el estado
+del archivo (`pendiente`, `aprobado` o `rechazado`); `estado_pago` informa el estado de la solicitud
+asociada (`pendiente`, `en revisión`, `pagado` o `rechazado`). Cuando se rechaza, `motivo_rechazo`
+contiene la explicación del administrador. Los tres campos pueden consultarse desde la app.
 
 ## Generación administrativa de cuotas
 
@@ -51,7 +56,7 @@ período se muestran como omitidos. La comparación reconoce `Primaria`/`Primari
 
 La confirmación crea una `Cuota` pendiente con el arancel del nivel. No crea un `PagoCuota` ni una
 solicitud de pago. El tutor podrá verla en la app si su relación con el alumno está vigente y
-enviar un comprobante; ese envío queda pendiente de revisión administrativa. Este generador usa
+enviar un comprobante; ese envío queda en revisión administrativa. Este generador usa
 el arancel base existente y no agrega importes de deportes, transporte o comedor.
 
 ## `POST /api/comprobantes/`
@@ -71,7 +76,7 @@ Respuesta `201`:
   "cuota_id": 12,
   "pago_id": 8,
   "estado": "en revisión",
-  "mensaje": "El comprobante fue enviado y queda pendiente de revisión administrativa."
+  "mensaje": "El comprobante fue enviado y quedó en revisión administrativa."
 }
 ```
 

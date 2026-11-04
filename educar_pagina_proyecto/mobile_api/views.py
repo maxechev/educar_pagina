@@ -160,6 +160,8 @@ class CuotasView(APIView):
         ).select_related(
             "id_legajo_alumno__id_persona",
             "id_legajo_alumno__id_curso__nivel_educativo",
+        ).prefetch_related(
+            "comprobantes__pago__solicitud",
         ).order_by("-fecha_vencimiento", "-id_cuota")
 
         periodo = request.query_params.get("periodo")
@@ -217,7 +219,22 @@ class CuotasView(APIView):
                         {
                             "id": comprobante.id_comprobante,
                             "estado": comprobante.estado.casefold(),
+                            "estado_pago": (
+                                comprobante.pago.estado.casefold()
+                                if comprobante.pago
+                                else comprobante.estado.casefold()
+                            ),
                             "fecha_envio": comprobante.fecha_envio.isoformat(),
+                            "importe": (
+                                str(comprobante.pago.importe)
+                                if comprobante.pago
+                                else None
+                            ),
+                            "motivo_rechazo": (
+                                comprobante.pago.solicitud.motivo_rechazo
+                                if comprobante.pago and comprobante.pago.solicitud_id
+                                else None
+                            ),
                             "nombre_archivo": comprobante.archivo.name,
                         }
                         for comprobante in cuota.comprobantes.all()
@@ -305,7 +322,7 @@ class ComprobantesView(APIView):
                 "cuota_id": cuota.id_cuota,
                 "pago_id": pago.id_pago,
                 "estado": "en revisión",
-                "mensaje": "El comprobante fue enviado y queda pendiente de revisión administrativa.",
+                "mensaje": "El comprobante fue enviado y quedó en revisión administrativa.",
             },
             status=status.HTTP_201_CREATED,
         )
