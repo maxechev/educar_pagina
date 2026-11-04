@@ -578,6 +578,7 @@
                   <th>Tutor</th>
                   <th>Mes</th>
                   <th>Importe</th>
+                  <th>Comprobante</th>
                   <th>Estado</th>
                 </tr>
               </thead>
@@ -598,6 +599,18 @@
                   <td>{{ pago.mes }}</td>
 
                   <td>${{ pago.importe }}</td>
+
+                  <td>
+                    {% with pago_aplicado=pago.pago_aplicado %}
+                      {% with comprobante=pago_aplicado.comprobantes.first %}
+                        {% if comprobante %}
+                        <a href="{% url 'ver-comprobante-pago' comprobante.id_comprobante %}" target="_blank" rel="noopener">Ver comprobante</a>
+                        {% else %}
+                        Sin comprobante
+                        {% endif %}
+                      {% endwith %}
+                    {% endwith %}
+                  </td>
 
                   <td>
                     {% if pago.estado == 'Pendiente' %}
@@ -638,7 +651,7 @@
 
                 {% empty %}
                 <tr>
-                  <td colspan="6">No hay pagos pendientes.</td>
+                  <td colspan="7">No hay pagos pendientes.</td>
                 </tr>
                 {% endfor %}
               </tbody>

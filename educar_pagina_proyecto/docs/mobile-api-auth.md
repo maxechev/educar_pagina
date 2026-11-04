@@ -22,6 +22,14 @@ Requiere Authorization: Bearer <token>. Devuelve el usuario asociado a la sesió
 
 Requiere Authorization: Bearer <token>. Revoca la sesión en el servidor. El token deja de servir inmediatamente.
 
+### GET /api/cuotas/
+
+Requiere Authorization: Bearer <token> de padre/tutor. Devuelve las cuotas registradas para ese tutor y sus alumnos asociados. Los filtros `periodo` y `estado` son opcionales; los estados admitidos son `pendiente`, `parcial`, `pagada` y `vencida`.
+
+Cada elemento incluye `id`, `periodo`, `monto`, `monto_pagado`, `fecha_pago`, `estado` y `alumno` (`legajo`, `nombre_completo`, `curso`). Las cuotas sin alumno vinculado al tutor autenticado no se incluyen.
+
+La base actual registra cuotas y pagos, pero no tiene entidades de factura ni fecha de vencimiento. Por eso este endpoint no devuelve `factura_id` ni `fecha_vencimiento`; las solicitudes guardadas en `PagoPendiente` tampoco se mezclan con cuotas confirmadas. El modelo tampoco guarda cuánto se abonó en un pago parcial, así que `monto_pagado` solo es exacto para estados `Pagada`.
+
 ## Seguridad
 
 - Cada sesión queda registrada en la tabla mobile_api_session.
