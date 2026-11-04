@@ -36,6 +36,7 @@ urlpatterns = [
     path('docente/guardar-nota/', views.guardar_nota, name='guardar-nota'),
     # Dashboards administrativos
     path('administrativo/', views.dashboard_administrativo, name='dashboard-administrativo'),
+    path('administrativo/cuotas/generar/', views.generar_cuotas_administrativo, name='generar-cuotas-administrativo'),
     path('administrativo/niveles-cursos/', views.lista_niveles_cursos_admin, name='lista-niveles-cursos-admin'),
     path('administrativo/materias/', views.lista_materias_admin, name='lista-materias-admin'),
     path('administrativo/deportes/', views.lista_deportes_admin, name='lista-deportes-admin'),

@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Confirmar generación de cuotas</title>
+    <style>
+      :root { color-scheme: light; font-family: Arial, sans-serif; color: #1e293b; background: #f1f5f9; }
+      body { margin: 0; padding: 24px; }
+      main { max-width: 1000px; margin: 0 auto; background: #fff; border-radius: 14px; padding: 24px; box-shadow: 0 8px 24px #0f172a12; }
+      h1, h2 { color: #1e3a5f; }
+      .summary, .notice { border-radius: 9px; padding: 14px 16px; margin: 16px 0; }
+      .summary { background: #eff6ff; border: 1px solid #bfdbfe; }
+      .notice { background: #fffbeb; border: 1px solid #fde68a; }
+      .table-wrap { overflow-x: auto; }
+      table { border-collapse: collapse; width: 100%; margin: 12px 0 24px; }
+      th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid #e2e8f0; }
+      th { background: #f8fafc; }
+      .muted { color: #64748b; }
+      .actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 20px; }
+      button, .back { border: 0; border-radius: 8px; padding: 11px 16px; font-size: 15px; text-decoration: none; cursor: pointer; }
+      button { background: #176b45; color: white; }
+      .back { background: #e2e8f0; color: #1e293b; }
+      label { display: flex; gap: 8px; align-items: center; }
+      @media (max-width: 600px) { body { padding: 10px; } main { padding: 16px; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Revisar cuotas antes de generarlas</h1>
+      {% for message in mensajes %}
+        <div class="notice">{{ message }}</div>
+      {% endfor %}
+      <div class="summary">
+        <strong>Período:</strong> {{ plan.periodo }}<br>
+        <strong>Vencimiento:</strong> {{ fecha_vencimiento|date:"d/m/Y" }}<br>
+        <strong>Cuotas nuevas:</strong> {{ plan.crear|length }}<br>
+        <strong>Alumnos omitidos:</strong> {{ plan.omitidos|length }}
+      </div>
+      <div class="notice">
+        Confirmar crea obligaciones reales con el importe del arancel configurado para cada nivel. No registra pagos. Los alumnos omitidos no recibirán una cuota.
+      </div>
+
+      <h2>Alumnos que recibirían una cuota</h2>
+      {% if plan.crear %}
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Alumno</th><th>Legajo</th><th>Nivel</th><th>Tutor</th><th>Importe</th></tr></thead>
+            <tbody>
+              {% for fila in plan.crear %}
+                <tr>
+                  <td>{{ fila.alumno.id_persona.nombre }} {{ fila.alumno.id_persona.apellido }}</td>
+                  <td>{{ fila.alumno.legajo }}</td>
+                  <td>{{ fila.nivel }}</td>
+                  <td>{{ fila.tutor.id_persona.nombre }} {{ fila.tutor.id_persona.apellido }}</td>
+                  <td>${{ fila.monto }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p class="muted">No hay alumnos elegibles para este período. No se puede confirmar una generación vacía.</p>
+      {% endif %}
+
+      {% if plan.omitidos %}
+        <h2>Alumnos omitidos</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Alumno</th><th>Legajo</th><th>Motivo</th></tr></thead>
+            <tbody>
+              {% for fila in plan.omitidos %}
+                <tr><td>{{ fila.alumno }}</td><td>{{ fila.legajo }}</td><td>{{ fila.motivo }}</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% endif %}
+
+      <div class="actions">
+        {% if plan.crear %}
+          <form method="POST" action="{% url 'generar-cuotas-administrativo' %}">
+            {% csrf_token %}
+            <input type="hidden" name="accion" value="confirmar">
+            <input type="hidden" name="periodo" value="{{ periodo_form }}">
+            <input type="hidden" name="fecha_vencimiento" value="{{ vencimiento_form }}">
+            <input type="hidden" name="revision_plan" value="{{ revision_plan }}">
+            <label><input type="checkbox" name="confirmar" value="si" required> Confirmo que estos alumnos deben recibir esta cuota.</label>
+            <p><button type="submit">Generar {{ plan.crear|length }} cuotas pendientes</button></p>
+          </form>
+        {% endif %}
+        <a class="back" href="{% url 'dashboard-administrativo' %}?panel=pagos">Volver a Pagos</a>
+      </div>
+    </main>
+  </body>
+</html>
