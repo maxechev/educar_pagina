@@ -7,7 +7,7 @@ from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
-from core.models import Persona, Usuario
+from core.models import Cuota, Persona, Tutor, TutorTutoraAlumno, Usuario
 
 from .authentication import MobileTokenAuthentication
 from .models import MobileSession
@@ -116,3 +116,84 @@ class LogoutView(APIView):
             revoked_at__isnull=True,
         ).update(revoked_at=timezone.now())
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class CuotasView(APIView):
+    authentication_classes = [MobileTokenAuthentication]
+    permission_classes = [IsMobileAuthenticated]
+
+    def get(self, request):
+        if request.auth.get("role") != "padre":
+            return Response(
+                {"detail": "Este recurso está disponible para padres/tutores."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        tutor = Tutor.objects.filter(id_persona__id_usuario=request.user).first()
+        if tutor is None:
+            return Response(
+                {"detail": "No se encontró el perfil de tutor asociado a la cuenta."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        legajos_hijos = TutorTutoraAlumno.objects.filter(
+            id_tutor=tutor
+        ).values_list("id_alumno_id", flat=True)
+
+        cuotas = Cuota.objects.filter(
+            id_tutor=tutor,
+            id_legajo_alumno_id__in=legajos_hijos,
+        ).select_related(
+            "id_legajo_alumno__id_persona",
+            "id_legajo_alumno__id_curso__nivel_educativo",
+        ).order_by("-fecha_pago", "-id_cuota")
+
+        periodo = request.query_params.get("periodo")
+        if periodo:
+            cuotas = cuotas.filter(periodo__iexact=periodo.strip())
+
+        estado = request.query_params.get("estado")
+        estados_validos = {
+            "pendiente": "Pendiente",
+            "parcial": "Parcial",
+            "pagada": "Pagada",
+            "vencida": "Vencida",
+        }
+        if estado:
+            estado_normalizado = estado.strip().casefold()
+            if estado_normalizado not in estados_validos:
+                return Response(
+                    {"detail": "El filtro estado debe ser pendiente, parcial, pagada o vencida."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            cuotas = cuotas.filter(estado__iexact=estados_validos[estado_normalizado])
+
+        data = []
+        for cuota in cuotas:
+            alumno = cuota.id_legajo_alumno
+            persona = alumno.id_persona
+            curso = alumno.id_curso
+            nombre_curso = ""
+            if curso:
+                nivel = curso.nivel_educativo.nombre
+                nombre_curso = f"{curso.anio}° Año {curso.comision} - {nivel}"
+
+            estado_cuota = (cuota.estado or "").strip().casefold()
+            monto_pagado = cuota.monto if estado_cuota == "pagada" else 0
+            data.append(
+                {
+                    "id": cuota.id_cuota,
+                    "periodo": cuota.periodo,
+                    "monto": str(cuota.monto),
+                    "monto_pagado": str(monto_pagado),
+                    "fecha_pago": cuota.fecha_pago.isoformat(),
+                    "estado": estado_cuota,
+                    "alumno": {
+                        "legajo": alumno.legajo,
+                        "nombre_completo": f"{persona.nombre} {persona.apellido}".strip(),
+                        "curso": nombre_curso,
+                    },
+                }
+            )
+
+        return Response(data)
