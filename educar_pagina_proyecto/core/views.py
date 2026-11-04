@@ -4635,6 +4635,23 @@ def aprobar_pago(request, id_pago):
 
     return redirect('dashboard-administrativo')
 
+
+def ver_comprobante_pago(request, id_comprobante):
+    if not _admin_session(request):
+        return redirect('login')
+    comprobante = get_object_or_404(ComprobantePago, id_comprobante=id_comprobante)
+    if not comprobante.archivo:
+        raise Http404('El comprobante no tiene archivo.')
+    try:
+        archivo = comprobante.archivo.open('rb')
+    except FileNotFoundError as exc:
+        raise Http404('El archivo del comprobante no está disponible.') from exc
+    return FileResponse(
+        archivo,
+        as_attachment=False,
+        filename=comprobante.archivo.name.rsplit('/', 1)[-1],
+    )
+
 @require_POST
 def rechazar_pago(request, id_pago):
     if not _admin_session(request):

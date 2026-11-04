@@ -76,6 +76,7 @@ urlpatterns = [
     path('administrativo/materias/<int:id_materia>/modificar/', views.modificar_materia_admin, name='modificar-materia-admin'),
     path('administrativo/materias/<int:id_materia>/baja/', views.baja_materia_admin, name='baja-materia-admin'),
     path('aprobar-pago/<int:id_pago>/',views.aprobar_pago,name='aprobar-pago'),
+    path('comprobantes-pago/<int:id_comprobante>/', views.ver_comprobante_pago, name='ver-comprobante-pago'),
     path('aprobar-inscripcion/<int:id_solicitud>/',views.aprobar_inscripcion,name='aprobar-inscripcion'),
     path('registrar-pago/',views.registrar_pago,name='registrar_pago'),
     path('enviar-documentacion/',views.enviar_documentacion,name='enviar_documentacion'),
