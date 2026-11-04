@@ -151,7 +151,7 @@ class Cuota(models.Model):
 
     def monto_pagado_actual(self):
         return sum(
-            (p.importe for p in self.pagos.filter(estado='Aprobado')),
+            (p.importe for p in self.pagos.filter(estado='Pagado')),
             Decimal('0'),
         )
 
@@ -928,6 +928,8 @@ class PagoPendiente(models.Model):
         default='Pendiente'
     )
 
+    motivo_rechazo = models.TextField(blank=True, null=True)
+
     fecha_solicitud = models.DateTimeField()
 
     class Meta:
@@ -940,7 +942,8 @@ class PagoCuota(models.Model):
 
     ESTADOS = (
         ('Pendiente', 'Pendiente'),
-        ('Aprobado', 'Aprobado'),
+        ('En revisión', 'En revisión'),
+        ('Pagado', 'Pagado'),
         ('Rechazado', 'Rechazado'),
     )
 

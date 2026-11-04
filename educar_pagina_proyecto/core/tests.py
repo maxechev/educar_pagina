@@ -7,6 +7,8 @@ from django.contrib.auth.hashers import check_password, make_password
 from django.test import Client, TestCase
 from django.utils import timezone
 from django.utils.crypto import get_random_string
+from django.core.files.uploadedfile import SimpleUploadedFile
+from rest_framework.test import APIClient
 
 from .models import (
     Alumno,
@@ -16,6 +18,9 @@ from .models import (
     Persona,
     PersonalAdministrativo,
     PagoPendiente,
+    PagoCuota,
+    ComprobantePago,
+    Cuota,
     Tutor,
     TutorTutoraAlumno,
     Usuario,
@@ -254,3 +259,131 @@ class SeguridadYPatronesTests(TestCase):
         self.assertEqual(
             b''.join(respuesta.streaming_content), b'contenido privado'
         )
+
+
+class FlujoPagosTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.api_client = APIClient()
+        self.admin_usuario = Usuario.objects.create(
+            nombre_usuario='admin_pagos',
+            contrasenia=make_password('pass1234'),
+            rol='administrativo',
+            estado='Activo',
+        )
+        admin_persona = Persona.objects.create(
+            id_usuario=self.admin_usuario,
+            dni='99100001', nombre='Admin', apellido='Pagos',
+            fecha_nacimiento=date(1980, 1, 1),
+        )
+        PersonalAdministrativo.objects.create(
+            id_persona=admin_persona,
+            sector='Administración', cargo='Administrador',
+            fecha_ingreso=date.today(),
+        )
+        tutor_usuario = Usuario.objects.create(
+            nombre_usuario='tutor_pagos',
+            contrasenia=make_password('pass1234'),
+            rol='padre', estado='Activo',
+        )
+        self.tutor_usuario = tutor_usuario
+        tutor_persona = Persona.objects.create(
+            id_usuario=tutor_usuario,
+            dni='99100002', nombre='Tutor', apellido='Pagos',
+            fecha_nacimiento=date(1980, 1, 1),
+        )
+        self.tutor = Tutor.objects.create(id_persona=tutor_persona)
+        alumno_persona = Persona.objects.create(
+            dni='99100003', nombre='Alumno', apellido='Pago',
+            fecha_nacimiento=date(2015, 1, 1),
+        )
+        nivel = NivelEducativo.objects.create(nombre='Nivel pagos')
+        curso = Curso.objects.create(
+            comision='A', anio=4, turno='Mañana', nivel_educativo=nivel,
+        )
+        self.alumno = Alumno.objects.create(
+            id_persona=alumno_persona,
+            fecha_ingreso=date.today(), id_curso=curso,
+        )
+        TutorTutoraAlumno.objects.create(id_tutor=self.tutor, id_alumno=self.alumno)
+        self.cuota = Cuota.objects.create(
+            periodo='Noviembre', monto=1000, monto_total=1000,
+            estado='Pendiente', id_tutor=self.tutor,
+            id_legajo_alumno=self.alumno,
+        )
+
+        session = self.client.session
+        session['usuario_id'] = self.admin_usuario.id
+        session.save()
+
+    def _crear_solicitud(self, importe=1000):
+        return PagoPendiente.objects.create(
+            id_tutor=self.tutor, legajo_alumno=self.alumno,
+            mes='Noviembre', importe=importe, estado='En revisión',
+            fecha_solicitud=timezone.now(),
+        )
+
+    def test_aprobar_pago_es_idempotente_y_conserva_historial(self):
+        solicitud = self._crear_solicitud()
+
+        primera = self.client.post(f'/aprobar-pago/{solicitud.id_pago}/')
+        segunda = self.client.post(f'/aprobar-pago/{solicitud.id_pago}/')
+
+        self.assertEqual(primera.status_code, 302)
+        self.assertEqual(segunda.status_code, 302)
+        solicitud.refresh_from_db()
+        self.assertEqual(solicitud.estado, 'Pagado')
+        self.assertEqual(PagoCuota.objects.filter(solicitud=solicitud).count(), 1)
+        self.assertEqual(PagoCuota.objects.get(solicitud=solicitud).estado, 'Pagado')
+
+    def test_rechazo_exige_motivo_y_conserva_solicitud(self):
+        solicitud = self._crear_solicitud()
+
+        sin_motivo = self.client.post(f'/rechazar-pago/{solicitud.id_pago}/')
+        solicitud.refresh_from_db()
+        self.assertEqual(sin_motivo.status_code, 302)
+        self.assertEqual(solicitud.estado, 'En revisión')
+
+        respuesta = self.client.post(
+            f'/rechazar-pago/{solicitud.id_pago}/',
+            {'motivo_rechazo': 'El comprobante no es legible.'},
+        )
+        solicitud.refresh_from_db()
+        self.assertEqual(respuesta.status_code, 302)
+        self.assertEqual(solicitud.estado, 'Rechazado')
+        self.assertEqual(solicitud.motivo_rechazo, 'El comprobante no es legible.')
+
+    def test_usuario_sin_rol_administrativo_no_puede_aprobar(self):
+        solicitud = self._crear_solicitud()
+        session = self.client.session
+        session['usuario_id'] = self.tutor.id_persona.id_usuario_id
+        session.save()
+
+        respuesta = self.client.post(f'/aprobar-pago/{solicitud.id_pago}/')
+        self.assertEqual(respuesta.status_code, 302)
+        self.assertEqual(respuesta['Location'], '/login/')
+        solicitud.refresh_from_db()
+        self.assertEqual(solicitud.estado, 'En revisión')
+
+    def test_comprobante_de_tutor_pasa_a_en_revision(self):
+        from mobile_api.tokens import create_access_token
+
+        token = create_access_token(self.tutor_usuario.id, 'padre')
+        respuesta = self.api_client.post(
+            '/api/comprobantes/',
+            {
+                'cuota_id': self.cuota.id_cuota,
+                'importe': '250',
+                'archivo': SimpleUploadedFile(
+                    'comprobante.txt', b'comprobante de prueba', content_type='text/plain'
+                ),
+            },
+            format='multipart',
+            HTTP_AUTHORIZATION=f'Bearer {token}',
+        )
+
+        self.assertEqual(respuesta.status_code, 201)
+        solicitud = PagoPendiente.objects.get(id_tutor=self.tutor)
+        self.assertEqual(solicitud.estado, 'En revisión')
+        self.assertEqual(PagoCuota.objects.get(solicitud=solicitud).estado, 'En revisión')
+        self.assertTrue(ComprobantePago.objects.filter(cuota=self.cuota).exists())
