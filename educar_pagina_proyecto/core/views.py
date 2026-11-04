@@ -57,6 +57,8 @@ from .models import (
     PostulacionLaboral,
     SolicitudInscripcion,
     PagoPendiente,
+    PagoCuota,
+    ComprobantePago,
     Arancel,
     DocumentacionAlumno,
     Tarea,
@@ -2014,9 +2016,7 @@ def dashboard_administrativo(request):
         'id_legajo_alumno__id_persona'
     )
     
-    cuotas_pendientes = PagoPendiente.objects.exclude(
-        estado='Pagada'
-    ).count()
+    cuotas_pendientes = PagoPendiente.objects.filter(estado='Pendiente').count()
 
     solicitudes = SolicitudInscripcion.objects.all().order_by('-fecha_solicitud')
 
@@ -2024,7 +2024,7 @@ def dashboard_administrativo(request):
         estado="Pendiente"
     ).count()
     
-    pagos_pendientes = PagoPendiente.objects.all()
+    pagos_pendientes = PagoPendiente.objects.filter(estado='Pendiente')
     documentacion_pendiente = DocumentacionAlumno.objects.filter(
         estado='Pendiente'
     ).count()
@@ -3108,10 +3108,10 @@ def lista_profesores_admin(request):
     else:
         opiniones = []
     
-    cuotas_pendientes = PagoPendiente.objects.exclude(estado='Pagada').count()
+    cuotas_pendientes = PagoPendiente.objects.filter(estado='Pendiente').count()
     solicitudes = SolicitudInscripcion.objects.all().order_by('-fecha_solicitud')
     inscripciones_pendientes = SolicitudInscripcion.objects.filter(estado="Pendiente").count()
-    pagos_pendientes = PagoPendiente.objects.all()
+    pagos_pendientes = PagoPendiente.objects.filter(estado='Pendiente')
     documentacion_pendiente = DocumentacionAlumno.objects.filter(estado='Pendiente').count()
     documentaciones = DocumentacionAlumno.objects.filter(estado='Pendiente').order_by('-fecha_envio')
     
@@ -4592,17 +4592,46 @@ def aprobar_pago(request, id_pago):
         id_pago=id_pago
     )
 
-    Cuota.objects.create(
-        periodo=pago.mes,
-        monto=pago.importe,
-        fecha_pago=date.today(),
-        medio_pago='Transferencia',
-        estado='Pagada',
+    cuota = Cuota.objects.filter(
         id_tutor=pago.id_tutor,
-        id_legajo_alumno=pago.legajo_alumno
-    )
-
-    pago.delete()
+        id_legajo_alumno=pago.legajo_alumno,
+        periodo=pago.mes,
+    ).order_by('-id_cuota').first()
+    if cuota is None:
+        cuota = Cuota.objects.create(
+            periodo=pago.mes,
+            monto=pago.importe,
+            monto_total=pago.importe,
+            fecha_pago=date.today(),
+            medio_pago='Transferencia',
+            estado='Pendiente',
+            id_tutor=pago.id_tutor,
+            id_legajo_alumno=pago.legajo_alumno,
+        )
+    try:
+        pago_aplicado = pago.pago_aplicado
+    except PagoCuota.DoesNotExist:
+        pago_aplicado = None
+    if pago_aplicado is None:
+        pago_aplicado = PagoCuota.objects.create(
+            cuota=cuota,
+            solicitud=pago,
+            tutor=pago.id_tutor,
+            importe=pago.importe,
+            fecha_pago=date.today(),
+            medio_pago='Transferencia',
+            estado='Aprobado',
+        )
+    else:
+        pago_aplicado.estado = 'Aprobado'
+        pago_aplicado.fecha_pago = date.today()
+        pago_aplicado.save(update_fields=['estado', 'fecha_pago'])
+    ComprobantePago.objects.filter(pago=pago_aplicado).update(estado='Aprobado')
+    pago.estado = 'Aprobado'
+    pago.save(update_fields=['estado'])
+    cuota.fecha_pago = date.today()
+    cuota.save(update_fields=['fecha_pago'])
+    cuota.actualizar_estado()
 
     return redirect('dashboard-administrativo')
 
@@ -4615,7 +4644,16 @@ def rechazar_pago(request, id_pago):
         id_pago=id_pago
     )
 
-    pago.delete()
+    try:
+        pago_aplicado = pago.pago_aplicado
+    except PagoCuota.DoesNotExist:
+        pago_aplicado = None
+    if pago_aplicado:
+        pago_aplicado.estado = 'Rechazado'
+        pago_aplicado.save(update_fields=['estado'])
+        ComprobantePago.objects.filter(pago=pago_aplicado).update(estado='Rechazado')
+    pago.estado = 'Rechazado'
+    pago.save(update_fields=['estado'])
 
     return redirect(
         'dashboard-administrativo'
@@ -5247,10 +5285,10 @@ def lista_alumnos_admin(request):
         opiniones = []
     
     cuotas = Cuota.objects.select_related('id_tutor__id_persona', 'id_legajo_alumno__id_persona')
-    cuotas_pendientes = PagoPendiente.objects.exclude(estado='Pagada').count()
+    cuotas_pendientes = PagoPendiente.objects.filter(estado='Pendiente').count()
     solicitudes = SolicitudInscripcion.objects.all().order_by('-fecha_solicitud')
     inscripciones_pendientes = SolicitudInscripcion.objects.filter(estado="Pendiente").count()
-    pagos_pendientes = PagoPendiente.objects.all()
+    pagos_pendientes = PagoPendiente.objects.filter(estado='Pendiente')
     documentacion_pendiente = DocumentacionAlumno.objects.filter(estado='Pendiente').count()
     documentaciones = DocumentacionAlumno.objects.filter(estado='Pendiente').order_by('-fecha_envio')
     

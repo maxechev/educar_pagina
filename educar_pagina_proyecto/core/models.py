@@ -5,7 +5,10 @@
 #   * Make sure each ForeignKey and OneToOneField has `on_delete` set to the desired behavior
 #   * Remove `managed = False` lines if you wish to allow Django to create, modify, and delete the table
 # Feel free to rename the models, but don't rename db_table values or field names.
+from decimal import Decimal
+
 from django.db import models
+from django.utils import timezone
 
 
 class Alumno(models.Model):
@@ -107,7 +110,17 @@ class Cuota(models.Model):
         max_digits=10,
         decimal_places=2
     )
-    fecha_pago = models.DateField()
+    # ``monto`` y ``fecha_pago`` se conservan por compatibilidad con los
+    # registros y pantallas existentes. Las nuevas obligaciones usan
+    # ``monto_total`` y ``fecha_vencimiento``.
+    monto_total = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+    )
+    fecha_pago = models.DateField(blank=True, null=True)
+    fecha_vencimiento = models.DateField(blank=True, null=True)
     medio_pago = models.CharField(
         max_length=50,
         blank=True,
@@ -131,6 +144,29 @@ class Cuota(models.Model):
     class Meta:
         managed = True
         db_table = 'cuota'
+
+    @property
+    def total_obligacion(self):
+        return self.monto_total if self.monto_total is not None else self.monto
+
+    def monto_pagado_actual(self):
+        return sum(
+            (p.importe for p in self.pagos.filter(estado='Aprobado')),
+            Decimal('0'),
+        )
+
+    def actualizar_estado(self):
+        total = self.total_obligacion or Decimal('0')
+        pagado = self.monto_pagado_actual()
+        if pagado >= total and total > 0:
+            self.estado = 'Pagada'
+        elif pagado > 0:
+            self.estado = 'Parcial'
+        elif self.fecha_vencimiento and self.fecha_vencimiento < timezone.localdate():
+            self.estado = 'Vencida'
+        else:
+            self.estado = 'Pendiente'
+        self.save(update_fields=['estado'])
 
 class NivelEducativo(models.Model):
     id_nivel = models.AutoField(primary_key=True)
@@ -897,6 +933,66 @@ class PagoPendiente(models.Model):
     class Meta:
         managed = True
         db_table = 'pago_pendiente'
+
+
+class PagoCuota(models.Model):
+    """Pago individual aplicado a una cuota, conservando pagos parciales."""
+
+    ESTADOS = (
+        ('Pendiente', 'Pendiente'),
+        ('Aprobado', 'Aprobado'),
+        ('Rechazado', 'Rechazado'),
+    )
+
+    id_pago = models.AutoField(primary_key=True)
+    cuota = models.ForeignKey(Cuota, models.CASCADE, related_name='pagos', db_column='id_cuota')
+    solicitud = models.OneToOneField(
+        PagoPendiente,
+        models.SET_NULL,
+        related_name='pago_aplicado',
+        db_column='id_solicitud',
+        blank=True,
+        null=True,
+    )
+    tutor = models.ForeignKey(Tutor, models.DO_NOTHING, db_column='id_tutor')
+    importe = models.DecimalField(max_digits=10, decimal_places=2)
+    fecha_pago = models.DateField(blank=True, null=True)
+    medio_pago = models.CharField(max_length=50, blank=True, null=True)
+    estado = models.CharField(max_length=20, choices=ESTADOS, default='Pendiente')
+    fecha_registro = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        managed = True
+        db_table = 'pago_cuota'
+        ordering = ['-fecha_registro', '-id_pago']
+
+
+class ComprobantePago(models.Model):
+    ESTADOS = (
+        ('Pendiente', 'Pendiente'),
+        ('Aprobado', 'Aprobado'),
+        ('Rechazado', 'Rechazado'),
+    )
+
+    id_comprobante = models.AutoField(primary_key=True)
+    cuota = models.ForeignKey(Cuota, models.CASCADE, related_name='comprobantes', db_column='id_cuota')
+    pago = models.ForeignKey(
+        PagoCuota,
+        models.CASCADE,
+        related_name='comprobantes',
+        db_column='id_pago',
+        blank=True,
+        null=True,
+    )
+    archivo = models.FileField(upload_to='comprobantes/%Y/%m/', max_length=255)
+    estado = models.CharField(max_length=20, choices=ESTADOS, default='Pendiente')
+    fecha_envio = models.DateTimeField(default=timezone.now)
+    observaciones = models.TextField(blank=True, null=True)
+
+    class Meta:
+        managed = True
+        db_table = 'comprobante_pago'
+        ordering = ['-fecha_envio', '-id_comprobante']
         
 class Arancel(models.Model):
     id_arancel = models.AutoField(primary_key=True)
