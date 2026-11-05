@@ -24,7 +24,10 @@ Respuesta `200`:
       {
         "id": 4,
         "estado": "pendiente",
+        "estado_pago": "en revisión",
         "fecha_envio": "2026-10-05T18:30:00-03:00",
+        "importe": "15000.00",
+        "motivo_rechazo": null,
         "nombre_archivo": "comprobantes/2026/10/transferencia.pdf"
       }
     ],
@@ -39,6 +42,13 @@ Respuesta `200`:
 
 Los estados de cuota son `pendiente`, `parcial`, `pagada` y `vencida`. Son independientes del
 estado del comprobante, que puede ser `pendiente`, `aprobado` o `rechazado`.
+
+## GET /api/cuotas/{id}/
+
+Devuelve el detalle de una cuota con la misma información y validación de pertenencia que el
+listado. Si la cuota no existe o corresponde a un alumno no asociado al tutor, responde 404.
+El campo discriminacion se devuelve como null: el modelo actual no registra conceptos
+desglosados (deportes, transporte o comedor) dentro de cada cuota.
 
 ## Generación administrativa de cuotas
 
@@ -82,3 +92,13 @@ la relación tutor-alumno.
 
 Errores principales: `400` para datos o archivo faltantes, `403` para roles no autorizados,
 `404` si la cuota no pertenece al tutor y `400` si el importe supera el saldo.
+
+## GET /api/servicios/inscripciones/
+
+Devuelve, para cada alumno asociado al tutor, sus inscripciones activas a deportes, transporte
+y comedor. Solo se incluyen inscripciones activas y servicios/grupos activos. El resultado no
+incluye alumnos asociados a otros tutores.
+
+Los campos monto_mensual se devuelven como null: los modelos de inscripción, recorridos,
+comedor y disciplinas no contienen actualmente un arancel o precio mensual. No se debe interpretar
+ese valor como cero ni como un importe a cobrar.
