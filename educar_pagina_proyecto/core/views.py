@@ -1,3 +1,4 @@
+from decimal import Decimal, InvalidOperation
 import requests
 import json
 import os
@@ -498,6 +499,18 @@ def _active_comedor():
     return ServicioComedor.objects.create(nombre='Comedor escolar', cupo_maximo=100, estado='Activo')
 
 
+def _parse_monto_servicio(valor):
+    try:
+        monto = Decimal(str(valor).strip())
+    except (InvalidOperation, AttributeError):
+        raise ValueError('Ingresá un arancel mensual válido.')
+    if not monto.is_finite() or monto < 0:
+        raise ValueError('El arancel mensual no puede ser negativo.')
+    if monto > Decimal('99999999.99'):
+        raise ValueError('El arancel mensual supera el máximo permitido.')
+    return monto.quantize(Decimal('0.01'))
+
+
 @never_cache
 def alta_recorrido_admin(request):
     if not _admin_session(request):
@@ -508,13 +521,20 @@ def alta_recorrido_admin(request):
             cupo = int(request.POST.get('cupo_maximo') or 0)
         except ValueError:
             cupo = 0
-        if not nombre or cupo < 1:
-            messages.error(request, 'Ingresá un nombre y un cupo válido.')
+        try:
+            monto_mensual = _parse_monto_servicio(request.POST.get('monto_mensual') or '10000')
+        except ValueError as exc:
+            monto_mensual = None
+            messages.error(request, str(exc))
+        if not nombre or cupo < 1 or monto_mensual is None:
+            if not nombre or cupo < 1:
+                messages.error(request, 'Ingresá un nombre y un cupo válido.')
         elif RecorridoTransporte.objects.filter(nombre__iexact=nombre).exists():
             messages.error(request, 'Ya existe un recorrido con ese nombre.')
         else:
             RecorridoTransporte.objects.create(
                 nombre=nombre,
+                monto_mensual=monto_mensual,
                 descripcion=(request.POST.get('descripcion') or '').strip(),
                 turno=request.POST.get('turno') or 'Mañana',
                 hora_salida=request.POST.get('hora_salida') or None,
@@ -540,8 +560,11 @@ def modificar_recorrido_admin(request, id_recorrido):
         recorrido.hora_salida = request.POST.get('hora_salida') or None
         try:
             recorrido.cupo_maximo = max(1, int(request.POST.get('cupo_maximo') or recorrido.cupo_maximo))
-        except ValueError:
-            messages.error(request, 'El cupo debe ser numérico.')
+            recorrido.monto_mensual = _parse_monto_servicio(
+                request.POST.get('monto_mensual') or recorrido.monto_mensual
+            )
+        except (ValueError, InvalidOperation) as exc:
+            messages.error(request, str(exc) or 'El cupo debe ser numérico.')
         else:
             recorrido.estado = request.POST.get('estado') or recorrido.estado
             recorrido.save()
@@ -596,12 +619,17 @@ def modificar_comedor_admin(request):
     if request.method == 'POST':
         cupo_anterior = servicio.cupo_maximo
         estado_anterior = servicio.estado
+        monto_anterior = servicio.monto_mensual
         try:
             nuevo_cupo = max(1, int(request.POST.get('cupo_maximo') or servicio.cupo_maximo))
             nuevo_estado = request.POST.get('estado') or servicio.estado
+            nuevo_monto = _parse_monto_servicio(
+                request.POST.get('monto_mensual') or servicio.monto_mensual
+            )
             servicio.cupo_maximo = nuevo_cupo
             servicio.estado = nuevo_estado
-            servicio.save(update_fields=['cupo_maximo', 'estado'])
+            servicio.monto_mensual = nuevo_monto
+            servicio.save(update_fields=['cupo_maximo', 'estado', 'monto_mensual'])
             cambios = []
             if cupo_anterior != nuevo_cupo:
                 cambios.append('cupo')
@@ -615,6 +643,8 @@ def modificar_comedor_admin(request):
                 messages.success(request, f'El comedor fue {estado_texto} correctamente.')
             elif cupo_anterior != nuevo_cupo:
                 messages.success(request, 'El cupo del comedor fue actualizado correctamente.')
+            elif monto_anterior != nuevo_monto:
+                messages.success(request, 'El arancel mensual del comedor fue actualizado correctamente.')
             else:
                 messages.info(request, 'No hubo cambios en el comedor.')
         except ValueError:
@@ -3102,13 +3132,19 @@ def alta_deporte_admin(request):
     if request.method == 'POST':
         nombre = (request.POST.get('nombre') or '').strip()
         instalacion_id = request.POST.get('id_instalacion')
-        if not nombre or not instalacion_id:
-            messages.error(request, 'El nombre y la instalación son obligatorios.')
+        try:
+            monto_mensual = _parse_monto_servicio(request.POST.get('monto_mensual') or '5000')
+        except ValueError as exc:
+            monto_mensual = None
+            messages.error(request, str(exc))
+        if not nombre or not instalacion_id or monto_mensual is None:
+            if not nombre or not instalacion_id:
+                messages.error(request, 'El nombre y la instalación son obligatorios.')
         elif DisciplinaDeportiva.objects.filter(nombre__iexact=nombre).exists():
             messages.error(request, 'Ya existe ese deporte.')
         else:
             instalacion = get_object_or_404(Instalacion, id=instalacion_id)
-            DisciplinaDeportiva.objects.create(nombre=nombre, id_instalacion=instalacion)
+            DisciplinaDeportiva.objects.create(nombre=nombre, id_instalacion=instalacion, monto_mensual=monto_mensual)
             messages.success(request, 'Deporte creado correctamente.')
     return redirect('lista-deportes-admin')
 
@@ -3121,14 +3157,23 @@ def modificar_deporte_admin(request, id_disciplina):
     if request.method == 'POST':
         nombre = (request.POST.get('nombre') or '').strip()
         instalacion_id = request.POST.get('id_instalacion')
-        if not nombre or not instalacion_id:
-            messages.error(request, 'El nombre y la instalación son obligatorios.')
+        try:
+            monto_mensual = _parse_monto_servicio(
+                request.POST.get('monto_mensual') or deporte.monto_mensual
+            )
+        except ValueError as exc:
+            monto_mensual = None
+            messages.error(request, str(exc))
+        if not nombre or not instalacion_id or monto_mensual is None:
+            if not nombre or not instalacion_id:
+                messages.error(request, 'El nombre y la instalación son obligatorios.')
         elif DisciplinaDeportiva.objects.filter(nombre__iexact=nombre).exclude(id_disciplina=id_disciplina).exists():
             messages.error(request, 'Ya existe otro deporte con ese nombre.')
         else:
             deporte.nombre = nombre
             deporte.id_instalacion_id = instalacion_id
-            deporte.save(update_fields=['nombre', 'id_instalacion'])
+            deporte.monto_mensual = monto_mensual
+            deporte.save(update_fields=['nombre', 'id_instalacion', 'monto_mensual'])
             messages.success(request, 'Deporte actualizado correctamente.')
     return redirect('lista-deportes-admin')
 
