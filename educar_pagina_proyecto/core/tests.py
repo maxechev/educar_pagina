@@ -1,4 +1,5 @@
 from datetime import date, time
+from decimal import Decimal
 from io import BytesIO
 from pathlib import Path
 from unittest.mock import patch
@@ -8,10 +9,13 @@ from django.test import Client, TestCase
 from django.utils import timezone
 from django.utils.crypto import get_random_string
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.core.management import call_command
+from django.core import mail
 from rest_framework.test import APIClient
 
 from .models import (
     Alumno,
+    Arancel,
     Curso,
     DocumentacionAlumno,
     NivelEducativo,
@@ -491,3 +495,272 @@ class FlujoPagosTests(TestCase):
         self.assertEqual(respuesta.data[0]['transporte']['monto_mensual'], '10000.00')
         self.assertEqual(respuesta.data[0]['deportes'][0]['monto_mensual'], '5000.00')
         self.assertEqual(respuesta.data[0]['comedor']['monto_mensual'], '5000.00')
+
+
+class ComandosYReportesTests(TestCase):
+    def setUp(self):
+        self.api_client = APIClient()
+
+        # Admin user
+        self.admin_usuario = Usuario.objects.create(
+            nombre_usuario='admin_reportes',
+            contrasenia=make_password('pass1234'),
+            rol='administrativo',
+            estado='Activo',
+            correo='admin@colegio.edu.ar',
+        )
+        admin_persona = Persona.objects.create(
+            id_usuario=self.admin_usuario,
+            dni='99200001',
+            nombre='Santiago',
+            apellido='Administrador',
+            fecha_nacimiento=date(1985, 5, 10),
+        )
+        PersonalAdministrativo.objects.create(
+            id_persona=admin_persona,
+            sector='Administración',
+            cargo='Administrador',
+            fecha_ingreso=date.today(),
+        )
+
+        # Tutor 1 (con deuda)
+        self.tutor_usuario = Usuario.objects.create(
+            nombre_usuario='tutor_deudor',
+            contrasenia=make_password('pass1234'),
+            rol='padre',
+            estado='Activo',
+            correo='tutor.deuda@test.com',
+        )
+        tutor_persona = Persona.objects.create(
+            id_usuario=self.tutor_usuario,
+            dni='99200002',
+            nombre='Carlos',
+            apellido='Gómez',
+            fecha_nacimiento=date(1980, 3, 15),
+        )
+        self.tutor = Tutor.objects.create(id_persona=tutor_persona, email_contacto='tutor.deuda@test.com')
+
+        # Nivel y Curso
+        self.nivel, _ = NivelEducativo.objects.get_or_create(
+            nombre='Nivel Primario Test',
+            defaults={'estado': 'Activo'}
+        )
+        self.arancel, _ = Arancel.objects.get_or_create(
+            nivel='Nivel Primario Test',
+            defaults={'monto': 25000}
+        )
+        self.curso = Curso.objects.create(
+            comision='A',
+            anio=5,
+            turno='Mañana',
+            nivel_educativo=self.nivel,
+        )
+
+        # Alumno 1
+        alumno_persona = Persona.objects.create(
+            dni='99200003',
+            nombre='Lucas',
+            apellido='Gómez',
+            fecha_nacimiento=date(2014, 8, 20),
+        )
+        self.alumno = Alumno.objects.create(
+            id_persona=alumno_persona,
+            fecha_ingreso=date.today(),
+            id_curso=self.curso,
+            estado='Activo',
+        )
+        TutorTutoraAlumno.objects.create(id_tutor=self.tutor, id_alumno=self.alumno)
+
+        # Servicios extracurriculares
+        self.recorrido = RecorridoTransporte.objects.create(
+            nombre='Recorrido Norte Test', monto_mensual=8000, estado='Activo'
+        )
+        InscripcionTransporte.objects.create(
+            id_alumno=self.alumno, id_recorrido=self.recorrido, estado='Activa'
+        )
+
+        self.comedor = ServicioComedor.objects.create(
+            nombre='Comedor Test', monto_mensual=5000, estado='Activo'
+        )
+        InscripcionComedor.objects.create(
+            id_alumno=self.alumno, id_servicio=self.comedor, estado='Activa'
+        )
+
+        docente_persona = Persona.objects.create(
+            dni='99200004', nombre='Profesor', apellido='Deportes', fecha_nacimiento=date(1985, 1, 1)
+        )
+        docente = Docente.objects.create(id_persona=docente_persona)
+        instalacion = Instalacion.objects.create(nombre='Gimnasio Test', capacidad=50, estado='Activo')
+        disciplina = DisciplinaDeportiva.objects.create(
+            nombre='Básquet Test', id_instalacion=instalacion, monto_mensual=4000
+        )
+        grupo = GrupoDeportivo.objects.create(
+            id_disciplina=disciplina,
+            nivel_educativo=self.nivel,
+            profesor_responsable=docente,
+            dia_semana='Martes',
+            hora_inicio=time(17, 0),
+            hora_fin=time(18, 30),
+            estado='Activo',
+        )
+        InscripcionDeportiva.objects.create(
+            id_alumno=self.alumno, id_grupo=grupo, estado='Activa'
+        )
+
+        from mobile_api.tokens import create_access_token
+        self.admin_token = create_access_token(self.admin_usuario.id, 'administrativo')
+        self.tutor_token = create_access_token(self.tutor_usuario.id, 'padre')
+
+    def test_emitir_facturas_mes_calcula_servicios_genera_pdf_y_envia_correo(self):
+        mail.outbox.clear()
+        call_command('emitir_facturas_mes', mes=11, anio=2026)
+
+        cuota = Cuota.objects.get(id_legajo_alumno=self.alumno, periodo='Noviembre 2026')
+        # Base: 25000 + Transporte: 8000 + Comedor: 5000 + Básquet: 4000 = 42000
+        self.assertEqual(cuota.monto, 25000)
+        self.assertEqual(cuota.total_obligacion, 42000)
+        self.assertEqual(cuota.estado, 'Pendiente')
+
+        self.assertEqual(len(mail.outbox), 1)
+        email = mail.outbox[0]
+        self.assertIn('Noviembre 2026', email.subject)
+        self.assertIn('Lucas Gómez', email.subject)
+        self.assertEqual(email.to, ['tutor.deuda@test.com'])
+        self.assertEqual(len(email.attachments), 1)
+        self.assertTrue(email.attachments[0][0].endswith('.pdf'))
+
+    def test_emitir_facturas_mes_dry_run_no_modifica_db(self):
+        mail.outbox.clear()
+        call_command('emitir_facturas_mes', mes=12, anio=2026, dry_run=True)
+
+        self.assertFalse(Cuota.objects.filter(periodo='Diciembre 2026').exists())
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_enviar_recordatorios_deuda_solo_a_morosos(self):
+        # Crear cuota adeudada para tutor 1
+        Cuota.objects.create(
+            periodo='Noviembre 2026',
+            monto=25000,
+            monto_total=42000,
+            estado='Pendiente',
+            fecha_vencimiento=date(2026, 11, 10),
+            id_tutor=self.tutor,
+            id_legajo_alumno=self.alumno,
+        )
+
+        mail.outbox.clear()
+        call_command('enviar_recordatorios_deuda', periodo='Noviembre 2026')
+
+        self.assertEqual(len(mail.outbox), 1)
+        email = mail.outbox[0]
+        self.assertIn('Recordatorio', email.subject)
+        self.assertEqual(email.to, ['tutor.deuda@test.com'])
+        self.assertIn('$42.000,00', email.body)
+        self.assertIn('Lucas Gómez', email.body)
+
+    def test_enviar_recordatorios_deuda_excluye_comprobantes_en_revision(self):
+        cuota = Cuota.objects.create(
+            periodo='Noviembre 2026',
+            monto=25000,
+            monto_total=25000,
+            estado='Pendiente',
+            fecha_vencimiento=date(2026, 11, 10),
+            id_tutor=self.tutor,
+            id_legajo_alumno=self.alumno,
+        )
+        solicitud = PagoPendiente.objects.create(
+            id_tutor=self.tutor,
+            legajo_alumno=self.alumno,
+            mes='Noviembre 2026',
+            importe=25000,
+            estado='En revisión',
+            fecha_solicitud=timezone.now(),
+        )
+        pago = PagoCuota.objects.create(
+            cuota=cuota,
+            solicitud=solicitud,
+            tutor=self.tutor,
+            importe=25000,
+            medio_pago='Transferencia',
+            estado='En revisión',
+        )
+        ComprobantePago.objects.create(
+            cuota=cuota,
+            pago=pago,
+            archivo='comprobantes/test.pdf',
+            estado='En revisión',
+        )
+
+        mail.outbox.clear()
+        call_command('enviar_recordatorios_deuda', periodo='Noviembre 2026')
+
+        # No debe enviar email porque el saldo de 25000 está cubierto por comprobante en revisión
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_reportes_administrativos_endpoints_y_permisos(self):
+        # 1. Admin accede a reportes de ingresos
+        res_ingresos = self.api_client.get(
+            '/api/reportes/ingresos/?mes=11&anio=2026',
+            HTTP_AUTHORIZATION=f'Bearer {self.admin_token}',
+        )
+        self.assertEqual(res_ingresos.status_code, 200)
+        self.assertIn('total_recaudado', res_ingresos.data)
+        self.assertIn('porcentaje_cobranza', res_ingresos.data)
+
+        # 2. Admin accede a pagos completos e incompletos
+        res_completos = self.api_client.get(
+            '/api/reportes/pagos-completos/?mes=11&anio=2026',
+            HTTP_AUTHORIZATION=f'Bearer {self.admin_token}',
+        )
+        self.assertEqual(res_completos.status_code, 200)
+        self.assertIsInstance(res_completos.data, list)
+
+        res_incompletos = self.api_client.get(
+            '/api/reportes/pagos-incompletos/?mes=11&anio=2026',
+            HTTP_AUTHORIZATION=f'Bearer {self.admin_token}',
+        )
+        self.assertEqual(res_incompletos.status_code, 200)
+        self.assertIsInstance(res_incompletos.data, list)
+
+        # 3. Tutor es rechazado con 403 Forbidden en los reportes de admin
+        res_rechazo = self.api_client.get(
+            '/api/reportes/ingresos/',
+            HTTP_AUTHORIZATION=f'Bearer {self.tutor_token}',
+        )
+        self.assertEqual(res_rechazo.status_code, 403)
+
+    def test_reportes_tutor_facturas_y_deuda_discriminada(self):
+        cuota = Cuota.objects.create(
+            periodo='Noviembre 2026',
+            monto=25000,
+            monto_total=42000,
+            estado='Pendiente',
+            fecha_vencimiento=date(2026, 11, 10),
+            id_tutor=self.tutor,
+            id_legajo_alumno=self.alumno,
+        )
+
+        # Consulta de facturas del tutor
+        res_facturas = self.api_client.get(
+            '/api/facturas/',
+            HTTP_AUTHORIZATION=f'Bearer {self.tutor_token}',
+        )
+        self.assertEqual(res_facturas.status_code, 200)
+        self.assertEqual(len(res_facturas.data), 1)
+        self.assertEqual(res_facturas.data[0]['id'], cuota.id_cuota)
+        self.assertEqual(res_facturas.data[0]['alumno_nombre'], 'Lucas Gómez')
+
+        # Consulta de historial discriminado del tutor
+        res_deuda = self.api_client.get(
+            '/api/deuda/historial/',
+            HTTP_AUTHORIZATION=f'Bearer {self.tutor_token}',
+        )
+        self.assertEqual(res_deuda.status_code, 200)
+        self.assertEqual(res_deuda.data['tutor_id'], self.tutor.id)
+        self.assertEqual(Decimal(res_deuda.data['total_deuda']), 42000)
+        self.assertEqual(Decimal(res_deuda.data['deuda_cuota_base']), 25000)
+        self.assertEqual(Decimal(res_deuda.data['deuda_transporte']), 8000)
+        self.assertEqual(Decimal(res_deuda.data['deuda_comedor']), 5000)
+        self.assertEqual(Decimal(res_deuda.data['deuda_deportes']), 4000)
+        self.assertEqual(len(res_deuda.data['desglose_alumnos']), 1)
+

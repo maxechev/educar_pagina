@@ -16,3 +16,5 @@ urllib3==2.7.0
 whitenoise==6.7.0
 djangorestframework==3.18.1
 djangorestframework-simplejwt==5.5.1
+reportlab==5.1.0
+pillow==13.0.0
