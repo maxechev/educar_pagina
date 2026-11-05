@@ -319,7 +319,7 @@ class ServiciosInscripcionesView(APIView):
                 deportes.append({
                     "id": inscripcion.id_inscripcion,
                     "nombre": grupo.id_disciplina.nombre,
-                    "monto_mensual": None,
+                    "monto_mensual": str(grupo.id_disciplina.monto_mensual),
                     "horario": horario,
                     "estado": inscripcion.estado,
                 })
@@ -333,7 +333,7 @@ class ServiciosInscripcionesView(APIView):
                     transporte = {
                         "id_inscripcion": inscripcion.id_inscripcion,
                         "recorrido": inscripcion.id_recorrido.nombre,
-                        "monto_mensual": None,
+                        "monto_mensual": str(inscripcion.id_recorrido.monto_mensual),
                         "estado": inscripcion.estado,
                     }
                     break
@@ -347,7 +347,7 @@ class ServiciosInscripcionesView(APIView):
                     comedor = {
                         "id_inscripcion": inscripcion.id_inscripcion,
                         "servicio": inscripcion.id_servicio.nombre,
-                        "monto_mensual": None,
+                        "monto_mensual": str(inscripcion.id_servicio.monto_mensual),
                         "estado": inscripcion.estado,
                     }
                     break

@@ -247,6 +247,7 @@ class Directivo(models.Model):
 class DisciplinaDeportiva(models.Model):
     id_disciplina = models.AutoField(primary_key=True)
     nombre = models.CharField(max_length=100)
+    monto_mensual = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('5000.00'))
     horarios = models.TextField(blank=True, null=True)
     id_instalacion = models.ForeignKey(
         'Instalacion',
@@ -331,6 +332,7 @@ class InscripcionDeportiva(models.Model):
 class RecorridoTransporte(models.Model):
     id_recorrido = models.AutoField(primary_key=True)
     nombre = models.CharField(max_length=100, unique=True)
+    monto_mensual = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('10000.00'))
     descripcion = models.TextField(blank=True, null=True)
     turno = models.CharField(max_length=20, default='Mañana')
     hora_salida = models.TimeField(blank=True, null=True)
@@ -348,6 +350,7 @@ class RecorridoTransporte(models.Model):
 class ServicioComedor(models.Model):
     id_servicio = models.AutoField(primary_key=True)
     nombre = models.CharField(max_length=100, default='Comedor escolar', unique=True)
+    monto_mensual = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('5000.00'))
     cupo_maximo = models.PositiveIntegerField(default=100)
     estado = models.CharField(max_length=20, default='Activo')
 

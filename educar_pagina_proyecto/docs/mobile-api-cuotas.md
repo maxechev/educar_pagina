@@ -99,6 +99,4 @@ Devuelve, para cada alumno asociado al tutor, sus inscripciones activas a deport
 y comedor. Solo se incluyen inscripciones activas y servicios/grupos activos. El resultado no
 incluye alumnos asociados a otros tutores.
 
-Los campos monto_mensual se devuelven como null: los modelos de inscripción, recorridos,
-comedor y disciplinas no contienen actualmente un arancel o precio mensual. No se debe interpretar
-ese valor como cero ni como un importe a cobrar.
+Los aranceles mensuales definidos por la institución se almacenan en cada deporte, recorrido y servicio de comedor: $5.000 por deporte, $10.000 por transporte y $5.000 por comedor. La migración 0017 aplica esos importes a los registros existentes y los deja como valores iniciales para nuevos servicios.

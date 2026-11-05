@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, time
 from io import BytesIO
 from pathlib import Path
 from unittest.mock import patch
@@ -16,7 +16,14 @@ from .models import (
     DocumentacionAlumno,
     NivelEducativo,
     InscripcionTransporte,
+    InscripcionComedor,
+    InscripcionDeportiva,
     RecorridoTransporte,
+    ServicioComedor,
+    DisciplinaDeportiva,
+    GrupoDeportivo,
+    Instalacion,
+    Docente,
     Persona,
     PersonalAdministrativo,
     PagoPendiente,
@@ -431,6 +438,35 @@ class FlujoPagosTests(TestCase):
         InscripcionTransporte.objects.create(
             id_alumno=self.alumno, id_recorrido=recorrido, estado='Activa',
         )
+        comedor = ServicioComedor.objects.create(nombre='Comedor API test', estado='Activo')
+        InscripcionComedor.objects.create(
+            id_alumno=self.alumno, id_servicio=comedor, estado='Activa',
+        )
+        instalacion = Instalacion.objects.create(
+            nombre='Instalación API test', capacidad=30, estado='Activo',
+        )
+        deporte = DisciplinaDeportiva.objects.create(
+            nombre='Deporte API test', id_instalacion=instalacion,
+        )
+        docente_persona = Persona.objects.create(
+            dni='99100005', nombre='Docente', apellido='Test',
+            fecha_nacimiento=date(1980, 1, 1),
+        )
+        docente = Docente.objects.create(
+            id_persona=docente_persona, titulo='Profesor de deporte',
+        )
+        grupo = GrupoDeportivo.objects.create(
+            id_disciplina=deporte,
+            nivel_educativo=self.alumno.id_curso.nivel_educativo,
+            profesor_responsable=docente,
+            dia_semana='lunes',
+            hora_inicio=time(16, 0),
+            hora_fin=time(18, 0),
+            estado='Activo',
+        )
+        InscripcionDeportiva.objects.create(
+            id_alumno=self.alumno, id_grupo=grupo, estado='Activa',
+        )
         ajeno_persona = Persona.objects.create(
             dni='99100004', nombre='Ajeno', apellido='Pago',
             fecha_nacimiento=date(2015, 1, 1),
@@ -452,4 +488,6 @@ class FlujoPagosTests(TestCase):
         self.assertEqual(len(respuesta.data), 1)
         self.assertEqual(respuesta.data[0]['alumno']['legajo'], self.alumno.legajo)
         self.assertEqual(respuesta.data[0]['transporte']['recorrido'], recorrido.nombre)
-        self.assertIsNone(respuesta.data[0]['transporte']['monto_mensual'])
+        self.assertEqual(respuesta.data[0]['transporte']['monto_mensual'], '10000.00')
+        self.assertEqual(respuesta.data[0]['deportes'][0]['monto_mensual'], '5000.00')
+        self.assertEqual(respuesta.data[0]['comedor']['monto_mensual'], '5000.00')
