@@ -15,6 +15,8 @@ from .models import (
     Curso,
     DocumentacionAlumno,
     NivelEducativo,
+    InscripcionTransporte,
+    RecorridoTransporte,
     Persona,
     PersonalAdministrativo,
     PagoPendiente,
@@ -387,3 +389,67 @@ class FlujoPagosTests(TestCase):
         self.assertEqual(solicitud.estado, 'En revisión')
         self.assertEqual(PagoCuota.objects.get(solicitud=solicitud).estado, 'En revisión')
         self.assertTrue(ComprobantePago.objects.filter(cuota=self.cuota).exists())
+
+    def test_detalle_cuota_reutiliza_datos_y_respeta_alumnos_asociados(self):
+        from mobile_api.tokens import create_access_token
+
+        token = create_access_token(self.tutor_usuario.id, 'padre')
+        respuesta = self.api_client.get(
+            f'/api/cuotas/{self.cuota.id_cuota}/',
+            HTTP_AUTHORIZATION=f'Bearer {token}',
+        )
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertEqual(respuesta.data['id'], self.cuota.id_cuota)
+        self.assertIsNone(respuesta.data['discriminacion'])
+        self.assertEqual(respuesta.data['estado'], 'pendiente')
+
+        otra_persona = Persona.objects.create(
+            dni='99100004', nombre='Ajeno', apellido='Pago',
+            fecha_nacimiento=date(2015, 1, 1),
+        )
+        otro_alumno = Alumno.objects.create(
+            id_persona=otra_persona, fecha_ingreso=date.today(),
+            id_curso=self.alumno.id_curso,
+        )
+        otra_cuota = Cuota.objects.create(
+            periodo='Noviembre', monto=1000, monto_total=1000,
+            estado='Pendiente', id_tutor=self.tutor,
+            id_legajo_alumno=otro_alumno,
+        )
+        no_autorizada = self.api_client.get(
+            f'/api/cuotas/{otra_cuota.id_cuota}/',
+            HTTP_AUTHORIZATION=f'Bearer {token}',
+        )
+        self.assertEqual(no_autorizada.status_code, 404)
+
+    def test_servicios_inscripciones_solo_incluye_hijos_del_tutor(self):
+        from mobile_api.tokens import create_access_token
+
+        recorrido = RecorridoTransporte.objects.create(
+            nombre='Recorrido API test', estado='Activo',
+        )
+        InscripcionTransporte.objects.create(
+            id_alumno=self.alumno, id_recorrido=recorrido, estado='Activa',
+        )
+        ajeno_persona = Persona.objects.create(
+            dni='99100004', nombre='Ajeno', apellido='Pago',
+            fecha_nacimiento=date(2015, 1, 1),
+        )
+        ajeno = Alumno.objects.create(
+            id_persona=ajeno_persona, fecha_ingreso=date.today(),
+            id_curso=self.alumno.id_curso,
+        )
+        InscripcionTransporte.objects.create(
+            id_alumno=ajeno, id_recorrido=recorrido, estado='Activa',
+        )
+
+        token = create_access_token(self.tutor_usuario.id, 'padre')
+        respuesta = self.api_client.get(
+            '/api/servicios/inscripciones/',
+            HTTP_AUTHORIZATION=f'Bearer {token}',
+        )
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertEqual(len(respuesta.data), 1)
+        self.assertEqual(respuesta.data[0]['alumno']['legajo'], self.alumno.legajo)
+        self.assertEqual(respuesta.data[0]['transporte']['recorrido'], recorrido.nombre)
+        self.assertIsNone(respuesta.data[0]['transporte']['monto_mensual'])
