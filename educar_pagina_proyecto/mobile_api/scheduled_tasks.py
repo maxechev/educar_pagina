@@ -23,6 +23,8 @@ class ScheduledNotificationView(View):
         if not expected or not hmac.compare_digest(supplied, expected):
             return JsonResponse({"detail": "No autorizado."}, status=403)
 
+        if task == "health":
+            return JsonResponse({"status": "ok", "authenticated": True, "commands_executed": False})
         if task == "invoice":
             hoy = timezone.localdate()
             ultimo_dia_habil = _ultimo_dia_habil(hoy.year, hoy.month)

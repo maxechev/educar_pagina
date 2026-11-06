@@ -15,9 +15,9 @@ hábil de lunes a viernes (no contempla feriados nacionales).
    crear:
    - `PYTHONANYWHERE_SITE_URL`: `https://educarparatransformar.pythonanywhere.com`
    - `NOTIFICATION_SCHEDULER_TOKEN`: el mismo valor configurado en PythonAnywhere.
-4. En **Actions**, habilitar workflows y ejecutar manualmente el workflow para comprobar
-   que puede contactar el sitio. La ejecución manual solo verifica la fecha local y no
-   enviará mensajes si no corresponde el día programado.
+4. En **Actions**, habilitar workflows y ejecutar manualmente el workflow. La ejecución
+   manual llama al endpoint `health`, valida el secreto compartido y confirma que Django
+   responde, sin ejecutar comandos ni enviar correos.
 5. Antes del primer día real de envío, confirmar el backend SMTP y probar los comandos
    con `--dry-run` desde una consola de PythonAnywhere.
 

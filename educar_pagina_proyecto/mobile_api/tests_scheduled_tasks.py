@@ -35,6 +35,18 @@ class ScheduledNotificationTests(SimpleTestCase):
         self.assertEqual(_ultimo_dia_habil(2026, 11), date(2026, 11, 30))
 
     @patch.dict("os.environ", {"NOTIFICATION_SCHEDULER_TOKEN": "test-secret"})
+    @patch("mobile_api.scheduled_tasks.call_command")
+    def test_health_check_authenticates_without_running_commands(self, call_command):
+        response = self.client.post(
+            "/internal/scheduled-notifications/health/",
+            HTTP_X_SCHEDULER_TOKEN="test-secret",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["status"], "ok")
+        self.assertFalse(response.json()["commands_executed"])
+        call_command.assert_not_called()
+
+    @patch.dict("os.environ", {"NOTIFICATION_SCHEDULER_TOKEN": "test-secret"})
     @patch("mobile_api.scheduled_tasks.timezone.localdate", return_value=date(2026, 11, 30))
     @patch("mobile_api.scheduled_tasks.call_command")
     def test_runs_invoice_command_on_last_business_day(self, call_command, _today):
