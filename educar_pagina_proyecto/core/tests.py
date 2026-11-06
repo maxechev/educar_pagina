@@ -10,6 +10,7 @@ from django.utils import timezone
 from django.utils.crypto import get_random_string
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.management import call_command
+from django.core.management.base import CommandError
 from django.core import mail
 from rest_framework.test import APIClient
 
@@ -650,6 +651,40 @@ class ComandosYReportesTests(TestCase):
         )
 
         self.assertFalse(Cuota.objects.filter(periodo='Diciembre 2026').exists())
+
+    def test_enviar_factura_existente_no_modifica_cuota_y_adjunta_pdf(self):
+        cuota = Cuota.objects.create(
+            periodo='Noviembre 2026', monto=25000, monto_total=42000,
+            estado='Pendiente', id_tutor=self.tutor, id_legajo_alumno=self.alumno,
+        )
+        valores_antes = (cuota.monto, cuota.monto_total, cuota.estado)
+        mail.outbox.clear()
+
+        call_command(
+            'enviar_factura_existente', cuota_id=cuota.id_cuota,
+            legajo=self.alumno.legajo, destinatario='prueba@ejemplo.com',
+        )
+
+        cuota.refresh_from_db()
+        self.assertEqual((cuota.monto, cuota.monto_total, cuota.estado), valores_antes)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, ['prueba@ejemplo.com'])
+        self.assertEqual(mail.outbox[0].attachments[0][2], 'application/pdf')
+
+    def test_enviar_factura_existente_rechaza_cuota_de_otro_legajo(self):
+        cuota = Cuota.objects.create(
+            periodo='Noviembre 2026', monto=25000, monto_total=25000,
+            estado='Pendiente', id_tutor=self.tutor, id_legajo_alumno=self.alumno,
+        )
+        mail.outbox.clear()
+
+        with self.assertRaises(CommandError):
+            call_command(
+                'enviar_factura_existente', cuota_id=cuota.id_cuota,
+                legajo=99200999, destinatario='prueba@ejemplo.com',
+            )
+
+        self.assertEqual(len(mail.outbox), 0)
 
     def test_enviar_recordatorios_deuda_solo_a_morosos(self):
         # Crear cuota adeudada para tutor 1
