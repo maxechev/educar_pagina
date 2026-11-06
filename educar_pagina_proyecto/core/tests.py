@@ -636,6 +636,21 @@ class ComandosYReportesTests(TestCase):
         self.assertFalse(Cuota.objects.filter(periodo='Diciembre 2026').exists())
         self.assertEqual(len(mail.outbox), 0)
 
+    def test_emitir_facturas_mes_filtra_por_legajo_en_dry_run(self):
+        otro_persona = Persona.objects.create(
+            dni='99200999', nombre='Otro', apellido='Alumno', fecha_nacimiento=date(2015, 1, 1)
+        )
+        otro_alumno = Alumno.objects.create(
+            legajo=99200999, id_persona=otro_persona, id_curso=self.curso, estado='Activo'
+        )
+        TutorTutoraAlumno.objects.create(id_tutor=self.tutor, id_alumno=otro_alumno)
+
+        call_command(
+            'emitir_facturas_mes', mes=12, anio=2026, dry_run=True, legajo=self.alumno.legajo
+        )
+
+        self.assertFalse(Cuota.objects.filter(periodo='Diciembre 2026').exists())
+
     def test_enviar_recordatorios_deuda_solo_a_morosos(self):
         # Crear cuota adeudada para tutor 1
         Cuota.objects.create(

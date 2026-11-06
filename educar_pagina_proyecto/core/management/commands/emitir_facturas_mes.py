@@ -75,12 +75,19 @@ class Command(BaseCommand):
             action="store_true",
             help="Regenera cuotas y reenvía correos incluso si la cuota ya existía.",
         )
+        parser.add_argument(
+            "--legajo",
+            type=int,
+            default=None,
+            help="Limita el procesamiento a un único legajo. Útil para una prueba controlada.",
+        )
 
     def handle(self, *args, **options):
         mes = options["mes"]
         anio = options["anio"]
         dry_run = options["dry_run"]
         force = options["force"]
+        legajo = options["legajo"]
 
         if not (1 <= mes <= 12):
             self.stderr.write(self.style.ERROR(f"Mes inválido: {mes}. Debe estar entre 1 y 12."))
@@ -121,6 +128,8 @@ class Command(BaseCommand):
             )
             .order_by("id_persona__apellido", "id_persona__nombre")
         )
+        if legajo is not None:
+            alumnos = alumnos.filter(legajo=legajo)
 
         if not alumnos.exists():
             # Si no hay con estado 'Activo', buscar todos los alumnos registrados
@@ -134,6 +143,12 @@ class Command(BaseCommand):
                 )
                 .order_by("id_persona__apellido", "id_persona__nombre")
             )
+            if legajo is not None:
+                alumnos = alumnos.filter(legajo=legajo)
+
+        if legajo is not None and not alumnos.exists():
+            self.stderr.write(self.style.ERROR(f"No se encontró alumno con legajo {legajo}. No se procesó nada."))
+            return
 
         emitidas_count = 0
         omitidas_count = 0
