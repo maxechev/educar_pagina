@@ -1,0 +1,39 @@
+name: Scheduled payment notifications
+
+on:
+  schedule:
+    # GitHub schedules use UTC. Daily checks let Django apply Argentina's local date.
+    - cron: "17 12 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger due notifications
+        env:
+          SITE_URL: ${{ secrets.PYTHONANYWHERE_SITE_URL }}
+          SCHEDULER_TOKEN: ${{ secrets.NOTIFICATION_SCHEDULER_TOKEN }}
+        run: |
+          test -n "$SITE_URL" || { echo "Missing PYTHONANYWHERE_SITE_URL secret"; exit 1; }
+          test -n "$SCHEDULER_TOKEN" || { echo "Missing NOTIFICATION_SCHEDULER_TOKEN secret"; exit 1; }
+          TODAY=$(TZ=America/Argentina/Buenos_Aires date +%F)
+          DAY=$(TZ=America/Argentina/Buenos_Aires date +%d)
+          LAST_DAY=$(TZ=America/Argentina/Buenos_Aires date -d "$(TZ=America/Argentina/Buenos_Aires date +%Y-%m-01) +1 month -1 day" +%F)
+          LAST_WEEKDAY=$(TZ=America/Argentina/Buenos_Aires date -d "$LAST_DAY" +%u)
+          if [ "$LAST_WEEKDAY" -gt 5 ]; then
+            LAST_DAY=$(TZ=America/Argentina/Buenos_Aires date -d "$LAST_DAY -$((LAST_WEEKDAY - 5)) days" +%F)
+          fi
+          if [ "$DAY" = "20" ]; then
+            curl --fail --silent --show-error -X POST \
+              -H "X-Scheduler-Token: $SCHEDULER_TOKEN" \
+              "$SITE_URL/internal/scheduled-notifications/debt-reminder/"
+          fi
+          if [ "$TODAY" = "$LAST_DAY" ]; then
+            curl --fail --silent --show-error -X POST \
+              -H "X-Scheduler-Token: $SCHEDULER_TOKEN" \
+              "$SITE_URL/internal/scheduled-notifications/invoice/"
+          fi
