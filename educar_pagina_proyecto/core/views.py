@@ -79,8 +79,10 @@ from .models import (
 from .cuota_conceptos import (
     agrupar_reporte_financiero,
     construir_conceptos_cuota,
+    clave_concepto,
     serializar_conceptos_cuota,
 )
+from .factura_pdf import generar_factura_pdf
 from .patterns import GestionEscolarFacade
 
 MODELOS_FACHADA = {
@@ -103,19 +105,53 @@ OPINIONES_FILE = os.path.join(os.path.dirname(__file__), 'opiniones.json')
 logger = logging.getLogger(__name__)
 
 
-def _enviar_confirmacion_pago_aprobado(destinatario, asunto, cuerpo):
-    """Send the receipt confirmation after the approval transaction commits."""
+def _enviar_confirmacion_pago_aprobado(destinatario, asunto, cuerpo, pago_id):
+    """Send the approval email with its PDF receipt after the transaction commits."""
     if not destinatario:
         return
     try:
-        EmailMessage(
+        pago = PagoCuota.objects.select_related(
+            'cuota__id_legajo_alumno__id_persona',
+            'cuota__id_legajo_alumno__id_curso__nivel_educativo',
+            'tutor__id_persona__id_usuario',
+        ).get(id_pago=pago_id, estado='Pagado')
+        cuota = pago.cuota
+        conceptos_por_clave = {
+            clave_concepto(concepto): concepto
+            for concepto in (cuota.conceptos or [])
+            if isinstance(concepto, dict)
+        }
+        desglose = []
+        if isinstance(pago.conceptos_aplicados, dict):
+            for clave, importe in pago.conceptos_aplicados.items():
+                concepto = conceptos_por_clave.get(clave, {})
+                desglose.append({
+                    'concepto': concepto.get('concepto') or 'Concepto abonado',
+                    'monto': importe,
+                })
+        if not desglose:
+            desglose = [{
+                'concepto': f'Pago aplicado a la cuota de {cuota.periodo}',
+                'monto': pago.importe,
+            }]
+
+        pdf = generar_factura_pdf(
+            cuota=cuota,
+            alumno=cuota.id_legajo_alumno,
+            tutor=pago.tutor,
+            desglose_conceptos=desglose,
+            pago_aprobado=pago,
+        )
+        correo = EmailMessage(
             subject=asunto,
             body=cuerpo,
             from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', None),
             to=[destinatario],
-        ).send(fail_silently=False)
+        )
+        correo.attach(f'comprobante_pago_{pago.id_pago}.pdf', pdf, 'application/pdf')
+        correo.send(fail_silently=False)
     except Exception:
-        logger.exception('No se pudo enviar la confirmación del pago aprobado.')
+        logger.exception('No se pudo enviar la confirmación con el comprobante del pago aprobado.')
 
 def obtener_persona(request):
     usuario_id = request.session.get('usuario_id')
@@ -5071,11 +5107,17 @@ def aprobar_pago(request, id_pago):
             f'Importe aprobado: {pago.importe}\n'
             f'Estado de la cuota: {estado_cuota}\n'
             f'Saldo restante: {saldo_restante}\n\n'
-            'Podés consultar el estado y el comprobante desde la aplicación móvil o el portal.\n\n'
+            'Adjuntamos el comprobante PDF del pago aprobado. También podés consultar el estado '
+            'desde la aplicación móvil o el portal.\n\n'
             'Administración Escolar\nCentro Educativo «Transformar para educar»'
         )
         transaction.on_commit(
-            lambda: _enviar_confirmacion_pago_aprobado(destinatario, asunto, cuerpo)
+            lambda: _enviar_confirmacion_pago_aprobado(
+                destinatario,
+                asunto,
+                cuerpo,
+                pago_aplicado.id_pago,
+            )
         )
 
     return redirect('dashboard-administrativo')

@@ -40,6 +40,7 @@ from .models import (
     Usuario,
 )
 from .patterns import GestionEscolarFacade
+from .factura_pdf import generar_factura_pdf
 
 
 class SeguridadYPatronesTests(TestCase):
@@ -358,16 +359,53 @@ class FlujoPagosTests(TestCase):
         self.tutor_usuario.correo = 'tutor.pagos@test.com'
         self.tutor_usuario.save(update_fields=['correo'])
         solicitud = self._crear_solicitud(importe=250)
+        self.cuota.conceptos = [
+            {
+                'clave': 'cuota_base',
+                'concepto': 'Cuota base (Nivel pagos)',
+                'tipo': 'cuota_base',
+                'monto': '700.00',
+            },
+            {
+                'clave': 'deporte:1',
+                'concepto': 'Deporte: Vóley',
+                'tipo': 'deporte',
+                'monto': '300.00',
+            },
+        ]
+        self.cuota.save(update_fields=['conceptos'])
+        PagoCuota.objects.create(
+            cuota=self.cuota,
+            solicitud=solicitud,
+            tutor=self.tutor,
+            importe=250,
+            medio_pago='Transferencia',
+            conceptos_aplicados={'deporte:1': '250.00'},
+            estado='En revisión',
+        )
         mail.outbox.clear()
 
-        with self.captureOnCommitCallbacks(execute=True):
-            self.client.post(f'/aprobar-pago/{solicitud.id_pago}/')
+        with patch('core.views.generar_factura_pdf', wraps=generar_factura_pdf) as generar_pdf:
+            with self.captureOnCommitCallbacks(execute=True):
+                self.client.post(f'/aprobar-pago/{solicitud.id_pago}/')
         self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(
+            generar_pdf.call_args.kwargs['desglose_conceptos'],
+            [{'concepto': 'Deporte: Vóley', 'monto': '250.00'}],
+        )
         correo = mail.outbox[0]
         self.assertEqual(correo.to, ['tutor.pagos@test.com'])
         self.assertEqual(correo.from_email, 'notificaciones@test.com')
         self.assertIn('Pago aprobado', correo.subject)
         self.assertIn('Saldo restante: 750', correo.body)
+        self.assertIn('comprobante PDF', correo.body)
+        self.assertEqual(len(correo.attachments), 1)
+        nombre_archivo, contenido_pdf, tipo_contenido = correo.attachments[0]
+        pago_aprobado = PagoCuota.objects.get(solicitud=solicitud)
+        self.assertEqual(nombre_archivo, f'comprobante_pago_{pago_aprobado.id_pago}.pdf')
+        self.assertEqual(tipo_contenido, 'application/pdf')
+        self.assertTrue(contenido_pdf.startswith(b'%PDF-'))
+        self.assertGreater(len(contenido_pdf), 1000)
 
         with self.captureOnCommitCallbacks(execute=True):
             self.client.post(f'/aprobar-pago/{solicitud.id_pago}/')
