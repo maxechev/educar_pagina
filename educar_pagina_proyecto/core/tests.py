@@ -350,7 +350,10 @@ class FlujoPagosTests(TestCase):
         self.assertEqual(PagoCuota.objects.filter(solicitud=solicitud).count(), 1)
         self.assertEqual(PagoCuota.objects.get(solicitud=solicitud).estado, 'Pagado')
 
-    @override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
+    @override_settings(
+        EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend',
+        DEFAULT_FROM_EMAIL='notificaciones@test.com',
+    )
     def test_aprobacion_envia_un_unico_correo_con_saldo_restante(self):
         self.tutor_usuario.correo = 'tutor.pagos@test.com'
         self.tutor_usuario.save(update_fields=['correo'])
@@ -362,6 +365,7 @@ class FlujoPagosTests(TestCase):
         self.assertEqual(len(mail.outbox), 1)
         correo = mail.outbox[0]
         self.assertEqual(correo.to, ['tutor.pagos@test.com'])
+        self.assertEqual(correo.from_email, 'notificaciones@test.com')
         self.assertIn('Pago aprobado', correo.subject)
         self.assertIn('Saldo restante: 750', correo.body)
 
