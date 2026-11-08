@@ -965,6 +965,9 @@ class PagoCuota(models.Model):
     importe = models.DecimalField(max_digits=10, decimal_places=2)
     fecha_pago = models.DateField(blank=True, null=True)
     medio_pago = models.CharField(max_length=50, blank=True, null=True)
+    # Snapshot de cuánto de este pago se aplica a cada concepto de la cuota.
+    # Vacío identifica pagos históricos que se distribuyen proporcionalmente.
+    conceptos_aplicados = models.JSONField(default=dict, blank=True)
     estado = models.CharField(max_length=20, choices=ESTADOS, default='Pendiente')
     fecha_registro = models.DateTimeField(default=timezone.now)
 

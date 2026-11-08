@@ -1,4 +1,5 @@
 from decimal import Decimal, InvalidOperation
+import logging
 import requests
 import json
 import os
@@ -98,6 +99,23 @@ COMUNICADOS_FILE = os.path.join(
     'comunicados.json'
 )
 OPINIONES_FILE = os.path.join(os.path.dirname(__file__), 'opiniones.json')
+
+logger = logging.getLogger(__name__)
+
+
+def _enviar_confirmacion_pago_aprobado(destinatario, asunto, cuerpo):
+    """Send the receipt confirmation after the approval transaction commits."""
+    if not destinatario:
+        return
+    try:
+        EmailMessage(
+            subject=asunto,
+            body=cuerpo,
+            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', None),
+            to=[destinatario],
+        ).send(fail_silently=False)
+    except Exception:
+        logger.exception('No se pudo enviar la confirmación del pago aprobado.')
 
 def obtener_persona(request):
     usuario_id = request.session.get('usuario_id')
@@ -5030,6 +5048,35 @@ def aprobar_pago(request, id_pago):
         cuota.fecha_pago = date.today()
         cuota.save(update_fields=['fecha_pago'])
         cuota.actualizar_estado()
+
+        persona_alumno = pago.legajo_alumno.id_persona
+        nombre_alumno = f'{persona_alumno.nombre} {persona_alumno.apellido}'.strip()
+        persona_tutor = pago.id_tutor.id_persona
+        usuario_tutor = getattr(persona_tutor, 'id_usuario', None)
+        destinatario = (
+            getattr(usuario_tutor, 'correo', '')
+            or getattr(pago.id_tutor, 'email_contacto', '')
+            or ''
+        ).strip()
+        saldo_restante = max(
+            (cuota.total_obligacion or Decimal('0.00')) - cuota.monto_pagado_actual(),
+            Decimal('0.00'),
+        )
+        estado_cuota = cuota.estado
+        asunto = f'Pago aprobado - {nombre_alumno} - {cuota.periodo}'
+        cuerpo = (
+            f'Estimado/a {persona_tutor.nombre} {persona_tutor.apellido}:\n\n'
+            f'Administración aprobó el pago informado para {nombre_alumno}.\n\n'
+            f'Período: {cuota.periodo}\n'
+            f'Importe aprobado: {pago.importe}\n'
+            f'Estado de la cuota: {estado_cuota}\n'
+            f'Saldo restante: {saldo_restante}\n\n'
+            'Podés consultar el estado y el comprobante desde la aplicación móvil o el portal.\n\n'
+            'Administración Escolar\nCentro Educativo «Transformar para educar»'
+        )
+        transaction.on_commit(
+            lambda: _enviar_confirmacion_pago_aprobado(destinatario, asunto, cuerpo)
+        )
 
     return redirect('dashboard-administrativo')
 

@@ -5,7 +5,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from django.contrib.auth.hashers import check_password, make_password
-from django.test import Client, TestCase
+from django.test import Client, TestCase, override_settings
 from django.utils import timezone
 from django.utils.crypto import get_random_string
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -350,6 +350,29 @@ class FlujoPagosTests(TestCase):
         self.assertEqual(PagoCuota.objects.filter(solicitud=solicitud).count(), 1)
         self.assertEqual(PagoCuota.objects.get(solicitud=solicitud).estado, 'Pagado')
 
+    @override_settings(
+        EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend',
+        DEFAULT_FROM_EMAIL='notificaciones@test.com',
+    )
+    def test_aprobacion_envia_un_unico_correo_con_saldo_restante(self):
+        self.tutor_usuario.correo = 'tutor.pagos@test.com'
+        self.tutor_usuario.save(update_fields=['correo'])
+        solicitud = self._crear_solicitud(importe=250)
+        mail.outbox.clear()
+
+        with self.captureOnCommitCallbacks(execute=True):
+            self.client.post(f'/aprobar-pago/{solicitud.id_pago}/')
+        self.assertEqual(len(mail.outbox), 1)
+        correo = mail.outbox[0]
+        self.assertEqual(correo.to, ['tutor.pagos@test.com'])
+        self.assertEqual(correo.from_email, 'notificaciones@test.com')
+        self.assertIn('Pago aprobado', correo.subject)
+        self.assertIn('Saldo restante: 750', correo.body)
+
+        with self.captureOnCommitCallbacks(execute=True):
+            self.client.post(f'/aprobar-pago/{solicitud.id_pago}/')
+        self.assertEqual(len(mail.outbox), 1)
+
     def test_rechazo_exige_motivo_y_conserva_solicitud(self):
         solicitud = self._crear_solicitud()
 
@@ -401,6 +424,113 @@ class FlujoPagosTests(TestCase):
         self.assertEqual(solicitud.estado, 'En revisión')
         self.assertEqual(PagoCuota.objects.get(solicitud=solicitud).estado, 'En revisión')
         self.assertTrue(ComprobantePago.objects.filter(cuota=self.cuota).exists())
+
+    def test_comprobante_puede_pagar_conceptos_completos_seleccionados(self):
+        from mobile_api.tokens import create_access_token
+
+        self.cuota.conceptos = [
+            {'clave': 'cuota_base', 'tipo': 'cuota_base', 'concepto': 'Cuota base', 'monto': '700.00'},
+            {'clave': 'transporte:1', 'tipo': 'transporte', 'concepto': 'Transporte: Norte', 'monto': '300.00'},
+        ]
+        self.cuota.save(update_fields=['conceptos'])
+        token = create_access_token(self.tutor_usuario.id, 'padre')
+        cuotas_response = self.api_client.get(
+            '/api/cuotas/', HTTP_AUTHORIZATION=f'Bearer {token}',
+        )
+        self.assertEqual(cuotas_response.status_code, 200)
+        cuota_api = next(
+            item for item in cuotas_response.data
+            if item['id'] == self.cuota.id_cuota
+        )
+        self.assertEqual(
+            [item['clave'] for item in cuota_api['conceptos_pago']],
+            ['cuota_base', 'transporte:1'],
+        )
+        self.assertEqual(
+            [item['saldo_disponible'] for item in cuota_api['conceptos_pago']],
+            ['700.00', '300.00'],
+        )
+        datos = {
+            'cuota_id': self.cuota.id_cuota,
+            'importe': '700.00',
+            'conceptos_seleccionados': '["cuota_base"]',
+            'archivo': SimpleUploadedFile('comprobante.pdf', b'%PDF-prueba', content_type='application/pdf'),
+        }
+        respuesta = self.api_client.post(
+            '/api/comprobantes/', datos, format='multipart',
+            HTTP_AUTHORIZATION=f'Bearer {token}',
+        )
+        self.assertEqual(respuesta.status_code, 201)
+        pago = PagoCuota.objects.get(id_pago=respuesta.data['pago_id'])
+        self.assertEqual(pago.conceptos_aplicados, {'cuota_base': '700.00'})
+        cuotas_actualizadas = self.api_client.get(
+            '/api/cuotas/', HTTP_AUTHORIZATION=f'Bearer {token}',
+        )
+        cuota_actualizada = next(
+            item for item in cuotas_actualizadas.data
+            if item['id'] == self.cuota.id_cuota
+        )
+        self.assertEqual(
+            [item['saldo_disponible'] for item in cuota_actualizada['conceptos_pago']],
+            ['0.00', '300.00'],
+        )
+
+        duplicado = self.api_client.post(
+            '/api/comprobantes/',
+            {
+                'cuota_id': self.cuota.id_cuota,
+                'importe': '700.00',
+                'conceptos_seleccionados': '["cuota_base"]',
+                'archivo': SimpleUploadedFile('otro.pdf', b'%PDF-prueba', content_type='application/pdf'),
+            },
+            format='multipart',
+            HTTP_AUTHORIZATION=f'Bearer {token}',
+        )
+        self.assertEqual(duplicado.status_code, 400)
+
+        importe_incompleto = self.api_client.post(
+            '/api/comprobantes/',
+            {
+                'cuota_id': self.cuota.id_cuota,
+                'importe': '500.00',
+                'conceptos_seleccionados': '["transporte:1"]',
+                'archivo': SimpleUploadedFile('parcial.pdf', b'%PDF-prueba', content_type='application/pdf'),
+            },
+            format='multipart',
+            HTTP_AUTHORIZATION=f'Bearer {token}',
+        )
+        self.assertEqual(importe_incompleto.status_code, 400)
+
+    def test_cuota_historica_bloquea_el_saldo_mientras_hay_comprobante_en_revision(self):
+        from mobile_api.tokens import create_access_token
+
+        token = create_access_token(self.tutor_usuario.id, 'padre')
+        datos = {
+            'cuota_id': self.cuota.id_cuota,
+            'importe': '1000.00',
+            'conceptos_seleccionados': '["__saldo_total__"]',
+            'archivo': SimpleUploadedFile('historico.pdf', b'%PDF-prueba', content_type='application/pdf'),
+        }
+        primera = self.api_client.post(
+            '/api/comprobantes/', datos, format='multipart',
+            HTTP_AUTHORIZATION=f'Bearer {token}',
+        )
+        self.assertEqual(primera.status_code, 201)
+
+        cuotas = self.api_client.get('/api/cuotas/', HTTP_AUTHORIZATION=f'Bearer {token}')
+        cuota_api = next(item for item in cuotas.data if item['id'] == self.cuota.id_cuota)
+        self.assertEqual(cuota_api['conceptos_pago'][0]['saldo_disponible'], '0.00')
+
+        repetido = self.api_client.post(
+            '/api/comprobantes/',
+            {
+                **datos,
+                'archivo': SimpleUploadedFile('historico-otro.pdf', b'%PDF-prueba', content_type='application/pdf'),
+            },
+            format='multipart',
+            HTTP_AUTHORIZATION=f'Bearer {token}',
+        )
+        self.assertEqual(repetido.status_code, 400)
 
     def test_detalle_cuota_reutiliza_datos_y_respeta_alumnos_asociados(self):
         from mobile_api.tokens import create_access_token

@@ -17,6 +17,7 @@ def construir_conceptos_cuota(alumno, monto_base, nivel=None):
         else "Sin nivel"
     )
     conceptos = [{
+        "clave": "cuota_base",
         "tipo": "cuota_base",
         "concepto": f"Cuota base ({nivel_nombre})",
         "monto": _decimal(monto_base),
@@ -44,6 +45,7 @@ def construir_conceptos_cuota(alumno, monto_base, nivel=None):
             f"{grupo.hora_fin.strftime('%H:%M')}"
         )
         conceptos.append({
+            "clave": f"deporte:{disciplina.id_disciplina}",
             "tipo": "deporte",
             "concepto": f"Deporte: {disciplina.nombre}",
             "monto": _decimal(disciplina.monto_mensual),
@@ -64,6 +66,7 @@ def construir_conceptos_cuota(alumno, monto_base, nivel=None):
     if transporte:
         recorrido = transporte.id_recorrido
         conceptos.append({
+            "clave": f"transporte:{recorrido.id_recorrido}",
             "tipo": "transporte",
             "concepto": f"Transporte: {recorrido.nombre}",
             "monto": _decimal(recorrido.monto_mensual),
@@ -81,6 +84,7 @@ def construir_conceptos_cuota(alumno, monto_base, nivel=None):
     if comedor:
         servicio = comedor.id_servicio
         conceptos.append({
+            "clave": f"comedor:{servicio.id_servicio}",
             "tipo": "comedor",
             "concepto": f"Comedor: {servicio.nombre}",
             "monto": _decimal(servicio.monto_mensual),
@@ -98,6 +102,116 @@ def serializar_conceptos_cuota(conceptos):
     ]
 
 
+def clave_concepto(concepto):
+    """Return a stable key for both current snapshots and older snapshots."""
+    clave = concepto.get("clave")
+    if clave:
+        return str(clave)
+    tipo = str(concepto.get("tipo") or "").strip()
+    if tipo == "cuota_base":
+        return "cuota_base"
+    campos_id = {
+        "deporte": "deporte_id",
+        "transporte": "recorrido_id",
+        "comedor": "servicio_id",
+    }
+    identificador = concepto.get(campos_id.get(tipo, ""))
+    if identificador is not None:
+        return f"{tipo}:{identificador}"
+    nombre = str(concepto.get("concepto") or tipo or "concepto").strip().casefold()
+    return f"{tipo}:{nombre}"
+
+
+def _repartir_importe_proporcional(importe, conceptos):
+    """Allocate a legacy payment over concepts without inventing new categories."""
+    montos = [_decimal(item.get("monto")) for item in conceptos]
+    total = sum(montos, Decimal("0.00"))
+    if total <= 0:
+        return [Decimal("0.00") for _ in conceptos]
+    restante = min(_decimal(importe), total)
+    asignados = []
+    for indice, monto in enumerate(montos):
+        if indice == len(montos) - 1:
+            parte = restante
+        else:
+            parte = (_decimal(importe) * monto / total).quantize(
+                CENTAVO,
+                rounding=ROUND_HALF_UP,
+            )
+            parte = min(parte, restante, monto)
+        asignados.append(parte)
+        restante -= parte
+    return asignados
+
+
+def disponibilidad_conceptos_pago(cuota):
+    """Return the remaining payable amount for each issued concept snapshot.
+
+    Legacy payments without a saved allocation keep the historical proportional
+    distribution. Legacy payments awaiting review block the whole fee because
+    their intended concepts are unknown.
+    """
+    conceptos = cuota.conceptos
+    if not isinstance(conceptos, list) or not conceptos:
+        return []
+    if any(not isinstance(item, dict) for item in conceptos):
+        return []
+
+    total_conceptos = sum((_decimal(item.get("monto")) for item in conceptos), Decimal("0.00"))
+    if total_conceptos != _decimal(cuota.total_obligacion):
+        return []
+
+    claves = [clave_concepto(item) for item in conceptos]
+    if len(set(claves)) != len(claves):
+        return []
+    pagado_por_clave = {clave: Decimal("0.00") for clave in claves}
+    en_revision_por_clave = {clave: Decimal("0.00") for clave in claves}
+    pago_legacy_aprobado = Decimal("0.00")
+    pago_legacy_en_revision = False
+
+    for pago in cuota.pagos.all():
+        asignacion = pago.conceptos_aplicados or {}
+        tiene_asignacion = isinstance(asignacion, dict) and bool(asignacion)
+        if pago.estado == "Pagado":
+            if tiene_asignacion:
+                for clave, importe in asignacion.items():
+                    if clave in pagado_por_clave:
+                        pagado_por_clave[clave] += _decimal(importe)
+            else:
+                pago_legacy_aprobado += _decimal(pago.importe)
+        elif pago.estado in {"Pendiente", "En revisión"}:
+            if tiene_asignacion:
+                for clave, importe in asignacion.items():
+                    if clave in en_revision_por_clave:
+                        en_revision_por_clave[clave] += _decimal(importe)
+            else:
+                pago_legacy_en_revision = True
+
+    if pago_legacy_aprobado:
+        reparto_legacy = _repartir_importe_proporcional(pago_legacy_aprobado, conceptos)
+        for clave, importe in zip(claves, reparto_legacy):
+            pagado_por_clave[clave] += importe
+
+    disponibilidad = []
+    for concepto, clave in zip(conceptos, claves):
+        monto = _decimal(concepto.get("monto"))
+        pagado = min(pagado_por_clave[clave], monto)
+        en_revision = min(en_revision_por_clave[clave], max(monto - pagado, Decimal("0.00")))
+        saldo_disponible = max(monto - pagado - en_revision, Decimal("0.00"))
+        if pago_legacy_en_revision:
+            saldo_disponible = Decimal("0.00")
+        disponibilidad.append({
+            **concepto,
+            "clave": clave,
+            "monto": format(monto, ".2f"),
+            "monto_pagado": format(pagado, ".2f"),
+            "monto_en_revision": format(en_revision, ".2f"),
+            "saldo_disponible": format(saldo_disponible, ".2f"),
+            "bloqueado_por_revision": pago_legacy_en_revision,
+        })
+    return disponibilidad
+
+
 def distribuir_pago_por_conceptos(cuota):
     """Allocate approved payments proportionally; return None for missing/inconsistent snapshots."""
     conceptos = cuota.conceptos
@@ -112,21 +226,28 @@ def distribuir_pago_por_conceptos(cuota):
     if total_conceptos <= 0 or total_conceptos != total_cuota:
         return None
 
-    total_pagado = min(_decimal(cuota.monto_pagado_actual()), total_conceptos)
-    asignados = []
-    restante = total_pagado
-    for indice, (concepto, monto) in enumerate(zip(conceptos, montos)):
-        if indice == len(conceptos) - 1:
-            importe = restante
+    pagos = list(cuota.pagos.filter(estado="Pagado"))
+    pagado_por_clave = {clave_concepto(concepto): Decimal("0.00") for concepto in conceptos}
+    pagos_legacy = Decimal("0.00")
+    for pago in pagos:
+        asignacion = pago.conceptos_aplicados or {}
+        if isinstance(asignacion, dict) and asignacion:
+            for clave, importe in asignacion.items():
+                if clave not in pagado_por_clave:
+                    return None
+                pagado_por_clave[clave] += _decimal(importe)
         else:
-            importe = (total_pagado * monto / total_conceptos).quantize(
-                CENTAVO,
-                rounding=ROUND_HALF_UP,
-            )
-            importe = min(importe, restante)
-        restante -= importe
-        asignados.append((concepto, importe))
-    return asignados
+            pagos_legacy += _decimal(pago.importe)
+
+    if pagos_legacy:
+        reparto_legacy = _repartir_importe_proporcional(pagos_legacy, conceptos)
+        for concepto, importe in zip(conceptos, reparto_legacy):
+            pagado_por_clave[clave_concepto(concepto)] += importe
+
+    return [
+        (concepto, min(pagado_por_clave[clave_concepto(concepto)], _decimal(concepto.get("monto"))))
+        for concepto in conceptos
+    ]
 
 
 def agrupar_reporte_financiero(cuotas):
