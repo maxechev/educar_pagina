@@ -119,6 +119,7 @@ class Cuota(models.Model):
         null=True,
         blank=True,
     )
+    conceptos = models.JSONField(default=list, blank=True)
     fecha_pago = models.DateField(blank=True, null=True)
     fecha_vencimiento = models.DateField(blank=True, null=True)
     medio_pago = models.CharField(
@@ -1072,3 +1073,4 @@ class DocumentacionAlumno(models.Model):
     class Meta:
         managed = True
         db_table = 'documentacion_alumno'
+
