@@ -38,14 +38,14 @@
         <strong>Alumnos omitidos:</strong> {{ plan.omitidos|length }}
       </div>
       <div class="notice">
-        Confirmar crea obligaciones reales con el importe del arancel configurado para cada nivel. No registra pagos. Los alumnos omitidos no recibirán una cuota.
+        Confirmar crea una obligación real por el total mostrado, que incluye el arancel del nivel y los servicios activos detallados. No registra pagos. Los alumnos omitidos no recibirán una cuota.
       </div>
 
       <h2>Alumnos que recibirían una cuota</h2>
       {% if plan.crear %}
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Alumno</th><th>Legajo</th><th>Nivel</th><th>Tutor</th><th>Importe</th></tr></thead>
+            <thead><tr><th>Alumno</th><th>Legajo</th><th>Nivel</th><th>Tutor</th><th>Importe total</th><th>Desglose</th></tr></thead>
             <tbody>
               {% for fila in plan.crear %}
                 <tr>
@@ -53,7 +53,14 @@
                   <td>{{ fila.alumno.legajo }}</td>
                   <td>{{ fila.nivel }}</td>
                   <td>{{ fila.tutor.id_persona.nombre }} {{ fila.tutor.id_persona.apellido }}</td>
-                  <td>${{ fila.monto }}</td>
+                  <td>${{ fila.total }}</td>
+                  <td>
+                    <ul style="margin:0;padding-left:18px;">
+                      {% for concepto in fila.conceptos %}
+                        <li>{{ concepto.concepto }}: ${{ concepto.monto }}</li>
+                      {% endfor %}
+                    </ul>
+                  </td>
                 </tr>
               {% endfor %}
             </tbody>
@@ -94,3 +101,4 @@
     </main>
   </body>
 </html>
+

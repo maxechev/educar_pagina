@@ -13,6 +13,7 @@ from .views import (
     ReporteIngresosView,
     ReportePagosCompletosView,
     ReportePagosIncompletosView,
+    ReporteDesgloseFinancieroView,
     ServiciosInscripcionesView,
 )
 
@@ -29,7 +30,9 @@ urlpatterns = [
     path("reportes/ingresos/", ReporteIngresosView.as_view(), name="mobile-reporte-ingresos"),
     path("reportes/pagos-completos/", ReportePagosCompletosView.as_view(), name="mobile-reporte-pagos-completos"),
     path("reportes/pagos-incompletos/", ReportePagosIncompletosView.as_view(), name="mobile-reporte-pagos-incompletos"),
+    path("reportes/desglose-financiero/", ReporteDesgloseFinancieroView.as_view(), name="mobile-reporte-desglose-financiero"),
     # Reportes del Tutor (HU_M08 y HU_M09)
     path("facturas/", FacturasReporteView.as_view(), name="mobile-facturas"),
     path("deuda/historial/", DeudaHistorialView.as_view(), name="mobile-deuda-historial"),
 ]
+

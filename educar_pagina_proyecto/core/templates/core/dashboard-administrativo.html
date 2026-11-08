@@ -431,6 +431,67 @@
               para analizar las actividades extracurriculares.
             </p>
 
+            <div class="report-card" style="margin-top:20px;">
+              <h3>Reporte financiero por servicios</h3>
+              <p style="color:#64748b;">Consultá lo facturado y los pagos aprobados por deporte, nivel, horario, docente y recorrido.</p>
+              <form method="get" action="{% url 'dashboard-administrativo' %}" class="form-section" style="margin:14px 0;">
+                <input type="hidden" name="panel" value="reportes-avanzados">
+                <input type="hidden" name="generar_reporte_financiero" value="1">
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label for="reporte-financiero-mes">Mes</label>
+                    <select id="reporte-financiero-mes" name="reporte_financiero_mes" required>
+                      <option value="1" {% if reporte_financiero_mes == '1' %}selected{% endif %}>Enero</option>
+                      <option value="2" {% if reporte_financiero_mes == '2' %}selected{% endif %}>Febrero</option>
+                      <option value="3" {% if reporte_financiero_mes == '3' %}selected{% endif %}>Marzo</option>
+                      <option value="4" {% if reporte_financiero_mes == '4' %}selected{% endif %}>Abril</option>
+                      <option value="5" {% if reporte_financiero_mes == '5' %}selected{% endif %}>Mayo</option>
+                      <option value="6" {% if reporte_financiero_mes == '6' %}selected{% endif %}>Junio</option>
+                      <option value="7" {% if reporte_financiero_mes == '7' %}selected{% endif %}>Julio</option>
+                      <option value="8" {% if reporte_financiero_mes == '8' %}selected{% endif %}>Agosto</option>
+                      <option value="9" {% if reporte_financiero_mes == '9' %}selected{% endif %}>Septiembre</option>
+                      <option value="10" {% if reporte_financiero_mes == '10' %}selected{% endif %}>Octubre</option>
+                      <option value="11" {% if reporte_financiero_mes == '11' %}selected{% endif %}>Noviembre</option>
+                      <option value="12" {% if reporte_financiero_mes == '12' %}selected{% endif %}>Diciembre</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="reporte-financiero-anio">Año</label>
+                    <input id="reporte-financiero-anio" type="number" name="reporte_financiero_anio" min="2000" max="9999" value="{{ reporte_financiero_anio }}" required>
+                  </div>
+                </div>
+                <button type="submit" class="btn-form" style="margin-top:14px;">Generar reporte financiero</button>
+              </form>
+
+              {% if reporte_financiero_error %}
+                <p class="alert alert-error">{{ reporte_financiero_error }}</p>
+              {% endif %}
+              {% if reporte_financiero_generar and reporte_financiero %}
+                <h4>Período: {{ reporte_financiero_mes }}/{{ reporte_financiero_anio }}</h4>
+                <p><strong>Total facturado:</strong> ${{ reporte_financiero_facturado }} &nbsp; <strong>Total pagado:</strong> ${{ reporte_financiero_pagado }}</p>
+                {% for seccion in reporte_financiero_secciones %}
+                  <h4>{{ seccion.nombre }}</h4>
+                  <div style="overflow-x:auto;">
+                    <table class="tabla">
+                      <thead><tr><th>Categoría</th><th>Facturado</th><th>Pagado aprobado</th></tr></thead>
+                      <tbody>
+                        {% for fila in seccion.filas %}
+                          <tr><td>{{ fila.nombre }}</td><td>${{ fila.facturado }}</td><td>${{ fila.pagado }}</td></tr>
+                        {% empty %}
+                          <tr><td colspan="3">Sin movimientos con desglose en esta categoría.</td></tr>
+                        {% endfor %}
+                      </tbody>
+                    </table>
+                  </div>
+                {% endfor %}
+                {% if reporte_financiero.cuotas_sin_desglose %}
+                  <p style="color:#92400e;background:#fef3c7;padding:10px;border-radius:8px;">
+                    {{ reporte_financiero.cuotas_sin_desglose }} cuota(s) histórica(s) no tienen desglose guardado. Facturado sin desglose: ${{ reporte_financiero.facturado_sin_desglose }}; pagado sin desglose: ${{ reporte_financiero.pagado_sin_desglose }}. No se asignan a categorías.
+                  </p>
+                {% endif %}
+              {% endif %}
+            </div>
+
             <form method="get" action="{% url 'dashboard-administrativo' %}" class="form-section" style="margin:20px 0;">
               <input type="hidden" name="panel" value="reportes-avanzados">
               <input type="hidden" name="generar_reporte_avanzado" value="1">
@@ -974,7 +1035,7 @@
                     <input
                       type="email"
                       name="correo"
-                      placeholder="ejemplo@colegio.edu.ar"
+                      placeholder="Correo electrónico"
                     />
                   </div>
 
@@ -2586,3 +2647,4 @@
     </script>
   </body>
 </html>
+

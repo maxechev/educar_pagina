@@ -28,3 +28,16 @@ ejecuciones programadas, por lo que revisar el historial del workflow y configur
 de fallos. El calendario toma fines de semana como inhábiles, pero no tiene un calendario
 de feriados; si el requisito exige feriados argentinos, debe añadirse una fuente fiable
 de feriados antes de considerarlo exacto.
+
+## Destinatarios de formularios del sitio
+
+Los formularios de contacto y postulaciones usan variables privadas, no direcciones
+escritas en el código. En **Web → Environment variables** configurá:
+
+- `ADMIN_NOTIFICATION_EMAIL`: buzón institucional que recibirá las consultas y postulaciones.
+- `RESEND_FROM_EMAIL`: remitente verificado en Resend para el formulario de contacto.
+- `RESEND_API_KEY`: clave de Resend, si se habilita el envío desde el formulario de contacto.
+
+Tras agregar o cambiar estas variables, recargá la aplicación web. No guardes sus valores en
+Git ni en archivos compartidos.
+

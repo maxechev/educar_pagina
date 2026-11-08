@@ -9,13 +9,11 @@ from django.db import transaction
 from django.utils import timezone
 
 from core.factura_pdf import formatear_moneda, generar_factura_pdf
+from core.cuota_conceptos import construir_conceptos_cuota, serializar_conceptos_cuota
 from core.models import (
     Alumno,
     Arancel,
     Cuota,
-    InscripcionComedor,
-    InscripcionDeportiva,
-    InscripcionTransporte,
     Tutor,
     TutorTutoraAlumno,
 )
@@ -123,6 +121,8 @@ class Command(BaseCommand):
             .select_related("id_persona", "id_curso__nivel_educativo")
             .prefetch_related(
                 "inscripciones_deportivas__id_grupo__id_disciplina",
+                "inscripciones_deportivas__id_grupo__nivel_educativo",
+                "inscripciones_deportivas__id_grupo__profesor_responsable__id_persona",
                 "inscripciones_transporte__id_recorrido",
                 "inscripciones_comedor__id_servicio",
             )
@@ -138,6 +138,8 @@ class Command(BaseCommand):
                 .select_related("id_persona", "id_curso__nivel_educativo")
                 .prefetch_related(
                     "inscripciones_deportivas__id_grupo__id_disciplina",
+                    "inscripciones_deportivas__id_grupo__nivel_educativo",
+                    "inscripciones_deportivas__id_grupo__profesor_responsable__id_persona",
                     "inscripciones_transporte__id_recorrido",
                     "inscripciones_comedor__id_servicio",
                 )
@@ -179,59 +181,9 @@ class Command(BaseCommand):
             aranceles_candidatos = aranceles_por_nivel.get(clave_nivel, [])
             monto_base = aranceles_candidatos[0] if aranceles_candidatos else Decimal("30000.00")
 
-            desglose = [
-                {
-                    "concepto": f"Cuota Base de Enseñanza ({nivel_nombre})",
-                    "monto": monto_base,
-                }
-            ]
-
-            # Servicios: Deportes (máx 2)
-            deportes_activas = [
-                i for i in alumno.inscripciones_deportivas.all()
-                if (i.estado or "").casefold() == "activa"
-                and (i.id_grupo.estado or "").casefold() == "activo"
-            ][:2]
-            for dep in deportes_activas:
-                monto_dep = dep.id_grupo.id_disciplina.monto_mensual or Decimal("0")
-                desglose.append({
-                    "concepto": f"Deporte: {dep.id_grupo.id_disciplina.nombre}",
-                    "monto": monto_dep,
-                })
-
-            # Servicios: Transporte
-            transporte_activo = next(
-                (
-                    i for i in alumno.inscripciones_transporte.all()
-                    if (i.estado or "").casefold() == "activa"
-                    and (i.id_recorrido.estado or "").casefold() == "activo"
-                ),
-                None,
-            )
-            if transporte_activo:
-                monto_transp = transporte_activo.id_recorrido.monto_mensual or Decimal("0")
-                desglose.append({
-                    "concepto": f"Transporte: {transporte_activo.id_recorrido.nombre}",
-                    "monto": monto_transp,
-                })
-
-            # Servicios: Comedor
-            comedor_activo = next(
-                (
-                    i for i in alumno.inscripciones_comedor.all()
-                    if (i.estado or "").casefold() == "activa"
-                    and (i.id_servicio.estado or "").casefold() == "activo"
-                ),
-                None,
-            )
-            if comedor_activo:
-                monto_comedor = comedor_activo.id_servicio.monto_mensual or Decimal("0")
-                desglose.append({
-                    "concepto": f"Comedor: {comedor_activo.id_servicio.nombre}",
-                    "monto": monto_comedor,
-                })
-
+            desglose = construir_conceptos_cuota(alumno, monto_base, nivel=nivel_nombre)
             total_alumno = sum((item["monto"] for item in desglose), Decimal("0"))
+            conceptos_guardados = serializar_conceptos_cuota(desglose)
 
             # Verificar si ya existe cuota
             cuota_existente = Cuota.objects.filter(
@@ -262,13 +214,15 @@ class Command(BaseCommand):
                     cuota = cuota_existente
                     cuota.monto = monto_base
                     cuota.monto_total = total_alumno
+                    cuota.conceptos = conceptos_guardados
                     cuota.fecha_vencimiento = fecha_vencimiento
-                    cuota.save(update_fields=["monto", "monto_total", "fecha_vencimiento"])
+                    cuota.save(update_fields=["monto", "monto_total", "conceptos", "fecha_vencimiento"])
                 else:
                     cuota = Cuota.objects.create(
                         periodo=periodo_nombre,
                         monto=monto_base,
                         monto_total=total_alumno,
+                        conceptos=conceptos_guardados,
                         fecha_vencimiento=fecha_vencimiento,
                         estado="Pendiente",
                         id_tutor=tutor,
@@ -311,12 +265,7 @@ class Command(BaseCommand):
                         f"Total a abonar: {formatear_moneda(total_alumno)}\n"
                         f"Fecha de vencimiento: {fecha_vencimiento.strftime('%d/%m/%Y')}\n"
                         f"--------------------------------------------------\n\n"
-                        f"Datos para Transferencia Bancaria:\n"
-                        f"• Banco: Banco Santander Río\n"
-                        f"• Titular: Centro Educativo Transformar para educar S.R.L.\n"
-                        f"• CUIT: 30-71234567-8\n"
-                        f"• CBU: 0720123456789012345678\n"
-                        f"• Alias: EDUCAR.TRANSFORMAR.PAGO\n\n"
+                        f"Consulte las vías de pago en la liquidación PDF adjunta.\n\n"
                         f"Una vez realizada la transferencia bancaria, recuerde ingresar a la aplicación móvil "
                         f"o al sitio web en la sección 'Cuotas' para adjuntar el comprobante correspondiente.\n\n"
                         f"Se adjunta el detalle formal en PDF.\n\n"
@@ -327,7 +276,7 @@ class Command(BaseCommand):
                     email_msg = EmailMessage(
                         subject=f"Factura de Aranceles {periodo_nombre} - {nombre_alumno}",
                         body=cuerpo_email,
-                        from_email=getattr(settings, "DEFAULT_FROM_EMAIL", "educarparatransformarcolegio@gmail.com"),
+                        from_email=getattr(settings, "DEFAULT_FROM_EMAIL", None),
                         to=[email_tutor],
                     )
                     email_msg.attach(
@@ -360,3 +309,4 @@ class Command(BaseCommand):
                 f"• Total facturado: {formatear_moneda(total_facturado)}\n"
             )
         )
+

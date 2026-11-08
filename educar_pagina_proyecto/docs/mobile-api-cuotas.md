@@ -47,8 +47,9 @@ estado del comprobante, que puede ser `pendiente`, `aprobado` o `rechazado`.
 
 Devuelve el detalle de una cuota con la misma información y validación de pertenencia que el
 listado. Si la cuota no existe o corresponde a un alumno no asociado al tutor, responde 404.
-El campo discriminacion se devuelve como null: el modelo actual no registra conceptos
-desglosados (deportes, transporte o comedor) dentro de cada cuota.
+El campo `discriminacion` contiene los conceptos guardados al emitir la cuota. Para registros
+anteriores a la migración de conceptos se devuelve `null`; el backend no reconstruye su detalle a
+partir de inscripciones actuales, porque pueden haber cambiado.
 
 ## Generación administrativa de cuotas
 
@@ -59,10 +60,12 @@ nivel. Los alumnos sin esas condiciones, con varios tutores o con una cuota ya e
 período se muestran como omitidos. La comparación reconoce `Primaria`/`Primario` y
 `Secundaria`/`Secundario` como nombres equivalentes; `Inicial` necesita su propio arancel.
 
-La confirmación crea una `Cuota` pendiente con el arancel del nivel. No crea un `PagoCuota` ni una
-solicitud de pago. El tutor podrá verla en la app si su relación con el alumno está vigente y
-enviar un comprobante; ese envío queda pendiente de revisión administrativa. Este generador usa
-el arancel base existente y no agrega importes de deportes, transporte o comedor.
+La confirmación crea una `Cuota` pendiente con una copia del arancel del nivel y de los servicios
+activos del alumno (hasta dos deportes, transporte y comedor). El total de la cuota es la suma de
+esos conceptos. No crea un `PagoCuota` ni una solicitud de pago. El tutor podrá verla en la app si
+su relación con el alumno está vigente y enviar un comprobante; ese envío queda pendiente de
+revisión administrativa. Los conceptos quedan guardados en la cuota para conservar el desglose
+emitido aunque luego cambien los precios o las inscripciones.
 
 ## `POST /api/comprobantes/`
 
@@ -100,3 +103,4 @@ y comedor. Solo se incluyen inscripciones activas y servicios/grupos activos. El
 incluye alumnos asociados a otros tutores.
 
 Los aranceles mensuales definidos por la institución se almacenan en cada deporte, recorrido y servicio de comedor: $5.000 por deporte, $10.000 por transporte y $5.000 por comedor. La migración 0017 aplica esos importes a los registros existentes y los deja como valores iniciales para nuevos servicios.
+

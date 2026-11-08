@@ -26,6 +26,7 @@ from core.models import (
     TutorTutoraAlumno,
     Usuario,
 )
+from core.cuota_conceptos import agrupar_reporte_financiero, distribuir_pago_por_conceptos
 
 from .authentication import MobileTokenAuthentication
 from .models import MobileSession
@@ -471,6 +472,26 @@ MESES_ESPANOL = (
 )
 
 
+def _periodo_reporte(request):
+    hoy = timezone.localdate()
+    try:
+        mes = int(request.query_params.get("mes", hoy.month))
+        anio = int(request.query_params.get("anio", hoy.year))
+    except (TypeError, ValueError):
+        return None
+    if not 1 <= mes <= 12 or not 2000 <= anio <= 9999:
+        return None
+    return mes, anio
+
+
+def _cuotas_del_periodo(mes, anio):
+    periodo = f"{MESES_ESPANOL[mes - 1]} {anio}"
+    return Cuota.objects.filter(
+        Q(periodo__iexact=periodo)
+        | Q(fecha_vencimiento__year=anio, fecha_vencimiento__month=mes)
+    )
+
+
 class ReporteIngresosView(APIView):
     """Reporte institucional de ingresos y recaudación para administradores (HU_M10)."""
 
@@ -484,22 +505,14 @@ class ReporteIngresosView(APIView):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
-        hoy = timezone.localdate()
-        try:
-            mes = int(request.query_params.get("mes", hoy.month))
-            anio = int(request.query_params.get("anio", hoy.year))
-        except (TypeError, ValueError):
-            mes = hoy.month
-            anio = hoy.year
-
-        if not (1 <= mes <= 12):
-            mes = hoy.month
-
-        mes_nombre = MESES_ESPANOL[mes - 1]
-
-        cuotas = Cuota.objects.filter(
-            Q(periodo__icontains=mes_nombre) | Q(fecha_vencimiento__year=anio, fecha_vencimiento__month=mes)
-        ).prefetch_related("pagos")
+        periodo = _periodo_reporte(request)
+        if periodo is None:
+            return Response(
+                {"detail": "Parámetros inválidos. Use mes entre 1 y 12 y año desde 2000."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        mes, anio = periodo
+        cuotas = _cuotas_del_periodo(mes, anio).prefetch_related("pagos")
 
         total_facturado = sum((c.total_obligacion or Decimal("0") for c in cuotas), Decimal("0"))
         total_recaudado = sum((c.monto_pagado_actual() for c in cuotas), Decimal("0"))
@@ -510,11 +523,18 @@ class ReporteIngresosView(APIView):
             else 0.0
         )
 
-        ingresos_cuota_base = sum(
-            (c.monto for c in cuotas if c.monto_pagado_actual() > 0),
-            Decimal("0"),
-        )
-        ingresos_servicios = max(total_recaudado - ingresos_cuota_base, Decimal("0"))
+        ingresos_cuota_base = Decimal("0.00")
+        ingresos_servicios = Decimal("0.00")
+        reporte_desglose = agrupar_reporte_financiero(cuotas)
+        for cuota in cuotas:
+            asignados = distribuir_pago_por_conceptos(cuota)
+            if asignados is None:
+                continue
+            for concepto, importe_pagado in asignados:
+                if concepto.get("tipo") == "cuota_base":
+                    ingresos_cuota_base += importe_pagado
+                else:
+                    ingresos_servicios += importe_pagado
 
         cantidad_cobradas = sum(
             1
@@ -532,6 +552,8 @@ class ReporteIngresosView(APIView):
             "porcentaje_cobranza": porcentaje,
             "ingresos_cuota_base": str(ingresos_cuota_base),
             "ingresos_servicios": str(ingresos_servicios),
+            "ingresos_sin_desglose": reporte_desglose["pagado_sin_desglose"],
+            "cuotas_sin_desglose": reporte_desglose["cuotas_sin_desglose"],
             "cantidad_cuotas_cobradas": cantidad_cobradas,
             "cantidad_cuotas_pendientes": max(cantidad_pendientes, 0),
         })
@@ -550,23 +572,17 @@ class ReportePagosCompletosView(APIView):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
+        periodo = _periodo_reporte(request)
+        if periodo is None:
+            return Response(
+                {"detail": "Parámetros inválidos. Use mes entre 1 y 12 y año desde 2000."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        mes, anio = periodo
         hoy = timezone.localdate()
-        try:
-            mes = int(request.query_params.get("mes", hoy.month))
-            anio = int(request.query_params.get("anio", hoy.year))
-        except (TypeError, ValueError):
-            mes = hoy.month
-            anio = hoy.year
-
-        if not (1 <= mes <= 12):
-            mes = hoy.month
-
-        mes_nombre = MESES_ESPANOL[mes - 1]
 
         cuotas = (
-            Cuota.objects.filter(
-                Q(periodo__icontains=mes_nombre) | Q(fecha_vencimiento__year=anio, fecha_vencimiento__month=mes)
-            )
+            _cuotas_del_periodo(mes, anio)
             .select_related(
                 "id_legajo_alumno__id_persona",
                 "id_legajo_alumno__id_curso__nivel_educativo",
@@ -637,34 +653,23 @@ class ReportePagosIncompletosView(APIView):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
+        periodo = _periodo_reporte(request)
+        if periodo is None:
+            return Response(
+                {"detail": "Parámetros inválidos. Use mes entre 1 y 12 y año desde 2000."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        mes, anio = periodo
         hoy = timezone.localdate()
-        try:
-            mes = int(request.query_params.get("mes", hoy.month))
-            anio = int(request.query_params.get("anio", hoy.year))
-        except (TypeError, ValueError):
-            mes = hoy.month
-            anio = hoy.year
-
-        if not (1 <= mes <= 12):
-            mes = hoy.month
-
-        mes_nombre = MESES_ESPANOL[mes - 1]
 
         cuotas = (
-            Cuota.objects.filter(
-                Q(periodo__icontains=mes_nombre) | Q(fecha_vencimiento__year=anio, fecha_vencimiento__month=mes)
-            )
+            _cuotas_del_periodo(mes, anio)
             .select_related(
                 "id_legajo_alumno__id_persona",
                 "id_legajo_alumno__id_curso__nivel_educativo",
                 "id_tutor__id_persona__id_usuario",
             )
-            .prefetch_related(
-                "pagos",
-                "id_legajo_alumno__inscripciones_deportivas__id_grupo__id_disciplina",
-                "id_legajo_alumno__inscripciones_transporte__id_recorrido",
-                "id_legajo_alumno__inscripciones_comedor__id_servicio",
-            )
+            .prefetch_related("pagos")
             .order_by("-fecha_vencimiento", "-id_cuota")
         )
 
@@ -693,19 +698,13 @@ class ReportePagosIncompletosView(APIView):
             ) or ""
             tutor_tel = getattr(cuota.id_tutor, "telefono_contacto", "") or (getattr(persona_tutor, "telefono", "") if persona_tutor else "")
 
-            # Conceptos adeudados
-            conceptos = ["Cuota Base"]
-            for dep in alumno.inscripciones_deportivas.all():
-                if (dep.estado or "").casefold() == "activa":
-                    conceptos.append(dep.id_grupo.id_disciplina.nombre)
-            for transp in alumno.inscripciones_transporte.all():
-                if (transp.estado or "").casefold() == "activa":
-                    conceptos.append(f"Transporte: {transp.id_recorrido.nombre}")
-                    break
-            for com in alumno.inscripciones_comedor.all():
-                if (com.estado or "").casefold() == "activa":
-                    conceptos.append("Comedor Escolar")
-                    break
+            conceptos = [
+                concepto.get("concepto")
+                for concepto in (cuota.conceptos or [])
+                if isinstance(concepto, dict) and concepto.get("concepto")
+            ]
+            if not conceptos:
+                conceptos = ["Desglose histórico no disponible"]
 
             estado_cuota = (cuota.estado or "Pendiente").strip().casefold()
             if estado_cuota not in {"pagada", "parcial"} and cuota.fecha_vencimiento and cuota.fecha_vencimiento < hoy:
@@ -727,6 +726,35 @@ class ReportePagosIncompletosView(APIView):
             })
 
         return Response(data)
+
+
+class ReporteDesgloseFinancieroView(APIView):
+    """Financial breakdown by service dimensions from issued quota snapshots (HU_M10)."""
+
+    authentication_classes = [MobileTokenAuthentication]
+    permission_classes = [IsMobileAuthenticated]
+
+    def get(self, request):
+        if request.auth.get("role") != "administrativo":
+            return Response(
+                {"detail": "Este reporte está disponible solo para el personal administrativo."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        periodo = _periodo_reporte(request)
+        if periodo is None:
+            return Response(
+                {"detail": "Parámetros inválidos. Use mes entre 1 y 12 y año desde 2000."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        mes, anio = periodo
+        cuotas = _cuotas_del_periodo(mes, anio).prefetch_related("pagos")
+        return Response({
+            "mes": mes,
+            "anio": anio,
+            **agrupar_reporte_financiero(cuotas),
+        })
 
 
 class FacturasReporteView(APIView):
@@ -951,4 +979,5 @@ class DeudaHistorialView(APIView):
             "deuda_comedor": str(total_comedor_gral),
             "desglose_alumnos": desglose_alumnos,
         })
+
 

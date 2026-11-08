@@ -75,6 +75,11 @@ from .models import (
     InscripcionComedor,
     SolicitudServicio,
 )
+from .cuota_conceptos import (
+    agrupar_reporte_financiero,
+    construir_conceptos_cuota,
+    serializar_conceptos_cuota,
+)
 from .patterns import GestionEscolarFacade
 
 MODELOS_FACHADA = {
@@ -243,6 +248,12 @@ def _plan_generacion_cuotas(periodo):
     """Prepara cuotas para alumnos activos sin escribir en la base."""
     alumnos = Alumno.objects.filter(estado='Activo').select_related(
         'id_persona', 'id_curso__nivel_educativo'
+    ).prefetch_related(
+        'inscripciones_deportivas__id_grupo__id_disciplina',
+        'inscripciones_deportivas__id_grupo__nivel_educativo',
+        'inscripciones_deportivas__id_grupo__profesor_responsable__id_persona',
+        'inscripciones_transporte__id_recorrido',
+        'inscripciones_comedor__id_servicio',
     ).order_by('id_persona__apellido', 'id_persona__nombre')
     alumno_ids = list(alumnos.values_list('legajo', flat=True))
 
@@ -314,10 +325,18 @@ def _plan_generacion_cuotas(periodo):
             })
             continue
 
+        conceptos = construir_conceptos_cuota(
+            alumno,
+            aranceles[0].monto,
+            nivel=alumno.id_curso.nivel_educativo.nombre,
+        )
+        total = sum((concepto['monto'] for concepto in conceptos), Decimal('0.00'))
         plan['crear'].append({
             'alumno': alumno,
             'tutor': tutor,
             'monto': aranceles[0].monto,
+            'total': total,
+            'conceptos': conceptos,
             'nivel': alumno.id_curso.nivel_educativo.nombre,
         })
 
@@ -365,14 +384,16 @@ def _pagos_admin(request):
 
 
 def _datos_plan_cuotas(plan, fecha_vencimiento):
-    cuotas = sorted(
-        [
-            fila['alumno'].legajo,
-            fila['tutor'].id,
-            str(fila['monto']),
-        ]
+    cuotas = [
+        {
+            'legajo': fila['alumno'].legajo,
+            'tutor_id': fila['tutor'].id,
+            'total': str(fila['total']),
+            'conceptos': serializar_conceptos_cuota(fila['conceptos']),
+        }
         for fila in plan['crear']
-    )
+    ]
+    cuotas.sort(key=lambda fila: fila['legajo'])
     return {
         'periodo': plan['periodo'],
         'fecha_vencimiento': fecha_vencimiento.isoformat(),
@@ -466,7 +487,8 @@ def generar_cuotas_administrativo(request):
             Cuota.objects.create(
                 periodo=periodo,
                 monto=fila['monto'],
-                monto_total=fila['monto'],
+                monto_total=fila['total'],
+                conceptos=serializar_conceptos_cuota(fila['conceptos']),
                 fecha_vencimiento=fecha_vencimiento,
                 fecha_pago=None,
                 medio_pago=None,
@@ -2121,9 +2143,11 @@ def enviar_postulacion(request):
 
         print("Postulación guardada correctamente")
         
-        correo = EmailMessage(
-            subject=f"Nueva postulación - {nombre} {apellido}",
-            body=f"""
+        destinatario_admin = os.environ.get("ADMIN_NOTIFICATION_EMAIL", "").strip()
+        if destinatario_admin:
+            correo = EmailMessage(
+                subject=f"Nueva postulación - {nombre} {apellido}",
+                body=f"""
         Nueva postulación recibida
 
         Nombre: {nombre}
@@ -2136,23 +2160,21 @@ def enviar_postulacion(request):
         Mensaje:
         {mensaje}
         """,
-            from_email='educarparatransformarcolegio@gmail.com',
-            to=['educarparatransformarcolegio@gmail.com']
-        )
-        
-        if cv:
-            correo.attach(
-                cv.name,
-                cv.read(),
-                cv.content_type
+                from_email=getattr(settings, "DEFAULT_FROM_EMAIL", None),
+                to=[destinatario_admin],
             )
-        
-        correo.send()
-        
-        messages.success(
-            request,
-            "La postulación fue enviada correctamente. Nos pondremos en contacto si tu perfil coincide con una búsqueda."
-        )
+            if cv:
+                correo.attach(cv.name, cv.read(), cv.content_type)
+            correo.send()
+            messages.success(
+                request,
+                "La postulación fue enviada correctamente. Nos pondremos en contacto si tu perfil coincide con una búsqueda.",
+            )
+        else:
+            messages.warning(
+                request,
+                "La postulación se guardó, pero falta configurar el correo administrativo para recibir avisos.",
+            )
 
     return redirect('postulacion')
 
@@ -2193,12 +2215,18 @@ def enviar_consulta(request):
             )
             return redirect('contacto')
 
+        destinatario_admin = os.environ.get("ADMIN_NOTIFICATION_EMAIL", "").strip()
+        remitente_resend = os.environ.get("RESEND_FROM_EMAIL", "").strip()
+        if not destinatario_admin or not remitente_resend:
+            messages.error(request, "Falta configurar el correo institucional para recibir consultas.")
+            return redirect('contacto')
+
         try:
             resend.api_key = os.environ.get("RESEND_API_KEY")
 
             resend.Emails.send({
-                "from": "onboarding@resend.dev",
-                "to": ["educarparatransformarcolegio@gmail.com"],
+                "from": remitente_resend,
+                "to": [destinatario_admin],
                 "subject": f"Consulta desde la web - {nombre}",
                 "html": f"""
                     <h2>Nueva consulta recibida</h2>
@@ -2210,7 +2238,8 @@ def enviar_consulta(request):
 
         except Exception as e:
             print("ERROR RESEND:", e)
-            raise
+            messages.error(request, "No se pudo enviar la consulta. Intentá nuevamente más tarde.")
+            return redirect('contacto')
 
         messages.success(
             request,
@@ -2729,6 +2758,53 @@ def dashboard_administrativo(request):
                 ),
             })
 
+    reporte_financiero_generar = request.GET.get('generar_reporte_financiero') == '1'
+    fecha_hoy_reporte = timezone.localdate()
+    reporte_financiero_mes = request.GET.get('reporte_financiero_mes', str(fecha_hoy_reporte.month))
+    reporte_financiero_anio = request.GET.get('reporte_financiero_anio', str(fecha_hoy_reporte.year))
+    reporte_financiero = None
+    reporte_financiero_secciones = []
+    reporte_financiero_error = ''
+    reporte_financiero_facturado = Decimal('0.00')
+    reporte_financiero_pagado = Decimal('0.00')
+    if reporte_financiero_generar:
+        try:
+            mes_financiero = int(reporte_financiero_mes)
+            anio_financiero = int(reporte_financiero_anio)
+            if not 1 <= mes_financiero <= 12 or not 2000 <= anio_financiero <= 9999:
+                raise ValueError
+        except (TypeError, ValueError):
+            reporte_financiero_error = 'Elegí un mes entre 1 y 12 y un año válido desde 2000.'
+        else:
+            periodo_financiero = (
+                f'{MESES_PERIODO_CUOTA[mes_financiero - 1]} {anio_financiero}'
+            )
+            cuotas_financieras = list(
+                Cuota.objects.filter(
+                    Q(periodo__iexact=periodo_financiero)
+                    | Q(
+                        fecha_vencimiento__year=anio_financiero,
+                        fecha_vencimiento__month=mes_financiero,
+                    )
+                ).prefetch_related('pagos')
+            )
+            reporte_financiero = agrupar_reporte_financiero(cuotas_financieras)
+            reporte_financiero_secciones = [
+                {'nombre': 'Deportes', 'filas': reporte_financiero['deportes']},
+                {'nombre': 'Nivel educativo', 'filas': reporte_financiero['niveles']},
+                {'nombre': 'Horario', 'filas': reporte_financiero['horarios']},
+                {'nombre': 'Docente', 'filas': reporte_financiero['docentes']},
+                {'nombre': 'Recorrido de transporte', 'filas': reporte_financiero['recorridos']},
+            ]
+            reporte_financiero_facturado = sum(
+                (cuota.total_obligacion or Decimal('0.00') for cuota in cuotas_financieras),
+                Decimal('0.00'),
+            )
+            reporte_financiero_pagado = sum(
+                (cuota.monto_pagado_actual() for cuota in cuotas_financieras),
+                Decimal('0.00'),
+            )
+
     # Permite consultar únicamente los horarios de un curso desde el panel.
     # Los deportes se incluyen por nivel, ya que un grupo deportivo está
     # asociado al nivel educativo y no a un curso puntual.
@@ -2831,6 +2907,14 @@ def dashboard_administrativo(request):
         'reporte_avanzado_filtros': reporte_avanzado_filtros,
         'horarios_deportivos_reporte': horarios_deportivos_reporte,
         'reportes_avanzados': reportes_avanzados,
+        'reporte_financiero_generar': reporte_financiero_generar,
+        'reporte_financiero_mes': reporte_financiero_mes,
+        'reporte_financiero_anio': reporte_financiero_anio,
+        'reporte_financiero': reporte_financiero,
+        'reporte_financiero_secciones': reporte_financiero_secciones,
+        'reporte_financiero_error': reporte_financiero_error,
+        'reporte_financiero_facturado': reporte_financiero_facturado,
+        'reporte_financiero_pagado': reporte_financiero_pagado,
         'tutores_admin': tutores_admin,
         'alumnos_tutores_admin': alumnos_tutores_admin,
     })
