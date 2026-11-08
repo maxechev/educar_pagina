@@ -1,4 +1,5 @@
 from decimal import Decimal, InvalidOperation
+import json
 
 from django.contrib.auth.hashers import check_password, make_password
 from django.db import transaction
@@ -26,7 +27,11 @@ from core.models import (
     TutorTutoraAlumno,
     Usuario,
 )
-from core.cuota_conceptos import agrupar_reporte_financiero, distribuir_pago_por_conceptos
+from core.cuota_conceptos import (
+    agrupar_reporte_financiero,
+    disponibilidad_conceptos_pago,
+    distribuir_pago_por_conceptos,
+)
 
 from .authentication import MobileTokenAuthentication
 from .models import MobileSession
@@ -37,6 +42,62 @@ from .tokens import TOKEN_TTL_SECONDS, create_access_token
 class IsMobileAuthenticated(BasePermission):
     def has_permission(self, request, view):
         return isinstance(request.user, Usuario)
+
+
+def _discriminacion_cuota(cuota):
+    conceptos = cuota.conceptos
+    if not isinstance(conceptos, list) or not conceptos:
+        return None
+    base = next((item for item in conceptos if item.get("tipo") == "cuota_base"), None)
+    deportes = [
+        {"nombre": item.get("deporte") or item.get("concepto", "Deporte"), "monto": item.get("monto")}
+        for item in conceptos
+        if item.get("tipo") == "deporte"
+    ]
+    transporte = next(
+        (
+            {"recorrido": item.get("recorrido") or item.get("concepto", "Transporte"), "monto": item.get("monto")}
+            for item in conceptos
+            if item.get("tipo") == "transporte"
+        ),
+        None,
+    )
+    comedor = next(
+        ({"monto": item.get("monto")} for item in conceptos if item.get("tipo") == "comedor"),
+        None,
+    )
+    return {
+        "cuota_base": base.get("monto") if base else "0.00",
+        "deportes": deportes,
+        "transporte": transporte,
+        "comedor": comedor,
+    }
+
+
+def _conceptos_pago_cuota(cuota, saldo):
+    conceptos = disponibilidad_conceptos_pago(cuota)
+    if conceptos or saldo <= 0:
+        return conceptos
+    monto_en_revision = sum(
+        (
+            pago.importe
+            for pago in cuota.pagos.all()
+            if pago.estado in {"Pendiente", "En revisión"}
+        ),
+        Decimal("0.00"),
+    )
+    monto_en_revision = min(monto_en_revision, saldo)
+    disponible = max(saldo - monto_en_revision, Decimal("0.00"))
+    return [{
+        "clave": "__saldo_total__",
+        "tipo": "historico",
+        "concepto": "Saldo de la cuota (desglose histórico no disponible)",
+        "monto": str(cuota.total_obligacion),
+        "monto_pagado": str(cuota.monto_pagado_actual()),
+        "monto_en_revision": str(monto_en_revision),
+        "saldo_disponible": str(disponible),
+        "bloqueado_por_revision": monto_en_revision > 0,
+    }]
 
 
 def user_payload(user, role):
@@ -166,6 +227,7 @@ class CuotasView(APIView):
             "id_legajo_alumno__id_persona",
             "id_legajo_alumno__id_curso__nivel_educativo",
         ).prefetch_related(
+            "pagos",
             "comprobantes__pago__solicitud",
         ).order_by("-fecha_vencimiento", "-id_cuota")
 
@@ -201,12 +263,17 @@ class CuotasView(APIView):
                 nivel = curso.nivel_educativo.nombre
                 nombre_curso = f"{curso.anio}° Año {curso.comision} - {nivel}"
 
-            if cuota.estado not in {"Pagada", "Parcial"} and cuota.fecha_vencimiento and cuota.fecha_vencimiento < timezone.localdate():
-                cuota.estado = "Vencida"
             total = cuota.total_obligacion or Decimal("0")
             monto_pagado = cuota.monto_pagado_actual()
             saldo = max(total - monto_pagado, Decimal("0"))
-            estado_cuota = (cuota.estado or "Pendiente").strip().casefold()
+            if saldo <= 0 and total > 0:
+                estado_cuota = "pagada"
+            elif monto_pagado > 0:
+                estado_cuota = "parcial"
+            elif cuota.fecha_vencimiento and cuota.fecha_vencimiento < timezone.localdate():
+                estado_cuota = "vencida"
+            else:
+                estado_cuota = "pendiente"
             if estado and estado_cuota != estado.casefold():
                 continue
             data.append(
@@ -220,6 +287,8 @@ class CuotasView(APIView):
                     "fecha_vencimiento": cuota.fecha_vencimiento.isoformat() if cuota.fecha_vencimiento else None,
                     "fecha_pago": cuota.fecha_pago.isoformat() if cuota.fecha_pago else None,
                     "estado": estado_cuota,
+                    "discriminacion": _discriminacion_cuota(cuota),
+                    "conceptos_pago": _conceptos_pago_cuota(cuota, saldo),
                     "comprobantes": [
                         {
                             "id": comprobante.id_comprobante,
@@ -266,7 +335,7 @@ class CuotaDetalleView(APIView):
         cuota = next((item for item in response.data if item["id"] == cuota_id), None)
         if cuota is None:
             return Response({"detail": "Cuota no encontrada."}, status=status.HTTP_404_NOT_FOUND)
-        return Response({**cuota, "discriminacion": None})
+        return Response(cuota)
 
 
 class ServiciosInscripcionesView(APIView):
@@ -395,20 +464,66 @@ class ComprobantesView(APIView):
         if importe <= 0:
             return Response({"detail": "El importe debe ser mayor que cero."}, status=status.HTTP_400_BAD_REQUEST)
 
+        seleccion_informada = "conceptos_seleccionados" in request.data
+        seleccion_raw = request.data.get("conceptos_seleccionados")
+        seleccion = None
+        if seleccion_informada:
+            try:
+                seleccion = json.loads(seleccion_raw) if isinstance(seleccion_raw, str) else seleccion_raw
+            except (TypeError, ValueError):
+                return Response({"detail": "conceptos_seleccionados debe ser una lista JSON válida."}, status=status.HTTP_400_BAD_REQUEST)
+            if not isinstance(seleccion, list) or not seleccion or any(not isinstance(item, str) for item in seleccion):
+                return Response({"detail": "Seleccione al menos un concepto válido para pagar."}, status=status.HTTP_400_BAD_REQUEST)
+            if len(seleccion) != len(set(seleccion)):
+                return Response({"detail": "No repita conceptos en la selección."}, status=status.HTTP_400_BAD_REQUEST)
+
         legajos_hijos = TutorTutoraAlumno.objects.filter(id_tutor=tutor).values_list("id_alumno_id", flat=True)
-        cuota = Cuota.objects.filter(
-            id_cuota=cuota_id,
-            id_tutor=tutor,
-            id_legajo_alumno_id__in=legajos_hijos,
-        ).first()
-        if cuota is None:
-            return Response({"detail": "La cuota no existe o no pertenece a un alumno asociado."}, status=status.HTTP_404_NOT_FOUND)
-
-        saldo = max((cuota.total_obligacion or Decimal("0")) - cuota.monto_pagado_actual(), Decimal("0"))
-        if importe > saldo:
-            return Response({"detail": "El importe supera el saldo pendiente de la cuota.", "saldo": str(saldo)}, status=status.HTTP_400_BAD_REQUEST)
-
         with transaction.atomic():
+            cuota = Cuota.objects.select_for_update().filter(
+                id_cuota=cuota_id,
+                id_tutor=tutor,
+                id_legajo_alumno_id__in=legajos_hijos,
+            ).first()
+            if cuota is None:
+                return Response({"detail": "La cuota no existe o no pertenece a un alumno asociado."}, status=status.HTTP_404_NOT_FOUND)
+
+            saldo = max((cuota.total_obligacion or Decimal("0")) - cuota.monto_pagado_actual(), Decimal("0"))
+            if importe > saldo:
+                return Response({"detail": "El importe supera el saldo pendiente de la cuota.", "saldo": str(saldo)}, status=status.HTTP_400_BAD_REQUEST)
+
+            conceptos_aplicados = {}
+            if seleccion_informada:
+                conceptos_disponibles = disponibilidad_conceptos_pago(cuota)
+                if seleccion == ["__saldo_total__"] and not conceptos_disponibles:
+                    conceptos_historicos = _conceptos_pago_cuota(cuota, saldo)
+                    importe_esperado = Decimal(conceptos_historicos[0]["saldo_disponible"])
+                    if importe != importe_esperado or importe_esperado <= 0:
+                        return Response({"detail": "Para esta cuota histórica debe abonarse el saldo completo disponible.", "saldo": str(importe_esperado)}, status=status.HTTP_400_BAD_REQUEST)
+                    conceptos_aplicados = {"__saldo_total__": str(importe_esperado)}
+                else:
+                    conceptos_disponibles = {
+                        item["clave"]: Decimal(str(item["saldo_disponible"]))
+                        for item in conceptos_disponibles
+                    }
+                    if any(clave not in conceptos_disponibles for clave in seleccion):
+                        return Response({"detail": "La selección contiene conceptos que no pertenecen a esta cuota."}, status=status.HTTP_400_BAD_REQUEST)
+                    importes_conceptos = {
+                        clave: conceptos_disponibles[clave]
+                        for clave in seleccion
+                    }
+                    if any(monto <= 0 for monto in importes_conceptos.values()):
+                        return Response({"detail": "Uno o más conceptos ya están pagados o en revisión."}, status=status.HTTP_400_BAD_REQUEST)
+                    importe_esperado = sum(importes_conceptos.values(), Decimal("0.00"))
+                    if importe != importe_esperado:
+                        return Response({
+                            "detail": "El importe debe coincidir con el saldo completo de los conceptos seleccionados.",
+                            "importe_esperado": str(importe_esperado),
+                        }, status=status.HTTP_400_BAD_REQUEST)
+                    conceptos_aplicados = {
+                        clave: str(monto)
+                        for clave, monto in importes_conceptos.items()
+                    }
+
             solicitud = PagoPendiente.objects.create(
                 id_tutor=tutor,
                 legajo_alumno=cuota.id_legajo_alumno,
@@ -423,6 +538,7 @@ class ComprobantesView(APIView):
                 tutor=tutor,
                 importe=importe,
                 medio_pago=request.data.get("medio_pago") or "Transferencia",
+                conceptos_aplicados=conceptos_aplicados,
                 estado="En revisión",
             )
             comprobante = ComprobantePago.objects.create(
