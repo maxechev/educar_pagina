@@ -1,7 +1,10 @@
 from decimal import Decimal, InvalidOperation
 import json
+from types import SimpleNamespace
 
 from django.contrib.auth.hashers import check_password, make_password
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import Q
 from django.http import FileResponse
@@ -196,6 +199,70 @@ class LogoutView(APIView):
             revoked_at__isnull=True,
         ).update(revoked_at=timezone.now())
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class PasswordChangeView(APIView):
+    authentication_classes = [MobileTokenAuthentication]
+    permission_classes = [IsMobileAuthenticated]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "mobile_password_change"
+
+    def post(self, request):
+        current_password = request.data.get("current_password")
+        new_password = request.data.get("new_password")
+        if (
+            not isinstance(current_password, str)
+            or not current_password
+            or len(current_password) > 256
+            or not isinstance(new_password, str)
+            or not new_password
+            or len(new_password) > 256
+        ):
+            return Response(
+                {"detail": "Ingresá contraseñas válidas de hasta 256 caracteres."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            password_actual_valida = check_password(
+                current_password,
+                request.user.contrasenia,
+            )
+        except (TypeError, ValueError):
+            password_actual_valida = False
+        if not password_actual_valida:
+            return Response(
+                {"detail": "La contraseña actual es incorrecta."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if check_password(new_password, request.user.contrasenia):
+            return Response(
+                {"detail": "La nueva contraseña debe ser distinta de la actual."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        usuario_para_validacion = SimpleNamespace(
+            username=request.user.nombre_usuario,
+            email=request.user.correo or "",
+        )
+        try:
+            validate_password(new_password, user=usuario_para_validacion)
+        except ValidationError as exc:
+            return Response(
+                {"detail": exc.messages},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        with transaction.atomic():
+            request.user.contrasenia = make_password(new_password)
+            request.user.save(update_fields=["contrasenia"])
+            MobileSession.objects.filter(
+                user_id=request.user.pk,
+                revoked_at__isnull=True,
+            ).exclude(jti=request.auth["jti"]).update(revoked_at=timezone.now())
+
+        return Response({"detail": "La contraseña se cambió correctamente."})
 
 
 class CuotasView(APIView):
