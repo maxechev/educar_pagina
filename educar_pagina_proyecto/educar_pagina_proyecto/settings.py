@@ -192,6 +192,8 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_RATES": {
         "mobile_login": "10/hour",
         "mobile_password_change": "5/hour",
+        "mobile_recovery_request": "5/hour",
+        "mobile_recovery_confirm": "10/hour",
     },
 }
 
