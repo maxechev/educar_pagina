@@ -21,10 +21,11 @@ def generar_factura_pdf(
     desglose_conceptos,
     numero_factura=None,
     fecha_emision=None,
+    pago_aprobado=None,
 ):
     """
-    Genera un archivo PDF formal con la liquidación/factura de aranceles mensuales.
-    Retorna los bytes del PDF generado.
+    Genera una liquidación mensual o un comprobante interno de pago en PDF.
+    Retorna los bytes del documento generado.
     """
     buffer = BytesIO()
     doc = SimpleDocTemplate(
@@ -128,15 +129,20 @@ def generar_factura_pdf(
     story = []
 
     # 1. Cabecera Institucional
-    num_factura = (
-        numero_factura
-        or f"FAC-{cuota.periodo[:3].upper()}-{cuota.id_cuota:05d}"
+    es_comprobante_pago = pago_aprobado is not None
+    num_factura = numero_factura or (
+        f"REC-PAG-{pago_aprobado.id_pago:05d}"
+        if es_comprobante_pago
+        else f"FAC-{cuota.periodo[:3].upper()}-{cuota.id_cuota:05d}"
     )
-    f_emision = fecha_emision or (
-        cuota.fecha_vencimiento.strftime("%d/%m/%Y")
-        if cuota.fecha_vencimiento
-        else "-"
-    )
+    if fecha_emision:
+        f_emision = fecha_emision
+    elif es_comprobante_pago and pago_aprobado.fecha_pago:
+        f_emision = pago_aprobado.fecha_pago.strftime("%d/%m/%Y")
+    elif cuota.fecha_vencimiento:
+        f_emision = cuota.fecha_vencimiento.strftime("%d/%m/%Y")
+    else:
+        f_emision = "-"
     f_vto = (
         cuota.fecha_vencimiento.strftime("%d/%m/%Y")
         if cuota.fecha_vencimiento
@@ -151,7 +157,10 @@ def generar_factura_pdf(
     ]
 
     header_right = [
-        Paragraph("<b>LIQUIDACIÓN MENSUAL</b>", style_doc_title),
+        Paragraph(
+            "<b>COMPROBANTE DE PAGO</b>" if es_comprobante_pago else "<b>LIQUIDACIÓN MENSUAL</b>",
+            style_doc_title,
+        ),
         Paragraph(f"<b>N° Comprobante:</b> {num_factura}", style_doc_info),
         Paragraph(f"<b>Período:</b> {cuota.periodo}", style_doc_info),
         Paragraph(f"<b>Fecha Emisión:</b> {f_emision}", style_doc_info),
@@ -229,7 +238,12 @@ def generar_factura_pdf(
     story.append(Spacer(1, 14))
 
     # 3. Detalle Discriminado de Conceptos
-    story.append(Paragraph("<b>DETALLE DE CONCEPTOS ARANCELARIOS</b>", style_section_title))
+    titulo_detalle = (
+        "<b>DETALLE DE CONCEPTOS PAGADOS</b>"
+        if es_comprobante_pago
+        else "<b>DETALLE DE CONCEPTOS ARANCELARIOS</b>"
+    )
+    story.append(Paragraph(titulo_detalle, style_section_title))
     story.append(Spacer(1, 4))
 
     table_rows = [
@@ -253,8 +267,16 @@ def generar_factura_pdf(
 
     table_rows.append([
         Paragraph("", style_cell),
-        Paragraph("<b>TOTAL A ABONAR</b>", style_cell_bold),
-        Paragraph(formatear_moneda(cuota.total_obligacion or total_calculado), style_cell_right_bold),
+        Paragraph(
+            "<b>TOTAL PAGADO</b>" if es_comprobante_pago else "<b>TOTAL A ABONAR</b>",
+            style_cell_bold,
+        ),
+        Paragraph(
+            formatear_moneda(pago_aprobado.importe)
+            if es_comprobante_pago
+            else formatear_moneda(cuota.total_obligacion or total_calculado),
+            style_cell_right_bold,
+        ),
     ])
 
     conceptos_table = Table(table_rows, colWidths=[40, 360, 140])
@@ -279,25 +301,46 @@ def generar_factura_pdf(
     story.append(conceptos_table)
     story.append(Spacer(1, 16))
 
-    # 4. Datos de Pago por Transferencia
-    pago_box_data = [
-        [
-            Paragraph("<b>INSTRUCCIONES Y VÍAS DE PAGO (TRANSFERENCIA BANCARIA)</b>", style_section_title)
-        ],
-        [
+    # 4. Datos de acreditación o instrucciones de transferencia
+    if es_comprobante_pago:
+        saldo = max(
+            Decimal(str(cuota.total_obligacion or "0"))
+            - Decimal(str(cuota.monto_pagado_actual() or "0")),
+            Decimal("0.00"),
+        )
+        fecha_pago = (
+            pago_aprobado.fecha_pago.strftime("%d/%m/%Y")
+            if pago_aprobado.fecha_pago
+            else "-"
+        )
+        pago_box_data = [[
             Paragraph(
-                "• <b>Banco:</b> Banco Santander Río &nbsp;&nbsp;|&nbsp;&nbsp; "
-                "• <b>Tipo de Cuenta:</b> Cuenta Corriente en Pesos<br/>"
-                "• <b>Titular:</b> Centro Educativo Transformar para educar S.R.L. &nbsp;&nbsp;|&nbsp;&nbsp; "
-                "• <b>CUIT:</b> 30-71234567-8<br/>"
-                "• <b>CBU:</b> 0720123456789012345678 &nbsp;&nbsp;|&nbsp;&nbsp; "
-                "• <b>Alias:</b> <b>EDUCAR.TRANSFORMAR.PAGO</b><br/><br/>"
-                "<i>Una vez realizada la transferencia, adjunte el comprobante desde la <b>App Móvil</b> "
-                "en la sección de Pagos o mediante el portal web para su inmediata acreditación.</i>",
+                "<b>DATOS DE LA ACREDITACIÓN</b><br/>"
+                f"Fecha: {fecha_pago}<br/>"
+                f"Medio: {pago_aprobado.medio_pago or 'No informado'}<br/>"
+                f"Saldo pendiente de la cuota: {formatear_moneda(saldo)}",
                 style_cell,
             )
-        ],
-    ]
+        ]]
+    else:
+        pago_box_data = [
+            [
+                Paragraph("<b>INSTRUCCIONES Y VÍAS DE PAGO (TRANSFERENCIA BANCARIA)</b>", style_section_title)
+            ],
+            [
+                Paragraph(
+                    "• <b>Banco:</b> Banco Santander Río &nbsp;&nbsp;|&nbsp;&nbsp; "
+                    "• <b>Tipo de Cuenta:</b> Cuenta Corriente en Pesos<br/>"
+                    "• <b>Titular:</b> Centro Educativo Transformar para educar S.R.L. &nbsp;&nbsp;|&nbsp;&nbsp; "
+                    "• <b>CUIT:</b> 30-71234567-8<br/>"
+                    "• <b>CBU:</b> 0720123456789012345678 &nbsp;&nbsp;|&nbsp;&nbsp; "
+                    "• <b>Alias:</b> <b>EDUCAR.TRANSFORMAR.PAGO</b><br/><br/>"
+                    "<i>Una vez realizada la transferencia, adjunte el comprobante desde la <b>App Móvil</b> "
+                    "en la sección de Pagos o mediante el portal web para su inmediata acreditación.</i>",
+                    style_cell,
+                )
+            ],
+        ]
     pago_table = Table(pago_box_data, colWidths=[540])
     pago_table.setStyle(
         TableStyle([
@@ -314,10 +357,16 @@ def generar_factura_pdf(
 
     # 5. Pie institucional
     story.append(HRFlowable(width="100%", thickness=0.5, color=colors.HexColor("#94A3B8"), spaceBefore=0, spaceAfter=8))
+    texto_pie = (
+        "Centro Educativo «Transformar para educar» — Comprobante interno de pago; "
+        "no válido como factura fiscal AFIP."
+        if es_comprobante_pago
+        else "Centro Educativo «Transformar para educar» — Documento no válido como factura fiscal AFIP — "
+        "Liquidación interna de aranceles educativos."
+    )
     story.append(
         Paragraph(
-            "Centro Educativo «Transformar para educar» — Documento no válido como factura fiscal AFIP — "
-            "Liquidación interna de aranceles educativos.",
+            texto_pie,
             style_footer,
         )
     )
