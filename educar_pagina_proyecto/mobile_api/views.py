@@ -1,10 +1,17 @@
 from decimal import Decimal, InvalidOperation
+import hashlib
+import hmac
 import json
+import logging
+import secrets
 from types import SimpleNamespace
 
+from datetime import timedelta
+from django.conf import settings
 from django.contrib.auth.hashers import check_password, make_password
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
+from django.core.mail import send_mail
 from django.db import transaction
 from django.db.models import Q
 from django.http import FileResponse
@@ -37,9 +44,11 @@ from core.cuota_conceptos import (
 )
 
 from .authentication import MobileTokenAuthentication
-from .models import MobileSession
+from .models import MobilePasswordReset, MobileSession
 from .services import mobile_role_for_user
 from .tokens import TOKEN_TTL_SECONDS, create_access_token
+
+logger = logging.getLogger(__name__)
 
 
 class IsMobileAuthenticated(BasePermission):
@@ -263,6 +272,161 @@ class PasswordChangeView(APIView):
             ).exclude(jti=request.auth["jti"]).update(revoked_at=timezone.now())
 
         return Response({"detail": "La contraseña se cambió correctamente."})
+
+
+def _password_reset_digest(reset, code):
+    message = f"{reset.pk}:{reset.user_id}:{code}".encode("utf-8")
+    return hmac.new(settings.SECRET_KEY.encode("utf-8"), message, hashlib.sha256).hexdigest()
+
+
+class PasswordResetRequestView(APIView):
+    authentication_classes = []
+    permission_classes = [AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "mobile_recovery_request"
+
+    generic_response = {
+        "detail": "Si existe una cuenta activa con ese correo, enviaremos un código de recuperación válido por 15 minutos."
+    }
+
+    def post(self, request):
+        email = request.data.get("email")
+        if not isinstance(email, str) or not email.strip() or len(email.strip()) > 100:
+            return Response(self.generic_response)
+
+        user = Usuario.objects.filter(correo__iexact=email.strip()).first()
+        if (
+            user is None
+            or (user.estado or "").casefold() != "activo"
+            or mobile_role_for_user(user) is None
+        ):
+            return Response(self.generic_response)
+
+        now = timezone.now()
+        code = f"{secrets.randbelow(1_000_000):06d}"
+        with transaction.atomic():
+            MobilePasswordReset.objects.filter(
+                user=user,
+                used_at__isnull=True,
+            ).update(used_at=now)
+            reset = MobilePasswordReset.objects.create(
+                user=user,
+                code_digest="",
+                expires_at=now + timedelta(minutes=15),
+            )
+            reset.code_digest = _password_reset_digest(reset, code)
+            reset.save(update_fields=["code_digest"])
+
+        try:
+            send_mail(
+                subject="Código para recuperar tu contraseña",
+                message=(
+                    f"Hola {user.nombre_usuario},\n\n"
+                    f"Tu código para recuperar el acceso es: {code}\n\n"
+                    "Vence en 15 minutos y solo puede usarse una vez. "
+                    "Si no solicitaste este cambio, ignorá este mensaje."
+                ),
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[user.correo],
+                fail_silently=False,
+            )
+        except Exception:
+            MobilePasswordReset.objects.filter(pk=reset.pk).update(used_at=timezone.now())
+            logger.exception("No se pudo enviar el correo de recuperación móvil.")
+
+        return Response(self.generic_response)
+
+
+class PasswordResetConfirmView(APIView):
+    authentication_classes = []
+    permission_classes = [AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "mobile_recovery_confirm"
+
+    def post(self, request):
+        email = request.data.get("email")
+        code = request.data.get("code")
+        new_password = request.data.get("new_password")
+        if (
+            not isinstance(email, str)
+            or not email.strip()
+            or len(email.strip()) > 100
+            or not isinstance(code, str)
+            or len(code) != 6
+            or not code.isdigit()
+            or not isinstance(new_password, str)
+            or not new_password
+            or len(new_password) > 256
+        ):
+            return Response(
+                {"detail": "Ingresá correo, código y una nueva contraseña válida."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        now = timezone.now()
+        with transaction.atomic():
+            reset = (
+                MobilePasswordReset.objects.select_for_update()
+                .select_related("user")
+                .filter(
+                    user__correo__iexact=email.strip(),
+                    used_at__isnull=True,
+                    expires_at__gt=now,
+                    failed_attempts__lt=5,
+                )
+                .order_by("-created_at")
+                .first()
+            )
+            if (
+                reset is None
+                or (reset.user.estado or "").casefold() != "activo"
+                or not hmac.compare_digest(
+                    reset.code_digest,
+                    _password_reset_digest(reset, code),
+                )
+            ):
+                if reset is not None:
+                    reset.failed_attempts += 1
+                    if reset.failed_attempts >= 5:
+                        reset.used_at = now
+                    reset.save(update_fields=["failed_attempts", "used_at"])
+                return Response(
+                    {"detail": "El código es incorrecto o venció. Solicitá uno nuevo."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            if check_password(new_password, reset.user.contrasenia):
+                return Response(
+                    {"detail": "La nueva contraseña debe ser distinta de la actual."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            usuario_para_validacion = SimpleNamespace(
+                username=reset.user.nombre_usuario,
+                email=reset.user.correo or "",
+            )
+            try:
+                validate_password(new_password, user=usuario_para_validacion)
+            except ValidationError as exc:
+                return Response(
+                    {"detail": exc.messages},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            reset.user.contrasenia = make_password(new_password)
+            reset.user.save(update_fields=["contrasenia"])
+            reset.used_at = now
+            reset.save(update_fields=["used_at"])
+            MobilePasswordReset.objects.filter(
+                user=reset.user,
+                used_at__isnull=True,
+            ).exclude(pk=reset.pk).update(used_at=now)
+            MobileSession.objects.filter(
+                user_id=reset.user_id,
+                revoked_at__isnull=True,
+            ).update(revoked_at=now)
+
+        return Response({"detail": "La contraseña se restableció. Iniciá sesión con la nueva contraseña."})
 
 
 class CuotasView(APIView):

@@ -30,6 +30,14 @@ Requiere Authorization: Bearer <token>. JSON:
 
 Valida la contraseña actual y aplica los validadores de contraseña de Django. Cada contraseña acepta hasta 256 caracteres. Al cambiarla, se revocan las demás sesiones móviles de la cuenta; la sesión que realizó el cambio permanece activa. Devuelve 200 con un mensaje de confirmación, o 400 con los errores de validación. Está limitado a cinco solicitudes por hora.
 
+### POST /api/auth/password-reset/request/
+
+Endpoint público. JSON: `{"email":"persona@correo.com"}`. Siempre devuelve el mismo mensaje genérico para no revelar si el correo está asociado a una cuenta. Para una cuenta móvil activa con correo guardado, envía un código de seis dígitos al correo. El código vence en 15 minutos; un código nuevo invalida los anteriores. Está limitado a cinco solicitudes por hora.
+
+### POST /api/auth/password-reset/confirm/
+
+Endpoint público. JSON: `{"email":"persona@correo.com","code":"123456","new_password":"..."}`. Valida el código de un solo uso, su vencimiento y los validadores de contraseña de Django. Se permiten hasta cinco códigos incorrectos por solicitud; el endpoint tiene además un límite de diez solicitudes por hora. Al restablecer la contraseña, revoca todas las sesiones móviles para que el usuario vuelva a iniciar sesión. Devuelve 200 al completar o 400 con un mensaje genérico si el código no es válido o venció.
+
 ### GET /api/cuotas/
 
 Requiere Authorization: Bearer <token> de padre/tutor. Devuelve las cuotas registradas para ese tutor y sus alumnos asociados. Los filtros `periodo` y `estado` son opcionales; los estados admitidos son `pendiente`, `parcial`, `pagada` y `vencida`.
@@ -45,6 +53,7 @@ La base actual registra cuotas y pagos, pero no tiene entidades de factura ni fe
 - El cliente debe guardar el token en SecureStore y usar HTTPS fuera del entorno local.
 - La API móvil limita los intentos de login anónimos a 10 por hora.
 - La API limita los intentos de cambio de contraseña a 5 por hora.
+- La recuperación usa códigos de un solo uso almacenados como digest, con 15 minutos de vigencia y límites de intentos. La respuesta de solicitud no revela si existe la cuenta.
 
 ## Aplicar cambios al backend
 
