@@ -1,6 +1,9 @@
 from django.urls import path
 
 from .views import (
+    AdminComprobanteAprobarView,
+    AdminComprobanteRechazarView,
+    AdminComprobantesPendientesView,
     ComprobanteArchivoView,
     ComprobantesView,
     CuotaDetalleView,
@@ -32,6 +35,14 @@ urlpatterns = [
     path("servicios/inscripciones/", ServiciosInscripcionesView.as_view(), name="mobile-servicios-inscripciones"),
     path("comprobantes/", ComprobantesView.as_view(), name="mobile-comprobantes"),
     path("comprobantes/<int:comprobante_id>/archivo/", ComprobanteArchivoView.as_view(), name="mobile-comprobante-archivo"),
+    # Validación administrativa de comprobantes (HU_M04)
+    path("admin/comprobantes/pendientes/", AdminComprobantesPendientesView.as_view(), name="mobile-admin-comprobantes-pendientes"),
+    path("admin/comprobantes/<int:pago_id>/aprobar/", AdminComprobanteAprobarView.as_view(), name="mobile-admin-comprobante-aprobar"),
+    path("admin/comprobantes/<int:pago_id>/rechazar/", AdminComprobanteRechazarView.as_view(), name="mobile-admin-comprobante-rechazar"),
+    # Aliases directos para la app móvil
+    path("comprobantes/pendientes/", AdminComprobantesPendientesView.as_view(), name="mobile-comprobantes-pendientes"),
+    path("comprobantes/<int:pago_id>/aprobar/", AdminComprobanteAprobarView.as_view(), name="mobile-comprobante-aprobar"),
+    path("comprobantes/<int:pago_id>/rechazar/", AdminComprobanteRechazarView.as_view(), name="mobile-comprobante-rechazar"),
     # Reportes institucionales (Admin - HU_M10)
     path("reportes/ingresos/", ReporteIngresosView.as_view(), name="mobile-reporte-ingresos"),
     path("reportes/pagos-completos/", ReportePagosCompletosView.as_view(), name="mobile-reporte-pagos-completos"),
@@ -41,4 +52,3 @@ urlpatterns = [
     path("facturas/", FacturasReporteView.as_view(), name="mobile-facturas"),
     path("deuda/historial/", DeudaHistorialView.as_view(), name="mobile-deuda-historial"),
 ]
-

@@ -39,6 +39,7 @@ from core.models import (
 )
 from core.cuota_conceptos import (
     agrupar_reporte_financiero,
+    clave_concepto,
     disponibilidad_conceptos_pago,
     distribuir_pago_por_conceptos,
 )
@@ -795,15 +796,20 @@ class ComprobanteArchivoView(APIView):
     permission_classes = [IsMobileAuthenticated]
 
     def get(self, request, comprobante_id):
-        if request.auth.get("role") != "padre":
-            return Response({"detail": "Este recurso está disponible para padres/tutores."}, status=status.HTTP_403_FORBIDDEN)
-        tutor = Tutor.objects.filter(id_persona__id_usuario=request.user).first()
-        legajos_hijos = TutorTutoraAlumno.objects.filter(id_tutor=tutor).values_list("id_alumno_id", flat=True)
-        comprobante = ComprobantePago.objects.filter(
-            id_comprobante=comprobante_id,
-            cuota__id_tutor=tutor,
-            cuota__id_legajo_alumno_id__in=legajos_hijos,
-        ).first()
+        role = request.auth.get("role")
+        if role == "administrativo":
+            comprobante = ComprobantePago.objects.filter(id_comprobante=comprobante_id).first()
+        elif role == "padre":
+            tutor = Tutor.objects.filter(id_persona__id_usuario=request.user).first()
+            legajos_hijos = TutorTutoraAlumno.objects.filter(id_tutor=tutor).values_list("id_alumno_id", flat=True)
+            comprobante = ComprobantePago.objects.filter(
+                id_comprobante=comprobante_id,
+                cuota__id_tutor=tutor,
+                cuota__id_legajo_alumno_id__in=legajos_hijos,
+            ).first()
+        else:
+            return Response({"detail": "No autorizado para este recurso."}, status=status.HTTP_403_FORBIDDEN)
+
         if comprobante is None or not comprobante.archivo:
             return Response({"detail": "Comprobante no encontrado."}, status=status.HTTP_404_NOT_FOUND)
         try:
@@ -811,6 +817,251 @@ class ComprobanteArchivoView(APIView):
         except FileNotFoundError:
             return Response({"detail": "El archivo del comprobante no está disponible."}, status=status.HTTP_404_NOT_FOUND)
         return FileResponse(archivo, as_attachment=False, filename=comprobante.archivo.name.rsplit("/", 1)[-1])
+
+
+class AdminComprobantesPendientesView(APIView):
+    authentication_classes = [MobileTokenAuthentication]
+    permission_classes = [IsMobileAuthenticated]
+
+    def get(self, request):
+        if request.auth.get("role") != "administrativo":
+            return Response({"detail": "Este recurso está disponible para administración."}, status=status.HTTP_403_FORBIDDEN)
+
+        pagos = (
+            PagoPendiente.objects.select_related(
+                "id_tutor__id_persona",
+                "id_tutor__id_persona__id_usuario",
+                "legajo_alumno__id_persona",
+                "legajo_alumno__id_curso",
+            )
+            .prefetch_related(
+                "pago_aplicado__comprobantes",
+                "pago_aplicado__cuota",
+            )
+            .filter(estado__in=["En revisión", "Pendiente"])
+            .order_by("-fecha_solicitud", "-id_pago")
+        )
+
+        data = []
+        for pago in pagos:
+            persona_alumno = getattr(pago.legajo_alumno, "id_persona", None)
+            nombre_alumno = f"{persona_alumno.nombre} {persona_alumno.apellido}".strip() if persona_alumno else "Alumno"
+            curso_alumno = str(pago.legajo_alumno.id_curso) if pago.legajo_alumno and pago.legajo_alumno.id_curso else ""
+
+            persona_tutor = getattr(pago.id_tutor, "id_persona", None)
+            nombre_tutor = f"{persona_tutor.nombre} {persona_tutor.apellido}".strip() if persona_tutor else "Tutor"
+            usuario_tutor = getattr(persona_tutor, "id_usuario", None) if persona_tutor else None
+            email_tutor = (getattr(usuario_tutor, "correo", "") or getattr(pago.id_tutor, "email_contacto", "") or "").strip()
+
+            pago_aplicado = getattr(pago, "pago_aplicado", None)
+            comprobante_obj = pago_aplicado.comprobantes.first() if pago_aplicado else None
+            comprobante_data = None
+            if comprobante_obj and comprobante_obj.archivo:
+                comprobante_data = {
+                    "id": comprobante_obj.id_comprobante,
+                    "nombre_archivo": comprobante_obj.archivo.name.rsplit("/", 1)[-1],
+                    "archivo_url": f"/api/comprobantes/{comprobante_obj.id_comprobante}/archivo/",
+                    "fecha_envio": comprobante_obj.fecha_envio.isoformat() if comprobante_obj.fecha_envio else None,
+                }
+
+            conceptos_aplicados = pago_aplicado.conceptos_aplicados if pago_aplicado and isinstance(pago_aplicado.conceptos_aplicados, dict) else {}
+            conceptos_detalle = []
+            if pago_aplicado and pago_aplicado.cuota and pago_aplicado.cuota.conceptos:
+                conceptos_por_clave = {
+                    clave_concepto(c): c.get("concepto", "Concepto")
+                    for c in pago_aplicado.cuota.conceptos
+                    if isinstance(c, dict)
+                }
+                for k, m in conceptos_aplicados.items():
+                    conceptos_detalle.append({
+                        "clave": k,
+                        "concepto": conceptos_por_clave.get(k, k),
+                        "monto": str(m),
+                    })
+            elif conceptos_aplicados:
+                for k, m in conceptos_aplicados.items():
+                    conceptos_detalle.append({
+                        "clave": k,
+                        "concepto": "Saldo total de la cuota" if k == "__saldo_total__" else k,
+                        "monto": str(m),
+                    })
+
+            data.append({
+                "id": pago.id_pago,
+                "cuota_id": pago_aplicado.cuota_id if pago_aplicado else None,
+                "periodo": pago.mes,
+                "importe": str(pago.importe),
+                "estado": pago.estado,
+                "fecha_solicitud": pago.fecha_solicitud.isoformat() if pago.fecha_solicitud else None,
+                "motivo_rechazo": pago.motivo_rechazo,
+                "alumno": {
+                    "legajo": pago.legajo_alumno_id,
+                    "nombre": nombre_alumno,
+                    "curso": curso_alumno,
+                },
+                "tutor": {
+                    "id": pago.id_tutor_id,
+                    "nombre": nombre_tutor,
+                    "email": email_tutor,
+                },
+                "comprobante": comprobante_data,
+                "conceptos": conceptos_detalle,
+            })
+        return Response(data)
+
+
+class AdminComprobanteAprobarView(APIView):
+    authentication_classes = [MobileTokenAuthentication]
+    permission_classes = [IsMobileAuthenticated]
+
+    def post(self, request, pago_id):
+        if request.auth.get("role") != "administrativo":
+            return Response({"detail": "Este recurso está disponible para administración."}, status=status.HTTP_403_FORBIDDEN)
+
+        from core.views import _enviar_confirmacion_pago_aprobado
+
+        with transaction.atomic():
+            pago = PagoPendiente.objects.select_for_update().filter(id_pago=pago_id).first()
+            if pago is None:
+                return Response({"detail": "Pago pendiente no encontrado."}, status=status.HTTP_404_NOT_FOUND)
+
+            if pago.estado == "Pagado":
+                return Response({"detail": "El pago ya se encuentra aprobado.", "pago_id": pago.id_pago, "estado": "Pagado"})
+
+            if pago.estado == "Rechazado":
+                return Response({"detail": "No se puede aprobar un pago que fue rechazado."}, status=status.HTTP_400_BAD_REQUEST)
+
+            cuota = Cuota.objects.select_for_update().filter(
+                id_tutor=pago.id_tutor,
+                id_legajo_alumno=pago.legajo_alumno,
+                periodo=pago.mes,
+            ).order_by("-id_cuota").first()
+
+            if cuota is None:
+                cuota = Cuota.objects.create(
+                    periodo=pago.mes,
+                    monto=pago.importe,
+                    monto_total=pago.importe,
+                    fecha_pago=timezone.localdate(),
+                    medio_pago="Transferencia",
+                    estado="Pendiente",
+                    id_tutor=pago.id_tutor,
+                    id_legajo_alumno=pago.legajo_alumno,
+                )
+
+            try:
+                pago_aplicado = pago.pago_aplicado
+            except PagoCuota.DoesNotExist:
+                pago_aplicado = None
+
+            if pago_aplicado is None:
+                pago_aplicado = PagoCuota.objects.create(
+                    cuota=cuota,
+                    solicitud=pago,
+                    tutor=pago.id_tutor,
+                    importe=pago.importe,
+                    fecha_pago=timezone.localdate(),
+                    medio_pago="Transferencia",
+                    estado="Pagado",
+                )
+            elif pago_aplicado.estado != "Pagado":
+                pago_aplicado.estado = "Pagado"
+                pago_aplicado.fecha_pago = timezone.localdate()
+                pago_aplicado.save(update_fields=["estado", "fecha_pago"])
+
+            ComprobantePago.objects.filter(pago=pago_aplicado).update(estado="Aprobado")
+            pago.estado = "Pagado"
+            pago.save(update_fields=["estado"])
+            cuota.fecha_pago = timezone.localdate()
+            cuota.save(update_fields=["fecha_pago"])
+            cuota.actualizar_estado()
+
+            persona_alumno = pago.legajo_alumno.id_persona
+            nombre_alumno = f"{persona_alumno.nombre} {persona_alumno.apellido}".strip()
+            persona_tutor = pago.id_tutor.id_persona
+            usuario_tutor = getattr(persona_tutor, "id_usuario", None)
+            destinatario = (
+                getattr(usuario_tutor, "correo", "")
+                or getattr(pago.id_tutor, "email_contacto", "")
+                or ""
+            ).strip()
+            saldo_restante = max(
+                (cuota.total_obligacion or Decimal("0.00")) - cuota.monto_pagado_actual(),
+                Decimal("0.00"),
+            )
+            estado_cuota = cuota.estado
+            asunto = f"Pago aprobado - {nombre_alumno} - {cuota.periodo}"
+            cuerpo = (
+                f"Estimado/a {persona_tutor.nombre} {persona_tutor.apellido}:\n\n"
+                f"Administración aprobó el pago informado para {nombre_alumno}.\n\n"
+                f"Período: {cuota.periodo}\n"
+                f"Importe aprobado: {pago.importe}\n"
+                f"Estado de la cuota: {estado_cuota}\n"
+                f"Saldo restante: {saldo_restante}\n\n"
+                "Adjuntamos el comprobante PDF del pago aprobado. También podés consultar el estado "
+                "desde la aplicación móvil o el portal.\n\n"
+                "Administración Escolar\nCentro Educativo «Transformar para educar»"
+            )
+            transaction.on_commit(
+                lambda: _enviar_confirmacion_pago_aprobado(
+                    destinatario,
+                    asunto,
+                    cuerpo,
+                    pago_aplicado.id_pago,
+                )
+            )
+
+        return Response({
+            "detail": "Pago aprobado con éxito.",
+            "pago_id": pago.id_pago,
+            "estado": "Pagado",
+            "cuota_estado": cuota.estado,
+        })
+
+
+class AdminComprobanteRechazarView(APIView):
+    authentication_classes = [MobileTokenAuthentication]
+    permission_classes = [IsMobileAuthenticated]
+
+    def post(self, request, pago_id):
+        if request.auth.get("role") != "administrativo":
+            return Response({"detail": "Este recurso está disponible para administración."}, status=status.HTTP_403_FORBIDDEN)
+
+        motivo = (request.data.get("motivo") or request.data.get("motivo_rechazo") or "").strip()
+        if not motivo:
+            return Response({"detail": "Debe indicar el motivo del rechazo."}, status=status.HTTP_400_BAD_REQUEST)
+
+        with transaction.atomic():
+            pago = PagoPendiente.objects.select_for_update().filter(id_pago=pago_id).first()
+            if pago is None:
+                return Response({"detail": "Pago pendiente no encontrado."}, status=status.HTTP_404_NOT_FOUND)
+
+            if pago.estado == "Pagado":
+                return Response({"detail": "No se puede rechazar un pago ya aprobado."}, status=status.HTTP_400_BAD_REQUEST)
+
+            try:
+                pago_aplicado = pago.pago_aplicado
+            except PagoCuota.DoesNotExist:
+                pago_aplicado = None
+
+            if pago_aplicado:
+                pago_aplicado.estado = "Rechazado"
+                pago_aplicado.save(update_fields=["estado"])
+                ComprobantePago.objects.filter(pago=pago_aplicado).update(estado="Rechazado")
+
+            pago.estado = "Rechazado"
+            pago.motivo_rechazo = motivo
+            pago.save(update_fields=["estado", "motivo_rechazo"])
+
+            if pago_aplicado and pago_aplicado.cuota:
+                pago_aplicado.cuota.actualizar_estado()
+
+        return Response({
+            "detail": "Pago rechazado correctamente.",
+            "pago_id": pago.id_pago,
+            "estado": "Rechazado",
+            "motivo_rechazo": motivo,
+        })
 
 
 MESES_ESPANOL = (
