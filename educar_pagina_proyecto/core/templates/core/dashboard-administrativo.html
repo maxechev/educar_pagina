@@ -433,7 +433,7 @@
 
             <div class="report-card" style="margin-top:20px;">
               <h3>Reporte financiero por servicios</h3>
-              <p style="color:#64748b;">Consultá lo facturado y los pagos aprobados por deporte, nivel, horario, docente y recorrido.</p>
+              <p style="color:#64748b;">Consultá totales y listados por alumno de cuotas completas e incompletas, con el desglose disponible por deporte, nivel, horario, docente y recorrido.</p>
               <form method="get" action="{% url 'dashboard-administrativo' %}" class="form-section" style="margin:14px 0;">
                 <input type="hidden" name="panel" value="reportes-avanzados">
                 <input type="hidden" name="generar_reporte_financiero" value="1">
@@ -484,6 +484,46 @@
                     </table>
                   </div>
                 {% endfor %}
+                <h4>Pagos completos por alumno</h4>
+                <div style="overflow-x:auto;">
+                  <table class="tabla">
+                    <thead><tr><th>Año</th><th>Período</th><th>Legajo</th><th>Alumno</th><th>Curso</th><th>Nivel</th><th>Total</th><th>Pagado</th><th>Fecha de pago</th></tr></thead>
+                    <tbody>
+                      {% for fila in reporte_financiero_pagos_completos %}
+                        <tr><td>{{ fila.anio }}</td><td>{{ fila.periodo }}</td><td>{{ fila.legajo }}</td><td>{{ fila.alumno }}</td><td>{{ fila.curso }}</td><td>{{ fila.nivel }}</td><td>${{ fila.total }}</td><td>${{ fila.pagado }}</td><td>{{ fila.fecha_pago|date:'d/m/Y'|default:'—' }}</td></tr>
+                      {% empty %}
+                        <tr><td colspan="9">No hay pagos completos para este período.</td></tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+                <h4>Pagos incompletos y cuotas pendientes por alumno</h4>
+                <div style="overflow-x:auto;">
+                  <table class="tabla">
+                    <thead><tr><th>Año</th><th>Período</th><th>Legajo</th><th>Alumno</th><th>Curso</th><th>Nivel</th><th>Total</th><th>Pagado</th><th>Saldo</th><th>Estado</th></tr></thead>
+                    <tbody>
+                      {% for fila in reporte_financiero_pagos_incompletos %}
+                        <tr><td>{{ fila.anio }}</td><td>{{ fila.periodo }}</td><td>{{ fila.legajo }}</td><td>{{ fila.alumno }}</td><td>{{ fila.curso }}</td><td>{{ fila.nivel }}</td><td>${{ fila.total }}</td><td>${{ fila.pagado }}</td><td>${{ fila.saldo }}</td><td>{{ fila.estado }}</td></tr>
+                      {% empty %}
+                        <tr><td colspan="10">No hay cuotas con saldo pendiente para este período.</td></tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+                <h4>Detalle nominal por concepto y servicio</h4>
+                <p style="color:#64748b;">Incluye alumno, nivel, deporte, horario, docente y recorrido cuando están guardados en el desglose de la cuota.</p>
+                <div style="overflow-x:auto;">
+                  <table class="tabla">
+                    <thead><tr><th>Año</th><th>Período</th><th>Legajo</th><th>Alumno</th><th>Curso</th><th>Tipo</th><th>Concepto</th><th>Nivel</th><th>Deporte</th><th>Horario</th><th>Docente</th><th>Recorrido</th><th>Facturado</th><th>Pagado</th></tr></thead>
+                    <tbody>
+                      {% for fila in reporte_financiero_detalle_alumnos %}
+                        <tr><td>{{ fila.anio }}</td><td>{{ fila.periodo }}</td><td>{{ fila.legajo }}</td><td>{{ fila.alumno }}</td><td>{{ fila.curso }}</td><td>{{ fila.tipo }}</td><td>{{ fila.concepto }}</td><td>{{ fila.nivel }}</td><td>{{ fila.deporte }}</td><td>{{ fila.horario }}</td><td>{{ fila.docente }}</td><td>{{ fila.recorrido }}</td><td>${{ fila.facturado }}</td><td>${{ fila.pagado }}</td></tr>
+                      {% empty %}
+                        <tr><td colspan="14">No hay conceptos con desglose disponible para este período.</td></tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
                 {% if reporte_financiero.cuotas_sin_desglose %}
                   <p style="color:#92400e;background:#fef3c7;padding:10px;border-radius:8px;">
                     {{ reporte_financiero.cuotas_sin_desglose }} cuota(s) histórica(s) no tienen desglose guardado. Facturado sin desglose: ${{ reporte_financiero.facturado_sin_desglose }}; pagado sin desglose: ${{ reporte_financiero.pagado_sin_desglose }}. No se asignan a categorías.

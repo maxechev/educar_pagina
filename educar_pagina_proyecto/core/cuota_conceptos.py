@@ -226,7 +226,11 @@ def distribuir_pago_por_conceptos(cuota):
     if total_conceptos <= 0 or total_conceptos != total_cuota:
         return None
 
-    pagos = list(cuota.pagos.filter(estado="Pagado"))
+    pagos_prefetch = getattr(cuota, "_prefetched_objects_cache", {}).get("pagos")
+    if pagos_prefetch is None:
+        pagos = list(cuota.pagos.filter(estado="Pagado"))
+    else:
+        pagos = [pago for pago in pagos_prefetch if pago.estado == "Pagado"]
     pagado_por_clave = {clave_concepto(concepto): Decimal("0.00") for concepto in conceptos}
     pagos_legacy = Decimal("0.00")
     for pago in pagos:
