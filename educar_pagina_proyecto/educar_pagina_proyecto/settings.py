@@ -191,6 +191,7 @@ CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in os.getenv(
 REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_RATES": {
         "mobile_login": "10/hour",
+        "mobile_password_change": "5/hour",
     },
 }
 

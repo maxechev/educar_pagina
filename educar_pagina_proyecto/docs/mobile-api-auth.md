@@ -22,6 +22,14 @@ Requiere Authorization: Bearer <token>. Devuelve el usuario asociado a la sesió
 
 Requiere Authorization: Bearer <token>. Revoca la sesión en el servidor. El token deja de servir inmediatamente.
 
+### POST /api/auth/password-change/
+
+Requiere Authorization: Bearer <token>. JSON:
+
+    {"current_password":"...","new_password":"..."}
+
+Valida la contraseña actual y aplica los validadores de contraseña de Django. Cada contraseña acepta hasta 256 caracteres. Al cambiarla, se revocan las demás sesiones móviles de la cuenta; la sesión que realizó el cambio permanece activa. Devuelve 200 con un mensaje de confirmación, o 400 con los errores de validación. Está limitado a cinco solicitudes por hora.
+
 ### GET /api/cuotas/
 
 Requiere Authorization: Bearer <token> de padre/tutor. Devuelve las cuotas registradas para ese tutor y sus alumnos asociados. Los filtros `periodo` y `estado` son opcionales; los estados admitidos son `pendiente`, `parcial`, `pagada` y `vencida`.
@@ -36,6 +44,7 @@ La base actual registra cuotas y pagos, pero no tiene entidades de factura ni fe
 - El servidor comprueba la firma, la expiración, el estado de la cuenta y el rol en cada petición.
 - El cliente debe guardar el token en SecureStore y usar HTTPS fuera del entorno local.
 - La API móvil limita los intentos de login anónimos a 10 por hora.
+- La API limita los intentos de cambio de contraseña a 5 por hora.
 
 ## Aplicar cambios al backend
 
