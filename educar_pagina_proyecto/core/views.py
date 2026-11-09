@@ -80,6 +80,7 @@ from .cuota_conceptos import (
     agrupar_reporte_financiero,
     construir_conceptos_cuota,
     clave_concepto,
+    distribuir_pago_por_conceptos,
     serializar_conceptos_cuota,
 )
 from .factura_pdf import generar_factura_pdf
@@ -2821,6 +2822,9 @@ def dashboard_administrativo(request):
     reporte_financiero_error = ''
     reporte_financiero_facturado = Decimal('0.00')
     reporte_financiero_pagado = Decimal('0.00')
+    reporte_financiero_pagos_completos = []
+    reporte_financiero_pagos_incompletos = []
+    reporte_financiero_detalle_alumnos = []
     if reporte_financiero_generar:
         try:
             mes_financiero = int(reporte_financiero_mes)
@@ -2840,6 +2844,10 @@ def dashboard_administrativo(request):
                         fecha_vencimiento__year=anio_financiero,
                         fecha_vencimiento__month=mes_financiero,
                     )
+                ).select_related(
+                    'id_legajo_alumno__id_persona',
+                    'id_legajo_alumno__id_curso__nivel_educativo',
+                    'id_tutor__id_persona',
                 ).prefetch_related('pagos')
             )
             reporte_financiero = agrupar_reporte_financiero(cuotas_financieras)
@@ -2855,9 +2863,109 @@ def dashboard_administrativo(request):
                 Decimal('0.00'),
             )
             reporte_financiero_pagado = sum(
-                (cuota.monto_pagado_actual() for cuota in cuotas_financieras),
+                (
+                    pago.importe
+                    for cuota in cuotas_financieras
+                    for pago in cuota.pagos.all()
+                    if pago.estado == 'Pagado'
+                ),
                 Decimal('0.00'),
             )
+
+            for cuota in cuotas_financieras:
+                alumno = cuota.id_legajo_alumno
+                persona = alumno.id_persona
+                curso = alumno.id_curso
+                pagos_aprobados = [
+                    pago for pago in cuota.pagos.all()
+                    if pago.estado == 'Pagado'
+                ]
+                pagado = sum(
+                    (pago.importe for pago in pagos_aprobados),
+                    Decimal('0.00'),
+                )
+                total = cuota.total_obligacion or Decimal('0.00')
+                saldo = max(total - pagado, Decimal('0.00'))
+                nombre_curso = (
+                    f'{curso.anio}° {curso.comision}'
+                    if curso else 'Sin curso'
+                )
+                nivel_curso = (
+                    curso.nivel_educativo.nombre
+                    if curso and curso.nivel_educativo_id
+                    else 'Sin nivel'
+                )
+                nombre_alumno = f'{persona.nombre} {persona.apellido}'.strip()
+                ultimo_pago = max(
+                    (pago.fecha_pago for pago in pagos_aprobados if pago.fecha_pago),
+                    default=cuota.fecha_pago,
+                )
+                fila_base = {
+                    'anio': anio_financiero,
+                    'periodo': cuota.periodo,
+                    'legajo': alumno.legajo,
+                    'alumno': nombre_alumno,
+                    'curso': nombre_curso,
+                    'nivel': nivel_curso,
+                    'total': format(total, '.2f'),
+                    'pagado': format(pagado, '.2f'),
+                    'fecha_pago': ultimo_pago,
+                }
+
+                if total > 0 and saldo == 0:
+                    reporte_financiero_pagos_completos.append(fila_base)
+                elif saldo > 0:
+                    estado = cuota.estado or 'Pendiente'
+                    if (
+                        pagado <= 0
+                        and cuota.fecha_vencimiento
+                        and cuota.fecha_vencimiento < timezone.localdate()
+                    ):
+                        estado = 'Vencida'
+                    reporte_financiero_pagos_incompletos.append({
+                        **fila_base,
+                        'saldo': format(saldo, '.2f'),
+                        'estado': estado,
+                    })
+
+                conceptos_asignados = distribuir_pago_por_conceptos(cuota)
+                if conceptos_asignados is None:
+                    continue
+                for concepto, pago_concepto in conceptos_asignados:
+                    tipo = concepto.get('tipo')
+                    tipo_label = {
+                        'cuota_base': 'Cuota base',
+                        'deporte': 'Deporte',
+                        'transporte': 'Transporte',
+                        'comedor': 'Comedor',
+                    }.get(tipo, tipo or 'Otro')
+                    reporte_financiero_detalle_alumnos.append({
+                        'anio': anio_financiero,
+                        'periodo': cuota.periodo,
+                        'legajo': alumno.legajo,
+                        'alumno': nombre_alumno,
+                        'curso': nombre_curso,
+                        'nivel': concepto.get('nivel') or nivel_curso,
+                        'tipo': tipo_label,
+                        'concepto': concepto.get('concepto') or tipo_label,
+                        'deporte': concepto.get('deporte') or '—',
+                        'horario': concepto.get('horario') or '—',
+                        'docente': concepto.get('docente') or '—',
+                        'recorrido': concepto.get('recorrido') or '—',
+                        'facturado': format(Decimal(str(concepto.get('monto') or '0')), '.2f'),
+                        'pagado': format(pago_concepto, '.2f'),
+                    })
+
+            def orden_filas(fila):
+                return (
+                    fila['alumno'].casefold(),
+                    fila['legajo'],
+                    fila['periodo'].casefold(),
+                )
+
+            reporte_financiero_pagos_completos.sort(key=orden_filas)
+            reporte_financiero_pagos_incompletos.sort(key=orden_filas)
+            reporte_financiero_detalle_alumnos.sort(key=orden_filas)
 
     # Permite consultar únicamente los horarios de un curso desde el panel.
     # Los deportes se incluyen por nivel, ya que un grupo deportivo está
@@ -2969,6 +3077,9 @@ def dashboard_administrativo(request):
         'reporte_financiero_error': reporte_financiero_error,
         'reporte_financiero_facturado': reporte_financiero_facturado,
         'reporte_financiero_pagado': reporte_financiero_pagado,
+        'reporte_financiero_pagos_completos': reporte_financiero_pagos_completos,
+        'reporte_financiero_pagos_incompletos': reporte_financiero_pagos_incompletos,
+        'reporte_financiero_detalle_alumnos': reporte_financiero_detalle_alumnos,
         'tutores_admin': tutores_admin,
         'alumnos_tutores_admin': alumnos_tutores_admin,
     })
