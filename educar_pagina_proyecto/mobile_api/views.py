@@ -579,8 +579,7 @@ class AdminNotificationSimulationView(APIView):
             subject=f"[PRUEBA] Factura de Aranceles {periodo} - {nombre_alumno}",
             body=(
                 "Este correo de prueba simula la factura mensual programada.\n"
-                "No se creó ni modificó ninguna cuota y no se avisó al tutor.\n\n"
-                f"Alumno: {nombre_alumno}\nPeríodo: {periodo}\n"
+                f"\nAlumno: {nombre_alumno}\nPeríodo: {periodo}\n"
                 f"Total simulado: {formatear_moneda(total)}"
             ),
             from_email=settings.DEFAULT_FROM_EMAIL,
@@ -641,8 +640,7 @@ class AdminNotificationSimulationView(APIView):
             subject=f"[PRUEBA] Recordatorio de deuda - {periodo}",
             body=(
                 "Este correo de prueba simula el recordatorio programado del día 20.\n"
-                "No se avisó al tutor ni se modificaron cuotas o pagos.\n\n"
-                f"Tutor: {nombre_tutor}\nMes de la prueba: {periodo}\n\n"
+                f"\nTutor: {nombre_tutor}\nMes de la prueba: {periodo}\n\n"
                 f"{chr(10).join(lineas)}\n\n"
                 f"Total pendiente simulado: {formatear_moneda(total)}"
             ),
