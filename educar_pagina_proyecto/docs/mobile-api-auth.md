@@ -38,6 +38,10 @@ Endpoint público. JSON: `{"email":"persona@correo.com"}`. Siempre devuelve el m
 
 Endpoint público. JSON: `{"email":"persona@correo.com","code":"123456","new_password":"..."}`. Valida el código de un solo uso, su vencimiento y los validadores de contraseña de Django. Se permiten hasta cinco códigos incorrectos por solicitud; el endpoint tiene además un límite de diez solicitudes por hora. Al restablecer la contraseña, revoca todas las sesiones móviles para que el usuario vuelva a iniciar sesión. Devuelve 200 al completar o 400 con un mensaje genérico si el código no es válido o venció.
 
+### POST /api/admin/notificaciones/simulacion/
+
+Requiere sesión móvil con rol administrativo. JSON: `{"tipo":"factura","mes":11,"anio":2026,"legajo":31}` o `{"tipo":"recordatorio","mes":11,"anio":2026,"legajo":31}`. Envía una única copia a `ADMIN_NOTIFICATION_EMAIL`, nunca al tutor ni a una dirección elegida por la app. Para esta demostración, solo se habilita si está configurado exactamente como `maxecheverri9@gmail.com` (sin distinguir mayúsculas). La factura adjunta un PDF; el recordatorio resume las deudas pendientes del tutor asociado, en todos sus períodos, excluyendo los importes cubiertos por pagos aprobados o comprobantes en revisión. No crea ni cambia cuotas, pagos o comprobantes. Está limitado a diez envíos por hora.
+
 ### GET /api/cuotas/
 
 Requiere Authorization: Bearer <token> de padre/tutor. Devuelve las cuotas registradas para ese tutor y sus alumnos asociados. Los filtros `periodo` y `estado` son opcionales; los estados admitidos son `pendiente`, `parcial`, `pagada` y `vencida`.
@@ -54,6 +58,7 @@ La base actual registra cuotas y pagos, pero no tiene entidades de factura ni fe
 - La API móvil limita los intentos de login anónimos a 10 por hora.
 - La API limita los intentos de cambio de contraseña a 5 por hora.
 - La recuperación usa códigos de un solo uso almacenados como digest, con 15 minutos de vigencia y límites de intentos. La respuesta de solicitud no revela si existe la cuenta.
+- La simulación de notificaciones solo envía al buzón administrativo configurado, está limitada por tasa y no persiste datos financieros.
 
 ## Aplicar cambios al backend
 
