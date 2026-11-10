@@ -190,11 +190,12 @@ CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in os.getenv(
 
 REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_RATES": {
-        "mobile_login": "10/hour",
-        "mobile_password_change": "5/hour",
-        "mobile_recovery_request": "5/hour",
-        "mobile_recovery_confirm": "10/hour",
+        "mobile_login": "60/minute",
+        "mobile_password_change": "20/hour",
+        "mobile_recovery_request": "20/hour",
+        "mobile_recovery_confirm": "30/hour",
     },
+    "NUM_PROXIES": 1,
 }
 
 SIMPLE_JWT = {
