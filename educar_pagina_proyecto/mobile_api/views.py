@@ -1,17 +1,18 @@
+from datetime import date, timedelta
 from decimal import Decimal, InvalidOperation
 import hashlib
 import hmac
 import json
 import logging
+import os
 import secrets
 from types import SimpleNamespace
 
-from datetime import timedelta
 from django.conf import settings
 from django.contrib.auth.hashers import check_password, make_password
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
-from django.core.mail import send_mail
+from django.core.mail import EmailMessage, send_mail
 from django.db import transaction
 from django.db.models import Q
 from django.http import FileResponse
@@ -25,6 +26,7 @@ from rest_framework.views import APIView
 
 from core.models import (
     Alumno,
+    Arancel,
     ComprobantePago,
     Cuota,
     InscripcionComedor,
@@ -50,6 +52,11 @@ from .services import mobile_role_for_user
 from .tokens import TOKEN_TTL_SECONDS, create_access_token
 
 logger = logging.getLogger(__name__)
+
+MESES_SIMULACION = (
+    "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+    "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
+)
 
 
 class IsMobileAuthenticated(BasePermission):
@@ -428,6 +435,238 @@ class PasswordResetConfirmView(APIView):
             ).update(revoked_at=now)
 
         return Response({"detail": "La contraseña se restableció. Iniciá sesión con la nueva contraseña."})
+
+
+class AdminNotificationSimulationView(APIView):
+    """Send one administrator-only sample of a scheduled parent notification."""
+
+    authentication_classes = [MobileTokenAuthentication]
+    permission_classes = [IsMobileAuthenticated]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "mobile_notification_simulation"
+
+    def post(self, request):
+        if request.auth.get("role") != "administrativo":
+            return Response(
+                {"detail": "Esta función está disponible solo para administración."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        test_recipient = os.environ.get("ADMIN_NOTIFICATION_EMAIL", "").strip()
+        if test_recipient.casefold() != "maxecheverri9@gmail.com":
+            return Response(
+                {"detail": "Configurá ADMIN_NOTIFICATION_EMAIL como maxecheverri9@gmail.com para habilitar la prueba segura."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
+        tipo = request.data.get("tipo")
+        if tipo not in {"factura", "recordatorio"}:
+            return Response(
+                {"detail": "Elegí factura o recordatorio."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            mes = int(request.data.get("mes"))
+            anio = int(request.data.get("anio"))
+            legajo = int(request.data.get("legajo"))
+        except (TypeError, ValueError):
+            return Response(
+                {"detail": "Período y legajo deben ser números válidos."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if not 1 <= mes <= 12 or not 2000 <= anio <= 9999 or legajo <= 0:
+            return Response(
+                {"detail": "Revisá el mes, año y legajo indicados."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        alumno = Alumno.objects.filter(legajo=legajo).select_related(
+            "id_persona",
+            "id_curso__nivel_educativo",
+        ).first()
+        if alumno is None:
+            return Response(
+                {"detail": "No se encontró un alumno con ese legajo."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        relacion = TutorTutoraAlumno.objects.filter(id_alumno=alumno).select_related(
+            "id_tutor__id_persona__id_usuario",
+        ).first()
+        if relacion is None or relacion.id_tutor is None:
+            return Response(
+                {"detail": "El alumno no tiene un tutor asociado."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        periodo = f"{MESES_SIMULACION[mes - 1]} {anio}"
+        nombre_alumno = f"{alumno.id_persona.nombre} {alumno.id_persona.apellido}".strip()
+        if tipo == "factura":
+            resultado = self._enviar_factura(
+                alumno=alumno,
+                tutor=relacion.id_tutor,
+                nombre_alumno=nombre_alumno,
+                periodo=periodo,
+                mes=mes,
+                anio=anio,
+                test_recipient=test_recipient,
+            )
+        else:
+            resultado = self._enviar_recordatorio(
+                alumno=alumno,
+                tutor=relacion.id_tutor,
+                periodo=periodo,
+                mes=mes,
+                anio=anio,
+                test_recipient=test_recipient,
+            )
+
+        if isinstance(resultado, Response):
+            return resultado
+        return Response({
+            "detail": resultado["detail"],
+            "destinatario": test_recipient,
+            "tipo": tipo,
+            "periodo": periodo,
+            "alumno": nombre_alumno,
+            "total": resultado.get("total"),
+        })
+
+    @staticmethod
+    def _enviar_factura(alumno, tutor, nombre_alumno, periodo, mes, anio, test_recipient):
+        from core.cuota_conceptos import construir_conceptos_cuota
+        from core.factura_pdf import formatear_moneda, generar_factura_pdf
+
+        nivel = (
+            alumno.id_curso.nivel_educativo.nombre
+            if alumno.id_curso and alumno.id_curso.nivel_educativo_id
+            else "General"
+        )
+        equivalencias_nivel = {
+            "inicial": "inicial",
+            "primaria": "primario",
+            "primario": "primario",
+            "secundaria": "secundario",
+        }
+        nivel_clave = nivel.strip().casefold()
+        nivel_normalizado = equivalencias_nivel.get(nivel_clave, nivel_clave)
+        aranceles = [
+            arancel.monto
+            for arancel in Arancel.objects.all().order_by("id_arancel")
+            if equivalencias_nivel.get(
+                arancel.nivel.strip().casefold(), arancel.nivel.strip().casefold()
+            ) == nivel_normalizado
+        ]
+        monto_base = aranceles[0] if aranceles else Decimal("30000.00")
+        desglose = construir_conceptos_cuota(alumno, monto_base, nivel=nivel)
+        total = sum((Decimal(str(item["monto"])) for item in desglose), Decimal("0.00"))
+        cuota_simulada = SimpleNamespace(
+            id_cuota=0,
+            periodo=periodo,
+            fecha_vencimiento=date(anio, mes, 10),
+            total_obligacion=total,
+            monto_pagado_actual=lambda: Decimal("0.00"),
+        )
+        archivo_pdf = generar_factura_pdf(
+            cuota=cuota_simulada,
+            alumno=alumno,
+            tutor=tutor,
+            desglose_conceptos=desglose,
+            numero_factura=f"PRUEBA-{anio}{mes:02d}-{alumno.legajo:05d}",
+            fecha_emision=timezone.localdate().strftime("%d/%m/%Y"),
+        )
+        correo = EmailMessage(
+            subject=f"[PRUEBA] Factura de Aranceles {periodo} - {nombre_alumno}",
+            body=(
+                "Este correo de prueba simula la factura mensual programada.\n"
+                "No se creó ni modificó ninguna cuota y no se avisó al tutor.\n\n"
+                f"Alumno: {nombre_alumno}\nPeríodo: {periodo}\n"
+                f"Total simulado: {formatear_moneda(total)}"
+            ),
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=[test_recipient],
+        )
+        correo.attach(f"factura_prueba_{anio}_{mes:02d}_{alumno.legajo}.pdf", archivo_pdf, "application/pdf")
+        return AdminNotificationSimulationView._send(correo, total)
+
+    @staticmethod
+    def _enviar_recordatorio(alumno, tutor, periodo, mes, anio, test_recipient):
+        from core.factura_pdf import formatear_moneda
+
+        legajos_tutor = TutorTutoraAlumno.objects.filter(
+            id_tutor=tutor,
+        ).values_list("id_alumno_id", flat=True)
+        cuotas = Cuota.objects.filter(
+            id_tutor=tutor,
+            id_legajo_alumno_id__in=legajos_tutor,
+        ).select_related("id_legajo_alumno__id_persona").prefetch_related(
+            "pagos",
+            "comprobantes__pago",
+        )
+
+        detalle = []
+        for cuota in cuotas:
+            saldo = max(
+                (cuota.total_obligacion or Decimal("0.00")) - cuota.monto_pagado_actual(),
+                Decimal("0.00"),
+            )
+            if saldo <= 0:
+                continue
+            en_revision = Decimal("0.00")
+            for comprobante in cuota.comprobantes.all():
+                if comprobante.pago and (comprobante.pago.estado or "").casefold() == "en revisión":
+                    en_revision += comprobante.pago.importe or Decimal("0.00")
+                elif (comprobante.estado or "").casefold() == "en revisión":
+                    en_revision += saldo
+            saldo_neto = max(saldo - min(en_revision, saldo), Decimal("0.00"))
+            if saldo_neto > 0:
+                persona = cuota.id_legajo_alumno.id_persona
+                nombre = f"{persona.nombre} {persona.apellido}".strip()
+                detalle.append((nombre, cuota, saldo_neto))
+
+        if not detalle:
+            return Response(
+                {"detail": "Ese tutor no tiene saldo pendiente fuera de revisión para el período."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        total = sum((saldo for _, _, saldo in detalle), Decimal("0.00"))
+        lineas = [
+            f"• {nombre} — {cuota.periodo}: {formatear_moneda(saldo)}"
+            for nombre, cuota, saldo in detalle
+        ]
+        persona_tutor = tutor.id_persona
+        nombre_tutor = f"{persona_tutor.nombre} {persona_tutor.apellido}".strip()
+        correo = EmailMessage(
+            subject=f"[PRUEBA] Recordatorio de deuda - {periodo}",
+            body=(
+                "Este correo de prueba simula el recordatorio programado del día 20.\n"
+                "No se avisó al tutor ni se modificaron cuotas o pagos.\n\n"
+                f"Tutor: {nombre_tutor}\nMes de la prueba: {periodo}\n\n"
+                f"{chr(10).join(lineas)}\n\n"
+                f"Total pendiente simulado: {formatear_moneda(total)}"
+            ),
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=[test_recipient],
+        )
+        return AdminNotificationSimulationView._send(correo, total)
+
+    @staticmethod
+    def _send(correo, total):
+        try:
+            sent = correo.send(fail_silently=False)
+        except Exception:
+            logger.exception("No se pudo enviar el correo de simulación de notificación.")
+            return Response(
+                {"detail": "No se pudo enviar la copia de prueba. Revisá la configuración de correo."},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+        if sent != 1:
+            return Response(
+                {"detail": "El servicio de correo no confirmó el envío de la copia de prueba."},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+        return {"detail": "Correo de prueba enviado al correo administrativo. No se cambiaron datos financieros.", "total": str(total)}
 
 
 class CuotasView(APIView):

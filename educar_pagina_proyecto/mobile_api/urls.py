@@ -4,6 +4,7 @@ from .views import (
     AdminComprobanteAprobarView,
     AdminComprobanteRechazarView,
     AdminComprobantesPendientesView,
+    AdminNotificationSimulationView,
     ComprobanteArchivoView,
     ComprobantesView,
     CuotaDetalleView,
@@ -39,6 +40,7 @@ urlpatterns = [
     path("admin/comprobantes/pendientes/", AdminComprobantesPendientesView.as_view(), name="mobile-admin-comprobantes-pendientes"),
     path("admin/comprobantes/<int:pago_id>/aprobar/", AdminComprobanteAprobarView.as_view(), name="mobile-admin-comprobante-aprobar"),
     path("admin/comprobantes/<int:pago_id>/rechazar/", AdminComprobanteRechazarView.as_view(), name="mobile-admin-comprobante-rechazar"),
+    path("admin/notificaciones/simulacion/", AdminNotificationSimulationView.as_view(), name="mobile-admin-notificacion-simulacion"),
     # Aliases directos para la app móvil
     path("comprobantes/pendientes/", AdminComprobantesPendientesView.as_view(), name="mobile-comprobantes-pendientes"),
     path("comprobantes/<int:pago_id>/aprobar/", AdminComprobanteAprobarView.as_view(), name="mobile-comprobante-aprobar"),

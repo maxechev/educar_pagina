@@ -194,6 +194,7 @@ REST_FRAMEWORK = {
         "mobile_password_change": "20/hour",
         "mobile_recovery_request": "20/hour",
         "mobile_recovery_confirm": "30/hour",
+        "mobile_notification_simulation": "10/hour",
     },
     "NUM_PROXIES": 1,
 }
