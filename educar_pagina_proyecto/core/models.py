@@ -781,7 +781,16 @@ class Usuario(models.Model):
     class Meta:
         managed = True
         db_table = 'usuario'
-        
+
+    @property
+    def is_authenticated(self):
+        """Expose Django's authenticated-user interface to DRF throttles."""
+        return True
+
+    @property
+    def is_anonymous(self):
+        return False
+
     def __str__(self):
         return self.nombre_usuario
 
